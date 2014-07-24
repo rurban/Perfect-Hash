@@ -19,10 +19,10 @@ Also a good reference:
 Fabiano C. Botelho, and Martin Dietzfelbinger
 L<http://cmph.sourceforge.net/chd.html>
 
-=head1 new Perfect::Hash::HanovPP \@dict
+=head1 new Perfect::Hash::HanovPP \%dict
 
 Computes a minimal perfect hash table using the given dictionary,
-given as arrayref.  It returns an object with a list of [\@G, \@V].
+given as hashref or arrayref.  It returns an object with a list of [\@G, \@V].
 
 @G contains the intermediate table of values needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
@@ -31,9 +31,19 @@ index of the value in @V.  @V contains the values of the dictionary.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #arrayref
-  my int $size = scalar @$dict or
-    die "new $class: empty dict argument. arrayref expected";
+  my $dict = shift; #hashref or arrayref
+  my int $size;
+  if (ref $dict eq 'ARRAY') {
+    my $i = 0;
+    my %dict = map {$_ => $i++} @$dict;
+    $size = scalar @$dict;
+    $dict = \%dict;
+  } else {
+    die "new $class: wrong dict argument. arrayref or hashref expected"
+      if ref $dict ne 'HASH';
+    $size = scalar(keys %$dict) or
+      die "new $class: empty dict argument";
+  }
   my $last = $size-1;
 
   # Step 1: Place all of the keys into buckets
@@ -44,76 +54,67 @@ sub new {
   my @values; $#values = $last;
 
   # Step 1: Place all of the keys into buckets
-  for my $key (@$dict) {
-    push $buckets[ hash(0, $key) % $size ], $key;
-  }
-  for (0 .. scalar(@$buckets)-1) {
-    # init rest with empty array
-    $buckets->[$_] = [] unless defined $buckets->[$_];
-  }
+  push @{$buckets[ hash(0, $_) % $size ]}, $_ for keys %$dict;
+
   # Step 2: Sort the buckets and process the ones with the most items first.
-  my @sorted;
-  @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
-  for my $i (@sorted) {
-    my $bucket = $buckets->[$i];
-    next if scalar(@$bucket) <= 1;
-    #print "len[$i]=",scalar(@$bucket),"\n";
+  my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
+  my $next = 0;
+  for my $b (@sorted) {
+    my @bucket = @{$buckets->[$b]};
+    if (scalar(@bucket) <= 1) {
+      $next = $b;
+      last;
+    }
+    #print "len[$b]=",scalar(@bucket),"\n";
 
     my int $d = 1;
     my int $item = 0;
     my %slots;
 
-    # Repeatedly try different values of d until we find a hash function
-    # that places all items in the bucket into free slots
-    while ($item < scalar(@$bucket)) {
-      my $slot = hash( $d, $bucket->[$item] ) % $size;
-      #epmh.py uses a list for slots here, we rather use a faster hash
+    # Repeatedly try different values of $d (the seed) until we find a hash function
+    # that places all items in the bucket into free slots.
+    while ($item < scalar(@bucket)) {
+      my $slot = hash( $d, $bucket[$item] ) % $size;
+      # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $values[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
-        $slots{$slot} = $slot;
-        printf "slots[$slot]=$slot, d=%08x, item=$item: $bucket->[$item]\n", $d
-          unless $i % 1000;
+        $slots{$slot} = $item;
+        printf "slots[$slot]=$slot, d=%08x, item=$item: $bucket[$item]\n", $d
+          unless $d % 1000;
         $item++;
       }
     }
     #print "seed=$d\n";
 
-    $G[hash(0, $bucket->[0]) % $size] = $d;
-    for my $j (0 .. scalar(@$bucket)-1) {
-      if (exists $slots{$j}) {
-        $values[$slots{$j}] = $dict->[$bucket->[$j]];
-        print "values[$slots{$j}]=$dict->[$bucket->[$j]]\n";
-      }
-    }
-    print "bucket[$i]=",join" ",@{$bucket},"\n"
-      unless $i % 1000;
+    $G[hash(0, $bucket[0]) % $size] = $d;
+    $values[$_] = $dict->{$bucket[$_]} for values %slots;
+
+    print "bucket[$b]=",join" ",@bucket,"\n"
+      unless $b % 1000;
   }
 
   # Only buckets with 1 item remain. Process them more quickly by directly
-  # placing them into a free slot. Use a negative value of d to indicate
+  # placing them into a free slot. Use a negative value of $d to indicate
   # this.
   my @freelist;
   for my $i (0..$last) {
     push @freelist, $i unless defined $values[$i];
   }
 
-=pod
+  # use $next from the loop above: last
+  print "xrange($next, $last)\n";
+  for my $i ($next..$last) {
+    my @bucket = @{$buckets->[$i]};
+    next unless scalar(@bucket);
+    my $slot = pop @freelist;
+    # We subtract one to ensure it's negative even if the zeroeth slot was
+    # used.
+    $G[hash(0, $bucket[0]) % $size] = - $slot-1;
+    $values[$slot] = $dict->{$bucket[0]};
+  }
 
-  TODO: NOT YET FINISHED and TESTED
-
-  for b in xrange( b, size ):
-      bucket = buckets[b]
-      if len(bucket) == 0: break
-      slot = freelist.pop()
-      # We subtract one to ensure it's negative even if the zeroeth slot was
-      # used.
-      G[hash(0, bucket[0]) % size] = -slot-1 
-      values[slot] = dict[bucket[0]]
-
-=cut
-
-    return bless [\@G, \@values)], $class;
+  return bless [\@G, \@values], $class;
 }
 
 =head1 perfecthash $obj, $key
@@ -147,24 +148,34 @@ sub hash {
   return $d
 }
 
-# test code
+&_test unless caller;
 
-my @dict;
-my $dict = "/usr/share/dict/words";
-open my $d, $dict or die;
-{
-  local $/;
-  @dict = split /\n/, <$d>;
-}
-close $d;
-print "Reading ",scalar @dict, " words from $dict\n";
-my $ph = new Perfect::Hash::Hanov(\@dict);
+# usage: perl HanovPP.pm [words...]
+sub _test {
+  my (@dict, %dict);
+  my $dict = "/usr/share/dict/words";
+  #my $dict = "words20";
+  open my $d, $dict or die;
+  {
+    local $/;
+    @dict = split /\n/, <$d>;
+  }
+  close $d;
+  print "Reading ",scalar @dict, " words from $dict\n";
+  my $ph = new __PACKAGE__, \@dict;
 
-@ARGV = qw(hello goodbye dog cat) unless @ARGV;
+  unless (@ARGV) {
+    if ($dict eq "words20") {
+      @ARGV = qw(ASL's AWOL's AZT's Aachen);
+    } else {
+      @ARGV = qw(hello goodbye dog cat);
+    }
+  }
 
-for my $word (@ARGV) {
-  printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
-  my $line = $ph->perfecthash( $word ) || 0;
-  printf "perfecthash(\"%s\") = %x\n", $word, $line;
-  printf "dict[$line] = %s\n", $dict[$line];
+  for my $word (@ARGV) {
+    #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
+    my $line = $ph->perfecthash( $word ) || 0;
+    printf "perfecthash(\"%s\") = %d\n", $word, $line;
+    printf "dict[$line] = %s\n", $dict[$line];
+  }
 }

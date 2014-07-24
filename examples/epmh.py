@@ -12,9 +12,13 @@
 import sys
 
 DICTIONARY = "/usr/share/dict/words"
+#DICTIONARY = "words20"
 TEST_WORDS = sys.argv[1:]
 if len(TEST_WORDS) == 0:
-    TEST_WORDS = ['hello', 'goodbye', 'dog', 'cat']
+    if DICTIONARY == "words20":
+        TEST_WORDS = ['ASL\'s', 'AWOL\'s', 'AZT\'s', 'Aachen']
+    else:
+        TEST_WORDS = ['hello', 'goodbye', 'dog', 'cat']
 
 # Calculates a distinct hash function for a given string. Each value of the
 # integer d results in a different hash value.
@@ -79,6 +83,7 @@ def CreateMinimalPerfectHash( dict ):
     for i in xrange(size): 
         if values[i] == None: freelist.append( i )
 
+    print "xrange(%d, %d)\n" % (b, size),
     for b in xrange( b, size ):
         bucket = buckets[b]
         if len(bucket) == 0: break

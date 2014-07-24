@@ -12,7 +12,12 @@ Perfect::Hash - generate perfect hashes
 
     my $ph = Perfect::Hash->new(\@dict, -minimal);
     for (@ARGV) {
-      print "$_ at line ",$ph->perfecthash($_);
+      my $v = $ph->perfecthash($_);
+      if ($dict[$v] eq $_) {
+        print "$_ at line $v";
+      } else {
+        print "$_ not found";
+      }
     }
 
 =head1 DESCRIPTION
@@ -39,7 +44,7 @@ or hashref.
 WARNING: When querying a perfect hash you need to be sure that key
 really exists on some algorithms, as non-existing keys might return
 false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually.
+non-existing keys, you need to check the result manually as in the SYNOPSIS.
 
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH, Bob, Pearson, gperf.
@@ -162,15 +167,18 @@ Output classes:
 =cut
 
 
-&_test unless caller;
+&_test(@ARGV) unless caller;
 
-# usage: perl HanovPP.pm [words...]
+# usage: perl -Ilib lib/Perfect/Hash.pm
 sub _test {
   my (@dict, %dict);
-  my $dict = "/usr/share/dict/words";
-  #my $dict = "words20";
-  open my $d, $dict or die;
-  {
+  my $dict = shift || "/usr/share/dict/words";
+  #my $dict = "examples/words20";
+  unless (-f $dict) {
+    unshift @_, $dict;
+    $dict = "/usr/share/dict/words";
+  }
+  open my $d, $dict or die; {
     local $/;
     @dict = split /\n/, <$d>;
   }
@@ -178,18 +186,24 @@ sub _test {
   print "Reading ",scalar @dict, " words from $dict\n";
   my $ph = new __PACKAGE__, \@dict;
 
-  unless (@ARGV) {
+  unless (@_) {
+    # TODO: pick random values, about 50%
     if ($dict eq "examples/words20") {
-      @ARGV = qw(ASL's AWOL's AZT's Aachen);
+      @_ = qw(ASL's AWOL's AZT's Aachen);
     } else {
-      @ARGV = qw(hello goodbye dog cat);
+      @_ = qw(hello goodbye dog cat);
     }
   }
 
-  for my $word (@ARGV) {
+  for my $word (@_) {
     #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
     my $line = $ph->perfecthash( $word ) || 0;
     printf "perfecthash(\"%s\") = %d\n", $word, $line;
     printf "dict[$line] = %s\n", $dict[$line];
+    if ($dict[$line] eq $word) {
+      print "$word at index $line\n";
+    } else {
+      print "$word not found\n";
+    }
   }
 }

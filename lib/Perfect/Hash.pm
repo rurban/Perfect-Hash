@@ -36,6 +36,11 @@ L<http://cmph.sourceforge.net/papers/esa09.pdf>
 As input we need to provide a set of unique keys, either as arrayref
 or hashref.
 
+WARNING: When querying a perfect hash you need to be sure that key
+really exists on some algorithms, as non-existing keys might return
+false positives.  If you are not sure how the perfect hash deals with
+non-existing keys, you need to check the result manually.
+
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH, Bob, Pearson, gperf.
 
@@ -48,12 +53,16 @@ you can create your own for any language e.g. Java, Ruby, ...
 
 =item new hashref|arrayref, algo, options...
 
-Evaluate the best algorithm given the dict size and outoput options and 
-Generate the minimal perfect hash for the given keys. 
+Evaluate the best algorithm given the dict size and output options and 
+generate the minimal perfect hash for the given keys. 
 
 The values in the dict are not needed to generate the perfect hash function,
 but might be needed later. So you can use either an arrayref where the index
 is returned, or a full hashref.
+
+Options for output classes are prefixed with C<-for->,
+e.g. C<-for-c>. They might be needed to make a better decision which
+perfect hash to use.
 
 The following algorithms and options are planned:
 
@@ -84,6 +93,8 @@ the options, and if the compiled algos are available.
 
 =item -for-c
 
+=item -for-xs
+
 =item -for-sharedlib
 
 =back
@@ -106,6 +117,7 @@ sub new {
   } else {
     # choose the right default, based on the given options and the dict size
     $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
+    require Perfect::Hash::HanovPP;
   }
   return $method->new($dict, @_);
 }
@@ -122,15 +134,62 @@ sub perfecthash {
   return $ph->perfecthash(@_);
 }
 
+sub save_c {
+  require Perfect::Hash::C;
+  my $obj = bless shift, "Perfect::Hash::C";
+  $obj->save_c(@_);
+}
+
+sub save_xs {
+  require Perfect::Hash::XS;
+  my $obj = bless shift, "Perfect::Hash::XS";
+  $obj->save_xs(@_);
+}
+
 =back
 
 =head1 SEE ALSO
 
 Algos:
 
-L<Perfect::Hash::HanovPP>
+  - L<Perfect::Hash::HanovPP>
 
 Output classes:
 
-L<Perfect::Hash::C>
+  - L<Perfect::Hash::C>
+  - L<Perfect::Hash::XS>
 
+=cut
+
+
+&_test unless caller;
+
+# usage: perl HanovPP.pm [words...]
+sub _test {
+  my (@dict, %dict);
+  my $dict = "/usr/share/dict/words";
+  #my $dict = "words20";
+  open my $d, $dict or die;
+  {
+    local $/;
+    @dict = split /\n/, <$d>;
+  }
+  close $d;
+  print "Reading ",scalar @dict, " words from $dict\n";
+  my $ph = new __PACKAGE__, \@dict;
+
+  unless (@ARGV) {
+    if ($dict eq "examples/words20") {
+      @ARGV = qw(ASL's AWOL's AZT's Aachen);
+    } else {
+      @ARGV = qw(hello goodbye dog cat);
+    }
+  }
+
+  for my $word (@ARGV) {
+    #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
+    my $line = $ph->perfecthash( $word ) || 0;
+    printf "perfecthash(\"%s\") = %d\n", $word, $line;
+    printf "dict[$line] = %s\n", $dict[$line];
+  }
+}

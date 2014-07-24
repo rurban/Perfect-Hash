@@ -1,22 +1,22 @@
 package Perfect::Hash::C;
 our $VERSION = '0.01';
+our @ISA = qw(Perfect::Hash);
 
 =head1 NAME
 
-Perfect::Hash::C - generate C or XS code for perfect hashes
+Perfect::Hash::C - generate C code for perfect hashes
 
 =head1 SYNOPSIS
 
     use Perfect::Hash;
-    use Perfect::Hash::C;
 
     $hash->{chr($_)} = int rand(2) for 48..90;
-    my $ph = Perfect::Hash->new($hash, -for-c);
-    $ph->save_c("ph.c");
+    my $ph = new Perfect:Hash $hash, -for-c;
+    $ph->save_c("ph"); # => ph.c, ph.h
 
     my @dict = split/\n/,`cat /usr/share.dict/words`;
-    my $ph2 = Perfect::Hash->new(\@dict, -minimal, -for-xs);
-    $ph2->save_xs("ph.inc");
+    my $ph2 = Perfect::Hash->new(\@dict, -minimal, -for-c);
+    $ph2->save_c("ph2"); # => ph2.c, ph2.h
 
 =head1 DESCRIPTION
 
@@ -37,9 +37,8 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 Generates pure C code. Either indexed or with the values saved as C types,
 strings or numbers only.
 
-=item save_xs filename, options
-
-Generated XS code, with the perl values saved as perl types.
-
 =cut
 
+sub save_c {
+  die 'nyi';
+}

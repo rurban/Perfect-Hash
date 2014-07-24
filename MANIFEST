@@ -1,0 +1,9 @@
+MANIFEST
+README.md
+cmph-2.0.tar.gz
+examples/epmh.py
+examples/words20
+lib/Perfect/Hash.pm
+lib/Perfect/Hash/C.pm
+lib/Perfect/Hash/HanovPP.pm
+lib/Perfect/Hash/XS.pm

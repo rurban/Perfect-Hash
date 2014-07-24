@@ -3,6 +3,7 @@ our $VERSION = '0.01';
 use coretypes;
 use strict;
 use warnings;
+our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
 

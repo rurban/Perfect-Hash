@@ -115,7 +115,7 @@ you can create your own for any language e.g. Java, Ruby, ...
 
 - save\_xs file, options
 
-    See ["save_xs" in Perfect::Hash::xs](https://metacpan.org/pod/Perfect::Hash::xs#save_xs)
+    See ["save_xs" in Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS#save_xs)
 
 # SEE ALSO
 

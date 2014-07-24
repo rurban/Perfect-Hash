@@ -166,7 +166,7 @@ See L<Perfect::Hash::C/save_c>
 
 =item save_xs file, options
 
-See L<Perfect::Hash::xs/save_xs>
+See L<Perfect::Hash::XS/save_xs>
 
 =cut
 

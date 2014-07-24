@@ -20,11 +20,14 @@ Also a good reference:
 Fabiano C. Botelho, and Martin Dietzfelbinger
 L<http://cmph.sourceforge.net/chd.html>
 
-=head1 new Perfect::Hash::HanovPP \%dict
+=head1 new $dict, options
 
 Computes a minimal perfect hash table using the given dictionary,
-given as hashref or arrayref.  It returns an object with a list of [\@G, \@V].
+given as hashref or arrayref.
 
+Honored options are: I<none>
+
+It returns an object with a list of [\@G, \@V].
 @G contains the intermediate table of values needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
@@ -33,6 +36,7 @@ index of the value in @V.  @V contains the values of the dictionary.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref
+  my $options = map {$_ => 1 } @_;
   my int $size;
   if (ref $dict eq 'ARRAY') {
     my $i = 0;
@@ -114,8 +118,7 @@ sub new {
     $G[hash(0, $bucket[0]) % $size] = - $slot-1;
     $values[$slot] = $dict->{$bucket[0]};
   }
-
-  return bless [\@G, \@values], $class;
+  return bless [\@G, \@values, $options], $class;
 }
 
 =head1 perfecthash $obj, $key
@@ -129,10 +132,11 @@ given $dict.
 sub perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
-  my $d = $G->[hash(0,$key) % scalar(@$G)];
-  return $V->[- $d-1] if $d < 0;
-  return $V->[hash($d, $key) % scalar(@$G)];
+  my $d = $G->[hash(0, $key) % scalar(@$G)];
+  return $d < 0 ? $V->[- $d-1] : $V->[hash($d, $key) % scalar(@$G)];
 }
+
+sub false_positives { 1 }
 
 =head1 hash salt, string
 

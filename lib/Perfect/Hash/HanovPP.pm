@@ -2,7 +2,8 @@ package Perfect::Hash::HanovPP;
 our $VERSION = '0.01';
 use coretypes;
 use strict;
-use warnings;
+#use warnings;
+use integer;
 our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
@@ -52,29 +53,27 @@ sub new {
   my $last = $size-1;
 
   # Step 1: Place all of the keys into buckets
-  my @buckets; $#buckets = $last;
+  my str @buckets; $#buckets = $last;
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
-  my @G; $#G = $size; @G = map {0} (0..$last);
+  my int @G; $#G = $size; @G = map {0} (0..$last);
   my @values; $#values = $last;
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash(0, $_) % $size ]}, $_ for keys %$dict;
+  push @{$buckets[ hash(0, $_) % $size ]}, $_ for sort keys %$dict;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
-  my $b = $sorted[0];
+  my $i = 0;
   while (@sorted) {
+    my $b = $sorted[0];
     my @bucket = @{$buckets->[$b]};
-    if (scalar(@bucket) <= 1) { # skip the ones with 1 or 0
-      last;
-    }
-    $b = pop @sorted;
-    #print "len[$b]=",scalar(@bucket),"\n";
-
+    last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
+    shift @sorted;
+#    print "len[$i]=",scalar(@bucket),"\n";
     my int $d = 1;
     my int $item = 0;
-    my %slots;
+    my int %slots;
 
     # Repeatedly try different values of $d (the seed) until we find a hash function
     # that places all items in the bucket into free slots.
@@ -85,19 +84,18 @@ sub new {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-        printf "slots[$slot]=$slot, d=%08x, item=$item: $bucket[$item]\n", $d
-          unless $d % 100;
+#        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d;
+#          unless $d % 100;
         $item++;
       }
     }
-    print "buckets[$b]:",scalar(@bucket)," seed=$d\n"
-      unless $b % 1000;
-
     $G[hash(0, $bucket[0]) % $size] = $d;
-    $values[$_] = $dict->{$bucket[$_]} for values %slots;
+    $values[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
+#    print "[".join(",",@values),"]\n";
 
-    #print "bucket[$b]=",join" ",@bucket,"\n"
-    #  unless $b % 1000;
+#    print "buckets[$i]:",scalar(@bucket)," d=$d\n";
+#      unless $b % 1000;
+    $i++;
   }
 
   # Only buckets with 1 item remain. Process them more quickly by directly
@@ -107,15 +105,14 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $values[$i];
   }
-  print "len[freelist]=",scalar(@freelist),"\n";
+  #print "len[freelist]=",scalar(@freelist),"\n";
 
-  # use $next from the loop above: last
-  # print "xrange($next, $last)\n";
-  my $i = $sorted[0];
+  #print "xrange(",$last - $#sorted - 1,", $size)\n";
   while (@sorted) {
+    $i = $sorted[0];
     my @bucket = @{$buckets->[$i]};
-    $i = pop @sorted;
-    next unless scalar(@bucket);
+    last unless scalar(@bucket);
+    shift @sorted;
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.

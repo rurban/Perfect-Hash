@@ -15,7 +15,7 @@ DICTIONARY = "/usr/share/dict/words"
 #DICTIONARY = "examples/words20"
 TEST_WORDS = sys.argv[1:]
 if len(TEST_WORDS) == 0:
-    if DICTIONARY == "words20":
+    if DICTIONARY == "examples/words20":
         TEST_WORDS = ['ASL\'s', 'AWOL\'s', 'AZT\'s', 'Aachen']
     else:
         TEST_WORDS = ['hello', 'goodbye', 'dog', 'cat']
@@ -43,14 +43,16 @@ def CreateMinimalPerfectHash( dict ):
     G = [0] * size
     values = [None] * size
     
-    for key in dict.keys():
+#    for key in dict.keys():
+    for key in sorted(dict.keys()): # just for debugging
         buckets[hash(0, key) % size].append( key )
 
     # Step 2: Sort the buckets and process the ones with the most items first.
-    buckets.sort( key=len, reverse=True )        
+    buckets.sort( key=len, reverse=True )
     for b in xrange( size ):
         bucket = buckets[b]
         if len(bucket) <= 1: break
+        #print "len[%d]=%d\n" % (b, len(bucket)),
         
         d = 1
         item = 0
@@ -66,14 +68,16 @@ def CreateMinimalPerfectHash( dict ):
                 slots = []
             else:
                 slots.append( slot )
+                #print "slots[%d]=%d, d=0x%x, %s from [%s]\n" % (slot, item, d, bucket[item], ' '.join(bucket)),
                 item += 1
 
         G[hash(0, bucket[0]) % size] = d
         for i in range(len(bucket)):
             values[slots[i]] = dict[bucket[i]]
+        #print str(values)
 
         if ( b % 1000 ) == 0:
-            print "bucket %d    r\n" % (b),
+            print "buckets[%d]:%d d=%d\n" % (b, len(bucket), d),
             sys.stdout.flush()
 
     # Only buckets with 1 item remain. Process them more quickly by directly
@@ -82,8 +86,9 @@ def CreateMinimalPerfectHash( dict ):
     freelist = []
     for i in xrange(size): 
         if values[i] == None: freelist.append( i )
+    #print "len[freelist]=%d\n" % len(freelist),
 
-    print "xrange(%d, %d)\n" % (b, size),
+    #print "xrange(%d, %d)\n" % (b, size),
     for b in xrange( b, size ):
         bucket = buckets[b]
         if len(bucket) == 0: break
@@ -106,7 +111,7 @@ def PerfectHashLookup( G, V, key ):
 
 print "Reading words"
 dict = {}
-line = 1
+line = 0
 for key in open(DICTIONARY, "rt").readlines():
     dict[key.strip()] = line
     line += 1

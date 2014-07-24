@@ -32,7 +32,7 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 
 =over
 
-=item save_c filename, options
+=item save_c fileprefix, options
 
 Generates pure C code. Either indexed or with the values saved as C types,
 strings or numbers only.

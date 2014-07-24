@@ -100,7 +100,7 @@ you can create your own for any language e.g. Java, Ruby, ...
     - \-for-xs
     - \-for-sharedlib
 
-- perfecthash $obj, $key
+- perfecthash $key
 
     Returns the index into the arrayref, resp. the provided hash value.
 
@@ -109,11 +109,11 @@ you can create your own for any language e.g. Java, Ruby, ...
     Returns 1 if perfecthash might return false positives. I.e. You'll need to check
     the result manually again.
 
-- save\_c
+- save\_c fileprefix, options
 
     See ["save_c" in Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C#save_c)
 
-- save\_xs
+- save\_xs file, options
 
     See ["save_xs" in Perfect::Hash::xs](https://metacpan.org/pod/Perfect::Hash::xs#save_xs)
 

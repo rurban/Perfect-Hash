@@ -143,7 +143,7 @@ sub new {
   return $method->new($dict, @_);
 }
 
-=item perfecthash $obj, $key
+=item perfecthash $key
 
 Returns the index into the arrayref, resp. the provided hash value.
 
@@ -160,11 +160,11 @@ sub perfecthash {
 Returns 1 if perfecthash might return false positives. I.e. You'll need to check
 the result manually again.
 
-=item save_c
+=item save_c fileprefix, options
 
 See L<Perfect::Hash::C/save_c>
 
-=item save_xs
+=item save_xs file, options
 
 See L<Perfect::Hash::xs/save_xs>
 

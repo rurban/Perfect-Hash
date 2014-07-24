@@ -165,7 +165,7 @@ sub _test {
   my $ph = new __PACKAGE__, \@dict;
 
   unless (@ARGV) {
-    if ($dict eq "words20") {
+    if ($dict eq "examples/words20") {
       @ARGV = qw(ASL's AWOL's AZT's Aachen);
     } else {
       @ARGV = qw(hello goodbye dog cat);

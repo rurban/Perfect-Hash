@@ -12,7 +12,7 @@
 import sys
 
 DICTIONARY = "/usr/share/dict/words"
-#DICTIONARY = "words20"
+#DICTIONARY = "examples/words20"
 TEST_WORDS = sys.argv[1:]
 if len(TEST_WORDS) == 0:
     if DICTIONARY == "words20":

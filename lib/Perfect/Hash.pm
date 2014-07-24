@@ -23,15 +23,19 @@ Perfect::Hash - generate perfect hashes
 =head1 DESCRIPTION
 
 Perfect hashing is a technique for building a hash table with no
-collisions. It is only possible to build one when we know all of the
-keys in advance. Minimal perfect hashing implies that the resulting
-table contains one entry for each key, and no empty slots.
+collisions. Which means guaranteed constant O(1) access time, and for
+minimal perfect hashes guaranteed minimal size. It is only possible to
+build one when we know all of the keys in advance. Minimal perfect
+hashing implies that the resulting table contains one entry for each
+key, and no empty slots.
 
 There exist various C and a primitive python library to generate code
 to access perfect hashes and minimal versions thereof, but nothing to
-use easily. gperf is not very well suited to create big maps and cannot
-deal with anagrams, but creates fast C code. pearson hashes are also
-pretty fast, but not guaranteed to be creatable for small hashes.
+use easily. gperf is not very well suited to create big maps and
+cannot deal with anagrams, but creates fast C code. pearson hashes are
+also pretty fast, but not guaranteed to be creatable for small hashes.
+cmph CHD and the other cmph algorithms might be the best algorithms
+for big hashes, but lookup time is slower for smaller hashes.
 
 The best algorithm for big hashes, CHD, is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
@@ -44,12 +48,13 @@ or hashref.
 WARNING: When querying a perfect hash you need to be sure that key
 really exists on some algorithms, as non-existing keys might return
 false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually as in the SYNOPSIS.
+non-existing keys, you need to check the result manually as in the
+SYNOPSIS.  It's still faster than using a Bloom filter though.
 
 As generation algorithm there exist various hashing classes,
-e.g. Hanov, CMPH, Bob, Pearson, gperf.
+e.g. Hanov, CMPH::*, Bob, Pearson, Gperf.
 
-As output there exist several dumper classes, e.g. C, XS, Perl or
+As output there exist several dumper classes, e.g. C, XS or
 you can create your own for any language e.g. Java, Ruby, ...
 
 =head1 METHODS
@@ -75,6 +80,22 @@ The following algorithms and options are planned:
 
 =item -hanovpp (default, pure perl)
 
+=item -optimal-size
+
+tries various hashes, and uses the one which will create the smallest
+hash in memory. Those hashes usually will not store the value, so you
+need to check the result for a false-positive.
+
+=item -optimal-speed
+
+tries various hashes, and uses the one which will use the fastest
+lookup.
+
+=item -minimal
+
+Selects the best available method for a minimal hash, given the
+dictionary size, the options, and if the compiled algos are available.
+
 =item -bob
 
 =item -gperf
@@ -90,11 +111,6 @@ The following algorithms and options are planned:
 =item -cmph-chm
 
 =item -cmph-fch
-
-=item -minimal 
-
-Selects the best available method for a minimal hash, given the dictionary size, 
-the options, and if the compiled algos are available.
 
 =item -for-c
 
@@ -139,6 +155,21 @@ sub perfecthash {
   return $ph->perfecthash(@_);
 }
 
+=item false_positives
+
+Returns 1 if perfecthash might return false positives. I.e. You'll need to check
+the result manually again.
+
+=item save_c
+
+See L<Perfect::Hash::C/save_c>
+
+=item save_xs
+
+See L<Perfect::Hash::xs/save_xs>
+
+=cut
+
 sub save_c {
   require Perfect::Hash::C;
   my $obj = bless shift, "Perfect::Hash::C";
@@ -155,9 +186,16 @@ sub save_xs {
 
 =head1 SEE ALSO
 
-Algos:
+Algorithms:
 
   - L<Perfect::Hash::HanovPP>
+  - L<Perfect::Hash::Bob>
+  - L<Perfect::Hash::Pearson>
+  - L<Perfect::Hash::CMPH::CHD>
+  - L<Perfect::Hash::CMPH::BDZ>
+  - L<Perfect::Hash::CMPH::BRZ>
+  - L<Perfect::Hash::CMPH::CHM>
+  - L<Perfect::Hash::CMPH::FCH>
 
 Output classes:
 

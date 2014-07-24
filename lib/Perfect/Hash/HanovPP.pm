@@ -28,7 +28,7 @@ given as hashref or arrayref.
 Honored options are: I<none>
 
 It returns an object with a list of [\@G, \@V].
-@G contains the intermediate table of values needed to compute the
+@G contains the intermediate table of seeds needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
 =cut
@@ -63,13 +63,13 @@ sub new {
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
-  my $next = 0;
-  for my $b (@sorted) {
+  my $b = $sorted[0];
+  while (@sorted) {
     my @bucket = @{$buckets->[$b]};
-    if (scalar(@bucket) <= 1) {
-      $next = $b;
+    if (scalar(@bucket) <= 1) { # skip the ones with 1 or 0
       last;
     }
+    $b = pop @sorted;
     #print "len[$b]=",scalar(@bucket),"\n";
 
     my int $d = 1;
@@ -86,17 +86,18 @@ sub new {
       } else {
         $slots{$slot} = $item;
         printf "slots[$slot]=$slot, d=%08x, item=$item: $bucket[$item]\n", $d
-          unless $d % 1000;
+          unless $d % 100;
         $item++;
       }
     }
-    #print "seed=$d\n";
+    print "buckets[$b]:",scalar(@bucket)," seed=$d\n"
+      unless $b % 1000;
 
     $G[hash(0, $bucket[0]) % $size] = $d;
     $values[$_] = $dict->{$bucket[$_]} for values %slots;
 
-    print "bucket[$b]=",join" ",@bucket,"\n"
-      unless $b % 1000;
+    #print "bucket[$b]=",join" ",@bucket,"\n"
+    #  unless $b % 1000;
   }
 
   # Only buckets with 1 item remain. Process them more quickly by directly
@@ -106,11 +107,14 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $values[$i];
   }
+  print "len[freelist]=",scalar(@freelist),"\n";
 
   # use $next from the loop above: last
-  print "xrange($next, $last)\n";
-  for my $i ($next..$last) {
+  # print "xrange($next, $last)\n";
+  my $i = $sorted[0];
+  while (@sorted) {
     my @bucket = @{$buckets->[$i]};
+    $i = pop @sorted;
     next unless scalar(@bucket);
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
@@ -153,34 +157,8 @@ sub hash {
   return $d
 }
 
-&_test unless caller;
-
-# usage: perl HanovPP.pm [words...]
-sub _test {
-  my (@dict, %dict);
-  my $dict = "/usr/share/dict/words";
-  #my $dict = "words20";
-  open my $d, $dict or die;
-  {
-    local $/;
-    @dict = split /\n/, <$d>;
-  }
-  close $d;
-  print "Reading ",scalar @dict, " words from $dict\n";
-  my $ph = new __PACKAGE__, \@dict;
-
-  unless (@ARGV) {
-    if ($dict eq "examples/words20") {
-      @ARGV = qw(ASL's AWOL's AZT's Aachen);
-    } else {
-      @ARGV = qw(hello goodbye dog cat);
-    }
-  }
-
-  for my $word (@ARGV) {
-    #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
-    my $line = $ph->perfecthash( $word ) || 0;
-    printf "perfecthash(\"%s\") = %d\n", $word, $line;
-    printf "dict[$line] = %s\n", $dict[$line];
-  }
+# local testing: p -d -Ilib lib/Perfect/Hash/HanovPP.pm examples/words20
+unless (caller) {
+  require Perfect::Hash;
+  &Perfect::Hash::_test(@ARGV)
 }

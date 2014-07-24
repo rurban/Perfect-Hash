@@ -124,21 +124,23 @@ dictionary size, the options, and if the compiled algos are available.
 
 our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
 our %algo_methods = map {
-  my $m = $_ =~ s/::/-/;
-  lc $m => "Perfect::Hash::" . $_
+  my $m = $_;
+  s/::/-/g;
+  lc $_ => "Perfect::Hash::$m"
 } @algos;
 
 sub new {
   my $class = shift;
   my $dict = shift;
-  my $option = shift || '-hanov'; # the first must be the algo method
-  my $method = $algo_methods{substr($option,2)};
-  if (substr($option,1,1) eq "-" and $method) {
+  my $option = shift || '-hanovpp'; # the first must be the algo method
+  my $method = $algo_methods{substr($option,1)};
+  if (substr($option,0,1) eq "-" and $method) {
     ;
   } else {
     # choose the right default, based on the given options and the dict size
     $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
-    require Perfect::Hash::HanovPP;
+    require Perfect::Hash::HanovPP unless $INC{'Perfect/Hash/HanovPP.pm'};
+    unshift @_, $option;
   }
   return $method->new($dict, @_);
 }
@@ -236,7 +238,7 @@ sub _test {
   for my $word (@_) {
     #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
     my $line = $ph->perfecthash( $word ) || 0;
-    printf "perfecthash(\"%s\") = %d\n", $word, $line;
+    printf "perfecthash(\"%s\") = %d\t", $word, $line;
     printf "dict[$line] = %s\n", $dict[$line];
     if ($dict[$line] eq $word) {
       print "$word at index $line\n";

@@ -1,0 +1,12 @@
+url=http://cmph.sourceforge.net/
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: cmph
+Description: minimal perfect hashing library
+Version: 1.0
+Libs: -L${libdir} -lcmph
+Cflags: -I${includedir} 
+URL: ${url}

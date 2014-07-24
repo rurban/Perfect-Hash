@@ -1,0 +1,6 @@
+Run the commands below or refer to the autotools documentation for more
+sophisticated options.
+
+./configure --prefix=/usr
+make
+sudo make install

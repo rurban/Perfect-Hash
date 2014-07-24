@@ -25,7 +25,7 @@ use easily. gperf is not very well suited to create big maps and cannot
 deal with anagrams, but creates fast C code. pearson hashes are also
 pretty fast, but not guaranteed to be creatable for small hashes.
 
-The best algorithm for big hashes, CHD, is derived from 
+The best algorithm for big hashes, CHD, is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)
@@ -34,7 +34,7 @@ As input we need to provide a set of unique keys, either as arrayref
 or hashref.
 
 As generation algorithm there exist various hashing classes,
-e.g. Hanov, CMPH, Bob, Pearsons, gperf.
+e.g. Hanov, CMPH, Bob, Pearson, gperf.
 
 As output there exist several dumper classes, e.g. C, XS, Perl or
 you can create your own for any language e.g. Java, Ruby, ...
@@ -52,7 +52,7 @@ you can create your own for any language e.g. Java, Ruby, ...
 
     The following algorithms and options are planned:
 
-    - \-hanov (default, pure perl)
+    - \-hanovpp (default, pure perl)
     - \-bob
     - \-gperf
     - \-pearson
@@ -64,7 +64,7 @@ you can create your own for any language e.g. Java, Ruby, ...
     - \-minimal 
 
         Selects the best available method for a minimal hash, given the dictionary size, 
-        the options, and if the compiled methods are available.
+        the options, and if the compiled algos are available.
 
     - \-for-c
     - \-for-sharedlib
@@ -73,4 +73,12 @@ you can create your own for any language e.g. Java, Ruby, ...
 
     Returns the index into the arrayref, resp. the provided hash value.
 
+# SEE ALSO
 
+Algos:
+
+[Perfect::Hash::HanovPP](https://metacpan.org/pod/Perfect::Hash::HanovPP)
+
+Output classes:
+
+[Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C)

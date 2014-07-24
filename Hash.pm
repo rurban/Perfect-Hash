@@ -37,7 +37,7 @@ As input we need to provide a set of unique keys, either as arrayref
 or hashref.
 
 As generation algorithm there exist various hashing classes,
-e.g. Hanov, CMPH, Bob, Pearsons, gperf.
+e.g. Hanov, CMPH, Bob, Pearson, gperf.
 
 As output there exist several dumper classes, e.g. C, XS, Perl or
 you can create your own for any language e.g. Java, Ruby, ...
@@ -80,7 +80,7 @@ The following algorithms and options are planned:
 =item -minimal 
 
 Selects the best available method for a minimal hash, given the dictionary size, 
-the options, and if the compiled methods are available.
+the options, and if the compiled algos are available.
 
 =item -for-c
 
@@ -90,7 +90,7 @@ the options, and if the compiled methods are available.
 
 =cut
 
-our @algos = qw(HanovPP Bob gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
 our %algo_methods = map {
   my $m = $_ =~ s/::/-/;
   lc $m => "Perfect::Hash::" . $_

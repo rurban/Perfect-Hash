@@ -23,7 +23,7 @@ Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud,
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref or arrayref.
 
-Honored options are: I<none>
+Honored options are: I<-no-false-positives>
 
 It returns an object with a list of [\@G, \@V].
 @G contains the intermediate table of seeds needed to compute the
@@ -157,7 +157,8 @@ i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
 The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+option C<-no-false-positives>, which increases the required
+space from 2n to B<4n> (a perl hash holds the keys and the values).
 
 =cut
 

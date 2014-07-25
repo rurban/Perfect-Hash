@@ -1,5 +1,6 @@
 package Perfect::Hash;
 our $VERSION = '0.01';
+use Perfect::Hash::HanovPP (); # early load of coretypes
 
 =head1 NAME
 
@@ -122,7 +123,8 @@ dictionary size, the options, and if the compiled algos are available.
 
 =cut
 
-our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+#our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+our @algos = qw(HanovPP);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;
@@ -137,10 +139,12 @@ sub new {
   if (substr($option,0,1) eq "-" and $method) {
     eval "require $method;";
   } else {
+    # no algo given, check which would be the best
     unshift @_, $option;
     # TODO: choose the right default, based on the given options and the dict size
 
     $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
+
     require Perfect::Hash::HanovPP unless $INC{'Perfect/Hash/HanovPP.pm'};
   }
   return $method->new($dict, @_);

@@ -37,7 +37,7 @@ sub dist {
 sub depend {
   "
 README.md : \$(VERSION_FROM)
-	pod2markdown \$(VERSION_FROM) > $@
+	pod2markdown \$(VERSION_FROM) > \$@
 
 release : dist
 	git commit -a -m\"release \$(VERSION)\"

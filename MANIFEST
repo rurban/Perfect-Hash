@@ -9,3 +9,4 @@ Makefile.PL
 MANIFEST
 README.md
 t/00basic.t
+t/01words.t

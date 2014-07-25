@@ -50,10 +50,10 @@ sub new {
   my $last = $size-1;
 
   # Step 1: Place all of the keys into buckets
-  my str @buckets; $#buckets = $last;
+  my @buckets; $#buckets = $last;
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
-  my int @G; $#G = $size; @G = map {0} (0..$last);
+  my @G; $#G = $size; @G = map {0} (0..$last);
   my @values; $#values = $last;
 
   # Step 1: Place all of the keys into buckets
@@ -70,7 +70,7 @@ sub new {
 #    print "len[$i]=",scalar(@bucket),"\n";
     my int $d = 1;
     my int $item = 0;
-    my int %slots;
+    my %slots;
 
     # Repeatedly try different values of $d (the seed) until we find a hash function
     # that places all items in the bucket into free slots.

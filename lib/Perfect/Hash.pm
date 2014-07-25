@@ -116,6 +116,7 @@ Pretty fast lookup, but limited dictionaries.
 =item -pearson
 
 Very fast lookup, but limited dictionaries.
+Planned is a 8-bit pearson only so far, maybe a 16-bit later.
 
 =item -cmph-chd
 
@@ -136,6 +137,19 @@ Optimize for C libraries
 =item -for-xs
 
 Optimize for shared Perl XS code. Stores the values as perl types.
+
+=item -hash=C<name>
+
+Use the specified hash function instead of the default.
+Only useful for hardware assisted C<crc32> and C<aes> system calls,
+provided by compiler intrinsics (sse4.2) or libz.
+See -hash=help for a list of all supported hash function names:
+C<crc32>, C<aes>, C<crc32-libz>
+
+The hardware assisted C<crc32> and C<aes> functions add a run-time
+probe with slow software fallback code.  C<crc32-libz> does all this
+also, and is especially optimized for long keys to hash them in
+parallel.
 
 =item -pic
 

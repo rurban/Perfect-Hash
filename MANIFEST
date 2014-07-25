@@ -11,3 +11,4 @@ README.md
 t/00basic.t
 t/01words.t
 t/02sysdict.t
+t/03false-positives.t

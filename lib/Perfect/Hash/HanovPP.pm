@@ -34,7 +34,7 @@ index of the value in @V.  @V contains the values of the dictionary.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref
-  my $options = map {$_ => 1 } @_;
+  my %options = map {$_ => 1 } @_;
   my int $size;
   if (ref $dict eq 'ARRAY') {
     my $i = 0;
@@ -115,7 +115,11 @@ sub new {
     $G[hash(0, $bucket[0]) % $size] = - $slot-1;
     $values[$slot] = $dict->{$bucket[0]};
   }
-  return bless [\@G, \@values, $options], $class;
+  if (exists $options{'-no-false-positives'}) {
+    return bless [\@G, \@values, \%options, $dict], $class;
+  } else {
+    return bless [\@G, \@values, \%options], $class;
+  }
 }
 
 =head1 perfecthash $obj, $key
@@ -124,16 +128,42 @@ Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
 given $dict.
 
+With -no-false-positives it checks if the index is correct,
+otherwise it will return undef.
+Without -no-false-positives, the key must have existed in
+the given dictionary. If not, a wrong index will be returned.
+
 =cut
 
 sub perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
-  my $d = $G->[hash(0, $key) % scalar(@$G)];
-  return $d < 0 ? $V->[- $d-1] : $V->[hash($d, $key) % scalar(@$G)];
+  my $size = scalar(@$G);
+  my $d = $G->[hash(0, $key) % $size];
+  my $v = $d < 0 ? $V->[- $d-1] : $V->[hash($d, $key) % $size];
+  # -no-false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  if ($ph->[3]) {
+    return (exists $ph->[3]->{$v} and $ph->[3]->{$v} eq $key) ? $v : undef;
+  } else {
+    return $v;
+  }
 }
 
-sub false_positives { 1 }
+=head1 false_positives
+
+Returns 1 if the hash might return false positives,
+i.e. will return the index of an existing key when
+you searched for a non-existing key.
+
+The default is 1, unless you created the hash with the
+option C<-no-false-positives>.
+
+=cut
+
+sub false_positives {
+  return !exists $_[0]->[2]->{'-no-false-positives'};
+}
 
 =head1 hash salt, string
 

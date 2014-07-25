@@ -88,7 +88,7 @@ dictionary size, the options, and if the compiled algos are available.
 =item -no-false-positives
 
 Stores the values with the hash also, and checks the found key against
-the value to avoid false positives. needs much more space.
+the value to avoid false positives. Needs much more space.
 
 =item -optimal-size
 

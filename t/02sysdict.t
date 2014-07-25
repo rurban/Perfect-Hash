@@ -18,7 +18,8 @@ open my $d, $dict or die; {
 close $d;
 
 for my $m (map {"-$_"} @methods) {
-  diag "generating ph for $dict...";
+  diag "generating $m ph for ".scalar @dict." entries in $dict...";
+  # TODO: calc time?
   my $ph = new Perfect::Hash \@dict, $m;
   diag "done";
   my $ok = 1;

@@ -1,6 +1,6 @@
 package Perfect::Hash;
 our $VERSION = '0.01';
-use Perfect::Hash::HanovPP (); # early load of coretypes
+use Perfect::Hash::HanovPP (); # early load of coretypes when compiled via B::CC
 
 =head1 NAME
 
@@ -194,7 +194,7 @@ C<libicu>.
 =cut
 
 #our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP);
+our @algos = qw(HanovPP Urban);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;
@@ -286,18 +286,19 @@ Output classes:
 sub _test {
   my (@dict, %dict);
   my $dict = shift || "/usr/share/dict/words";
+  my $method = shift || "";
   #my $dict = "examples/words20";
   unless (-f $dict) {
     unshift @_, $dict;
     $dict = "/usr/share/dict/words";
   }
-  open my $d, $dict or die; {
+  open my $d, "<", $dict or die; {
     local $/;
     @dict = split /\n/, <$d>;
   }
   close $d;
   print "Reading ",scalar @dict, " words from $dict\n";
-  my $ph = new __PACKAGE__, \@dict;
+  my $ph = new __PACKAGE__, \@dict, $method;
 
   unless (@_) {
     # TODO: pick random values, about 50%

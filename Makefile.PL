@@ -12,6 +12,7 @@ WriteMakefile
    'ABSTRACT_FROM' => 'lib/Perfect/Hash.pm',
    'PL_FILES'   => { 'script/phash.PL' => 'script/phash' },
    'EXE_FILES'  => [ 'script/phash' ],
+   'LIBS'       => "-lz",
    'PREREQ_PM'	=> {
      'coretypes' => 0,
    },

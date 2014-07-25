@@ -8,6 +8,7 @@ lib/Perfect/Hash/XS.pm
 Makefile.PL
 MANIFEST
 README.md
+script/phash.PL
 t/00basic.t
 t/01words.t
 t/02sysdict.t

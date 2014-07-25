@@ -2,11 +2,16 @@ use strict;
 #use 5.005062;
 use ExtUtils::MakeMaker;
 
+# TODO: we should provide an option to provide a B::CC compiled script/phash,
+# which would e.g. use faster versions of the pure perl modules.
+
 WriteMakefile
   (
    'NAME'	   => 'Perfect::Hash',
    'VERSION_FROM'  => 'lib/Perfect/Hash.pm',
    'ABSTRACT_FROM' => 'lib/Perfect/Hash.pm',
+   'PL_FILES'   => { 'script/phash.PL' => 'script/phash' },
+   'EXE_FILES'  => [ 'script/phash' ],
    'PREREQ_PM'	=> {
      'coretypes' => 0,
    },

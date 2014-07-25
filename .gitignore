@@ -2,6 +2,7 @@
 /Debian_CPANTS.txt
 /Perfect-Hash-*.tar.gz
 /cmph-*.tar.gz
+script/phash
 META.json
 META.yml
 MYMETA.json

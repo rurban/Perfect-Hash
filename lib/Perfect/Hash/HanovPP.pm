@@ -12,14 +12,11 @@ Perl variant of the python "Easy Perfect Minimal Hashing" epmh.py
 By Steve Hanov. Released to the public domain.
 http://stevehanov.ca/blog/index.php?id=119
 
+Very simple and inefficient, needing O(2n) space.
+
 Based on:
 Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud, 
 "Practical minimal perfect hash functions for large databases", CACM, 35(1):105-121
-
-Also a good reference:
-"Compress, Hash, and Displace" (CHD algorithm) by Djamal Belazzougui,
-Fabiano C. Botelho, and Martin Dietzfelbinger
-L<http://cmph.sourceforge.net/chd.html>
 
 =head1 new $dict, options
 
@@ -92,7 +89,6 @@ sub new {
     $G[hash(0, $bucket[0]) % $size] = $d;
     $values[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
 #    print "[".join(",",@values),"]\n";
-
 #    print "buckets[$i]:",scalar(@bucket)," d=$d\n";
 #      unless $b % 1000;
     $i++;

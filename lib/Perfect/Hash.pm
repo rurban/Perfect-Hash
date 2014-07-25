@@ -23,7 +23,7 @@ Perfect::Hash - generate perfect hashes
 
 =head1 DESCRIPTION
 
-Perfect hashing is a technique for building a hash table with no
+Perfect hashing is a technique for building a static hash table with no
 collisions. Which means guaranteed constant O(1) access time, and for
 minimal perfect hashes guaranteed minimal size. It is only possible to
 build one when we know all of the keys in advance. Minimal perfect
@@ -32,16 +32,12 @@ key, and no empty slots.
 
 There exist various C and a primitive python library to generate code
 to access perfect hashes and minimal versions thereof, but nothing to
-use easily. gperf is not very well suited to create big maps and
-cannot deal with anagrams, but creates fast C code. pearson hashes are
-also pretty fast, but not guaranteed to be creatable for small hashes.
-cmph CHD and the other cmph algorithms might be the best algorithms
-for big hashes, but lookup time is slower for smaller hashes.
-
-The best algorithm for big hashes, CHD, is derived from
-"Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
-Fabiano C. Botelho, and Martin Dietzfelbinger
-L<http://cmph.sourceforge.net/papers/esa09.pdf>
+use easily. C<gperf> is not very well suited to create big maps and
+cannot deal with anagrams, but creates fast C code. C<Pearson> hashes
+are also pretty fast, but not guaranteed to be creatable for small
+hashes.  cmph C<CHD> and the other cmph algorithms might be the best
+algorithms for big hashes, but lookup time is slower for smaller
+hashes.
 
 As input we need to provide a set of unique keys, either as arrayref
 or hashref.
@@ -57,6 +53,11 @@ e.g. Hanov, CMPH::*, Bob, Pearson, Gperf.
 
 As output there exist several dumper classes, e.g. C, XS or
 you can create your own for any language e.g. Java, Ruby, ...
+
+The best algorithm for big hashes, CHD, is derived from
+"Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
+Fabiano C. Botelho, and Martin Dietzfelbinger
+L<http://cmph.sourceforge.net/papers/esa09.pdf>
 
 =head1 METHODS
 
@@ -79,31 +80,46 @@ The following algorithms and options are planned:
 
 =over 4
 
-=item -hanovpp (default, pure perl)
-
-=item -optimal-size
-
-tries various hashes, and uses the one which will create the smallest
-hash in memory. Those hashes usually will not store the value, so you
-need to check the result for a false-positive.
-
-=item -optimal-speed
-
-tries various hashes, and uses the one which will use the fastest
-lookup.
-
 =item -minimal
 
 Selects the best available method for a minimal hash, given the
 dictionary size, the options, and if the compiled algos are available.
 
+=item -no-false-positives
+
+Stores the values with the hash also, and checks the found key against
+the value to avoid false positives. needs much more space.
+
+=item -optimal-size
+
+Tries various hashes, and uses the one which will create the smallest
+hash in memory. Those hashes usually will not store the value, so you
+might need to check the result for a false-positive.
+
+=item -optimal-speed
+
+Tries various hashes, and uses the one which will use the fastest
+lookup.
+
+=item -hanovpp
+
+Default. Big and slow. Pure perl.
+
 =item -bob
+
+Nice and easy.
 
 =item -gperf
 
+Pretty fast lookup, but limited dictionaries.
+
 =item -pearson
 
+Very fast lookup, but limited dictionaries.
+
 =item -cmph-chd
+
+The current state of the art for bigger dictionaries.
 
 =item -cmph-bdz
 
@@ -115,9 +131,18 @@ dictionary size, the options, and if the compiled algos are available.
 
 =item -for-c
 
+Optimize for C libraries
+
 =item -for-xs
 
+Optimize for shared Perl XS code. Stores the values as perl types.
+
 =item -for-sharedlib
+
+Optimize the generated table for inclusion in shared libraries via a
+constant stringpool. This reduces the startup time of programs using a
+shared library containing the generated code. As with L<gperf>
+C<--pic>
 
 =back
 
@@ -179,14 +204,12 @@ See L<Perfect::Hash::XS/save_xs>
 
 sub save_c {
   require Perfect::Hash::C;
-  my $obj = bless shift, "Perfect::Hash::C";
-  $obj->save_c(@_);
+  Perfect::Hash::C->save_c(@_);
 }
 
 sub save_xs {
   require Perfect::Hash::XS;
-  my $obj = bless shift, "Perfect::Hash::XS";
-  $obj->save_xs(@_);
+  Perfect::Hash::XS->save_xs(@_);
 }
 
 =back

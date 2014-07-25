@@ -8,3 +8,4 @@ lib/Perfect/Hash/XS.pm
 Makefile.PL
 MANIFEST
 README.md
+t/00basic.t

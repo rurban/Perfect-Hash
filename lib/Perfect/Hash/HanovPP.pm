@@ -159,3 +159,5 @@ unless (caller) {
   require Perfect::Hash;
   &Perfect::Hash::_test(@ARGV)
 }
+
+1;

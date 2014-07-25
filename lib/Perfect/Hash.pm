@@ -135,12 +135,13 @@ sub new {
   my $option = shift || '-hanovpp'; # the first must be the algo method
   my $method = $algo_methods{substr($option,1)};
   if (substr($option,0,1) eq "-" and $method) {
-    ;
+    eval "require $method;";
   } else {
-    # choose the right default, based on the given options and the dict size
+    unshift @_, $option;
+    # TODO: choose the right default, based on the given options and the dict size
+
     $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
     require Perfect::Hash::HanovPP unless $INC{'Perfect/Hash/HanovPP.pm'};
-    unshift @_, $option;
   }
   return $method->new($dict, @_);
 }
@@ -247,3 +248,5 @@ sub _test {
     }
   }
 }
+
+1;

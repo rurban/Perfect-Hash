@@ -137,12 +137,43 @@ Optimize for C libraries
 
 Optimize for shared Perl XS code. Stores the values as perl types.
 
-=item -for-sharedlib
+=item -pic
 
 Optimize the generated table for inclusion in shared libraries via a
 constant stringpool. This reduces the startup time of programs using a
 shared library containing the generated code. As with L<gperf>
 C<--pic>
+
+=item -nul
+
+Allow C<NUL> bytes in keys, i.e. store the length for keys and compare
+binary via C<strncmp>.
+
+=item -null-strings
+
+Use C<NULL> strings instead of empty strings for empty keyword table
+entries. This reduces the startup time of programs using a shared
+library containing the generated code (but not as much as the
+declaration C<-pic> option), at the expense of one more
+test-and-branch instruction at run time.
+
+=item -7bit
+
+Guarantee that all keys consist only of 7-bit ASCII characters, bytes
+in the range 0..127.
+
+=item -ignore-case
+
+Consider upper and lower case ASCII characters as equivalent. The
+string comparison will use a case insignificant character
+comparison. Note that locale dependent case mappings are ignored.
+
+=item -unicode-ignore-case
+
+Consider upper and lower case unicode characters as equivalent. The
+string comparison will use a case insignificant character
+comparison. Note that locale dependent case mappings are done via
+C<libicu>.
 
 =back
 

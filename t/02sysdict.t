@@ -23,7 +23,7 @@ for my $m (map {"-$_"} @methods) {
   diag "done";
   my $ok = 1;
   my $i = 0;
-  for my $w (@dict[0..600]) {
+  for my $w (@dict) {
     my $v = $ph->perfecthash($w);
     $ok = 0 if $v ne $i;
     unless ($ok) {
@@ -32,5 +32,5 @@ for my $m (map {"-$_"} @methods) {
     }
     $i++;
   }
-  $ok ? ok($ok, "checked 600 words of $#dict with method $m") : 0;
+  $ok ? ok($ok, "checked all $#dict words with method $m") : 0;
 }

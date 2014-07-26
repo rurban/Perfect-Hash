@@ -105,6 +105,12 @@ lookup.
 
 Default. Big and slow. Pure perl.
 
+=item -pearsonpp
+
+Very fast lookup, but limited dictionaries, 5-255 keys.
+Planned is a 8-bit pearson only so far, maybe a 16-bit or 
+with binary tree later.
+
 =item -bob
 
 Nice and easy.
@@ -112,11 +118,6 @@ Nice and easy.
 =item -gperf
 
 Pretty fast lookup, but limited dictionaries.
-
-=item -pearson
-
-Very fast lookup, but limited dictionaries.
-Planned is a 8-bit pearson only so far, maybe a 16-bit later.
 
 =item -cmph-chd
 
@@ -193,8 +194,8 @@ C<libicu>.
 
 =cut
 
-#our @algos = qw(HanovPP Bob Pearson Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP Urban);
+#our @algos = qw(HanovPP Urban PearsonPP Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+our @algos = qw(HanovPP Urban PearsonPP);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;
@@ -264,8 +265,9 @@ sub save_xs {
 Algorithms:
 
   - L<Perfect::Hash::HanovPP>
+  - L<Perfect::Hash::PearsonPP>
+  - L<Perfect::Hash::Urban>
   - L<Perfect::Hash::Bob>
-  - L<Perfect::Hash::Pearson>
   - L<Perfect::Hash::CMPH::CHD>
   - L<Perfect::Hash::CMPH::BDZ>
   - L<Perfect::Hash::CMPH::BRZ>

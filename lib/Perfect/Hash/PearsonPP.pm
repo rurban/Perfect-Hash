@@ -56,26 +56,35 @@ sub new {
   my $last = $size-1;
 
   # Step 1: Generate @H
-  my @H; $#H = 255;
-  my $i = 0;
-  $H[$_] = $i++ for 0 .. 255; # init with ordered sequence
+  # round up to ending 1111's
+  my $i = 1;
+  while (2**$i++ < $size) {}
+  my $hsize = 2**($i-1) - 1;
+  print "size=$size hsize=$hsize\n";
+  # TODO: bitvector string with vec
+  my @H; $#H = $hsize;
+  $i = 0;
+  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
-  my $maxbuckets = $last > 255 ? $last / 255 : 1;
-  my $buckets = 0;
+  my $maxbuckets;
   my @N = ();
   my $counter = 0;
-  $N[$_] = 0 for 0..255;
-  # Step 2: shuffle H@ until we get a good maxbucket
+  my $maxcount = 3 * $last; # when to stop the search. should be $last !
+  # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
   do {
+    # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    for (0..$last) {
-      my $h = hash($H, 0, $olddict->[$_]);
+    $N[$_] = 0 for 0..$hsize;
+    $maxbuckets = 0;
+    for (values %$dict) {
+      my $h = hash($H, $_);
       $N[$h]++;
-      $buckets = $N[$h] if $buckets > $N[$h];
+      $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
     }
     $counter++;
-  } while $buckets > $maxbuckets or $counter > $last; # $n!
-  die "No pearson ph found" if $counter > $last;
+    print "$counter maxbuckets=$maxbuckets\n";
+  } while $maxbuckets > 1 or $counter > $maxcount; # $n!
+  return undef if $counter > $maxcount;
 
   if (exists $options{'-no-false-positives'}) {
     return bless [$H, \%options, $olddict], $class;
@@ -85,7 +94,7 @@ sub new {
 }
 
 sub shuffle {
-  # the "Knuth Shuffle", a random shuffle
+  # the "Knuth Shuffle", a random shuffle to create good permutations
   my $H = $_[0];
   my $last = scalar(@$H) - 1;
   for my $i (0 .. $last) {
@@ -112,7 +121,7 @@ the given dictionary. If not, a wrong index will be returned.
 sub perfecthash {
   my ($ph, $key ) = @_;
   my $H = $ph->[0];
-  my $v = hash($H, 0, $key);
+  my $v = hash($H, $key);
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[2]) {
@@ -127,9 +136,11 @@ sub perfecthash {
 =cut
 
 sub hash {
-  my ($H, $d, $key ) = @_;
+  my ($H, $key ) = @_;
+  my $d = length $key;
+  my $size = scalar @$H - 1;
   for (split //, $key) {
-    $d = $H->[$d ^ (255 & ord($_))];
+    $d = $H->[($d + ord($_)) % $size];
   }
   return $d;
 }

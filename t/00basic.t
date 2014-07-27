@@ -3,7 +3,7 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = keys %Perfect::Hash::algo_methods;
-my %todo = map {$_=>1} qw(-urban -pearsonpp);
+my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp);
 plan tests => scalar(@methods) + 1;
 
 my %dict = map {chr $_ => $_-48} (49..125);

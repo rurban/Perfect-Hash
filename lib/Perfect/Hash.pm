@@ -195,7 +195,7 @@ C<libicu>.
 =cut
 
 #our @algos = qw(HanovPP Urban PearsonPP Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP Urban PearsonPP);
+our @algos = qw(HanovPP Urban PearsonPP PearsonNP);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;

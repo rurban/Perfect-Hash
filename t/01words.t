@@ -3,7 +3,7 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = keys %Perfect::Hash::algo_methods;
-my %todo = map {$_=>1} qw(-urban);
+my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp);
 plan tests => 2*(scalar(@methods) + 0);
 
 # test words20 as hashref and arrayref

@@ -1,4 +1,4 @@
-package Perfect::Hash::PearsonPP;
+package Perfect::Hash::PearsonNP;
 our $VERSION = '0.01';
 #use coretypes;
 use strict;
@@ -8,23 +8,25 @@ our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
 
+Generate non-perfect pearson hash with static binary tree
+collision resolution.
+
+Optimal for 5-100.000 keys.
+
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-Optimal for 5-250 keys.
-
 =head1 new $dict, options
 
-Computes a brute-force perfect pearson hash table using the given
-dictionary, given as hashref or arrayref, with fast lookup.  This
-generator might fail, returning undef.
+Computes a non-prefect, but fast pearson hash table using the given
+dictionary, given as hashref or arrayref, with fast lookup.
 
 Honored options are: I<-no-false-positives>
 
 It returns an object with @H containing the randomized
-pearson lookup table.
+pearson lookup table of size 255.
 
 =cut
 
@@ -55,22 +57,12 @@ sub new {
     }
   }
   my $last = $size-1;
-  if ($last > 255) {
-    print "cannot create perfect pearson hash for $size entries > 255\n";
-    return undef;
-  }
 
   # Step 1: Generate @H
-  # round up to ending 1111's
-  my $i = 1;
-  while (2**$i++ < $size) {}
-  my $hsize = 2**($i-1) - 1;
-  $hsize = 255;
-  print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
-  my @H; $#H = $hsize;
-  $i = 0;
-  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
+  my @H; $#H = 255;
+  my $i = 0;
+  $H[$_] = $i++ for 0 .. 255; # init with ordered sequence
   my $H = \@H;
   my $maxbuckets;
   my @N = ();
@@ -81,7 +73,7 @@ sub new {
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    $N[$_] = 0 for 0..$hsize;
+    $N[$_] = 0 for 0..255;
     $maxbuckets = 0;
     for (values %$dict) {
       my $h = hash($H, $_);
@@ -90,8 +82,9 @@ sub new {
     }
     $counter++;
     print "$counter maxbuckets=$maxbuckets\n";
-  } while $maxbuckets > 1 or $counter > $maxcount; # $n!
-  return undef if $counter > $maxcount;
+    # TODO: or try 20 shuffles and take the best.
+  } while $maxbuckets > 4 or $counter > $maxcount; # $n!
+  # return undef if $counter > $maxcount;
 
   if (exists $options{'-no-false-positives'}) {
     return bless [$H, \%options, $olddict], $class;
@@ -147,7 +140,7 @@ sub hash {
   my $d = length $key;
   my $size = scalar @$H - 1;
   for (split //, $key) {
-    $d = $H->[($d + ord($_)) % $size];
+    $d = $H->[$d ^ (255 & ord($_))];
   }
   return $d;
 }
@@ -171,7 +164,7 @@ sub false_positives {
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearsonpp")'
 unless (caller) {
   require Perfect::Hash;
-  &Perfect::Hash::_test(shift @ARGV, "-pearsonpp", @ARGV)
+  &Perfect::Hash::_test(shift @ARGV, "-pearsonnp", @ARGV)
 }
 
 1;

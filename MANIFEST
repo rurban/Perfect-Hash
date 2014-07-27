@@ -1,5 +1,6 @@
 cmph-2.0.tar.gz
 examples/epmh.py
+examples/words1000
 examples/words20
 lib/Perfect/Hash.pm
 lib/Perfect/Hash/C.pm

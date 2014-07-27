@@ -13,7 +13,7 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-Optimal for 5-255 keys
+Optimal for 5-250 keys.
 
 =head1 new $dict, options
 
@@ -54,12 +54,17 @@ sub new {
     }
   }
   my $last = $size-1;
+  if ($last > 255) {
+    print "cannot create perfect pearson hash for $size entries > 255\n";
+    return undef;
+  }
 
   # Step 1: Generate @H
   # round up to ending 1111's
   my $i = 1;
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
+  $hsize = 255;
   print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
   my @H; $#H = $hsize;
@@ -71,6 +76,7 @@ sub new {
   my $counter = 0;
   my $maxcount = 3 * $last; # when to stop the search. should be $last !
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
+  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);

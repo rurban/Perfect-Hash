@@ -301,6 +301,7 @@ sub _test {
   close $d;
   print "Reading ",scalar @dict, " words from $dict\n";
   my $ph = new __PACKAGE__, \@dict, $method;
+  return unless $ph;
 
   unless (@_) {
     # TODO: pick random values, about 50%

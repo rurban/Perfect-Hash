@@ -35,12 +35,12 @@ sub new {
   my $dict = shift; #hashref or arrayref, file later
   my %options = map {$_ => 1 } @_;
   my $size;
-  my $olddict;
+  my $dictarray;
   if (ref $dict eq 'ARRAY') {
     my $i = 0;
     my %dict = map {$_ => $i++} @$dict;
     $size = scalar @$dict;
-    $olddict = $dict;
+    $dictarray = $dict;
     $dict = \%dict;
   } else {
     die "new $class: wrong dict argument. arrayref or hashref expected"
@@ -53,7 +53,7 @@ sub new {
       for (sort keys %$dict) {
         $arr[$_] = $dict->{$_};
       }
-      $olddict = \@arr;
+      $dictarray = \@arr;
     }
   }
   my $last = $size-1;
@@ -75,7 +75,7 @@ sub new {
     shuffle($H);
     ($buckets, $max) = cost($H, $dict);
     $counter++;
-    print "$counter sum=$buckets, max=$max\n";
+    #print "$counter sum=$buckets, max=$max\n";
     if ($buckets > $maxbuckets or $max == 1) {
       $buckets = $maxbuckets;
       @best = @$H;
@@ -86,7 +86,7 @@ sub new {
   # TODO Step 3: Store binary collision trees
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [$H, \%options, $olddict], $class;
+    return bless [$H, \%options, $dictarray], $class;
   } else {
     return bless [$H, \%options], $class;
   }
@@ -170,7 +170,7 @@ option C<-no-false-positives>.
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
+  return !exists $_[0]->[1]->{'-no-false-positives'};
 }
 
 # local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20

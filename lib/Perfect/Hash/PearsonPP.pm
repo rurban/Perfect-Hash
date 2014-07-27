@@ -33,12 +33,12 @@ sub new {
   my $dict = shift; #hashref or arrayref, file later
   my %options = map {$_ => 1 } @_;
   my $size;
-  my $olddict;
+  my $dictarray;
   if (ref $dict eq 'ARRAY') {
     my $i = 0;
     my %dict = map {$_ => $i++} @$dict;
     $size = scalar @$dict;
-    $olddict = $dict;
+    $dictarray = $dict;
     $dict = \%dict;
   } else {
     die "new $class: wrong dict argument. arrayref or hashref expected"
@@ -51,7 +51,7 @@ sub new {
       for (sort keys %$dict) {
         $arr[$_] = $dict->{$_};
       }
-      $olddict = \@arr;
+      $dictarray = \@arr;
     }
   }
   my $last = $size-1;
@@ -66,7 +66,7 @@ sub new {
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
   $hsize = 255;
-  print "size=$size hsize=$hsize\n";
+  #print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
   my @H; $#H = $hsize;
   $i = 0;
@@ -89,12 +89,12 @@ sub new {
       $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
     }
     $counter++;
-    print "$counter maxbuckets=$maxbuckets\n";
-  } while $maxbuckets > 1 or $counter > $maxcount; # $n!
-  return undef if $counter > $maxcount;
+    #print "$counter maxbuckets=$maxbuckets\n";
+  } while $maxbuckets > 1 and $counter < $maxcount; # $n!
+  return undef if $maxbuckets != 1;
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [$H, \%options, $olddict], $class;
+    return bless [$H, \%options, $dictarray], $class;
   } else {
     return bless [$H, \%options], $class;
   }
@@ -164,7 +164,7 @@ option C<-no-false-positives>.
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
+  return !exists $_[0]->[1]->{'-no-false-positives'};
 }
 
 # local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20

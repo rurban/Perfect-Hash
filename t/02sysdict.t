@@ -25,7 +25,6 @@ for my $m (map {"-$_"} @methods) {
   diag "done";
   unless ($ph) {
     ok(1, "SKIP empty ph $m");
-    ok(1, "SKIP empty ph $m");
     next;
   }
 TODO: {

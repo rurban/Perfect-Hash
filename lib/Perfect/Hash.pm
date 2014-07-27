@@ -304,12 +304,8 @@ sub _test {
   return unless $ph;
 
   unless (@_) {
-    # TODO: pick random values, about 50%
-    if ($dict eq "examples/words20") {
-      @_ = qw(ASL's AWOL's AZT's Aachen);
-    } else {
-      @_ = qw(hello goodbye dog cat);
-    }
+    # pick some random values
+    push @_, $dict[ int(rand(scalar @dict)) ] for 0..4;
   }
 
   for my $word (@_) {

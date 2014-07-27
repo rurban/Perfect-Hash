@@ -11,7 +11,7 @@ our @ISA = qw(Perfect::Hash);
 Generate non-perfect pearson hash with static binary tree
 collision resolution.
 
-Optimal for 5-100.000 keys.
+Good for 5-100.000 keys.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -64,27 +64,26 @@ sub new {
   my $i = 0;
   $H[$_] = $i++ for 0 .. 255; # init with ordered sequence
   my $H = \@H;
-  my $maxbuckets;
-  my @N = ();
-  my $counter = 0;
-  my $maxcount = 3 * $last; # when to stop the search. should be $last !
-  # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
+  my @best;
+  my $maxbuckets = 0; # birthday paradoxon
+  my ($buckets, $max, $counter);
+  my $maxcount = 30; # when to stop the search. exhaustive is 255!
+  # Step 2: shuffle @H until we get a good max, only 0 or 1
   # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    $N[$_] = 0 for 0..255;
-    $maxbuckets = 0;
-    for (values %$dict) {
-      my $h = hash($H, $_);
-      $N[$h]++;
-      $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
-    }
+    ($buckets, $max) = cost($H, $dict);
     $counter++;
-    print "$counter maxbuckets=$maxbuckets\n";
-    # TODO: or try 20 shuffles and take the best.
-  } while $maxbuckets > 4 or $counter > $maxcount; # $n!
-  # return undef if $counter > $maxcount;
+    print "$counter sum=$buckets, max=$max\n";
+    if ($buckets > $maxbuckets or $max == 1) {
+      $buckets = $maxbuckets;
+      @best = @$H;
+    }
+  } while ($max > 1 and $counter < $maxcount); # $n!
+  @H = @best;
+  $H = \@H;
+  # TODO Step 3: Store binary collision trees
 
   if (exists $options{'-no-false-positives'}) {
     return bless [$H, \%options, $olddict], $class;
@@ -103,6 +102,20 @@ sub shuffle {
     $_[0]->[$i]= $_[0]->[$j];
     $_[0]->[$j] = $tmp;
   }
+}
+
+sub cost {
+  my ($H, $dict) = @_;
+  my @N = (); $#N = 255;
+  $N[$_] = 0 for 0..255;
+  my ($buckets, $maxbuckets) = (0, 0);
+  for (values %$dict) {
+    my $h = hash($H, $_);
+    $N[$h]++;
+    $buckets++ if $N[$h] > 1;
+    $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
+  }
+  return ($buckets, $maxbuckets);
 }
 
 =head1 perfecthash $obj, $key

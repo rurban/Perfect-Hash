@@ -32,20 +32,67 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 
 =over
 
-=item save_c fileprefix, options
+=item _save_c_header fileprefix, options
 
-Generates pure C code. Either indexed or with the values saved as C types,
-strings or numbers only.
+Internal helper method for save_c
 
 =cut
 
-sub save_c {
+sub _save_c_header {
   # refer to the class save_c method
-  my $obj = shift;
-  if (ref $obj eq __PACKAGE__ or ref $obj eq 'Perfect::Hash::C') {
-    die "wrong class ",ref $obj";
-  } else {
-    $obj->save_c(@_);
+  my $ph = shift;
+  if (ref $ph eq __PACKAGE__ or ref $ph eq 'Perfect::Hash::C') {
+    die "wrong class ",ref $obj;
+  }
+  my $fileprefix = shift || "phash";
+  use File::Basename 'basename';
+  my $base = basename $fileprefix;
+  #my @options = @_;
+  my @H = @{$ph->[0]};
+  my $FH;
+  open $FH, ">", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $FH "
+static inline unsigned $base\_lookup(const char* s);
+";
+  close $FH;
+  return ($fileprefix, $base);
+}
+
+=item _save_c_funcdecl ph, fileprefix, base
+
+Internal helper method for save_c
+
+=cut
+
+sub _save_c_funcdecl {
+  my ($ph, $fileprefix, $base) = @_;
+  open $FH, ">", $fileprefix.".c" or die "> $fileprefix.c @!";
+  # non-binary only so far:
+  print $FH "
+#include \"$base.h\"
+
+static inline unsigned $base\_lookup(const char* s) {";
+  return $FH;
+}
+
+=item _save_c_array FH, array
+
+Internal helper method for save_c
+
+=cut
+
+sub _save_c_array {
+  my ($ident, $FH, $G) = @_;
+  my $size = scalar @$G;
+  for (0 .. int($size / 16)) {
+    my $from = $_ * 16;
+    my $to = $from + 15;
+    print $FH " " x $ident;
+    for ($from .. $to) {
+      printf $FH "%3d,",$G->[$_];
+      last if $to >= $size;
+    }
+    print $FH "\n";
   }
 }
 

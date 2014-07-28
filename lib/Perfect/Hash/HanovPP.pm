@@ -181,6 +181,68 @@ sub hash {
   return $d
 }
 
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
+=cut
+
+sub save_c {
+  my $ph = shift;
+  require Perfect::Hash::C;
+  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
+  my $H;
+  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $H "
+static inline unsigned $base\_hash (unsigned d, const char *s);
+";
+  close $H;
+  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
+  # non-binary only so far:
+  #d = G[hash(0, key) % size];
+  #v = d < 0 ? V[-d-1] : V[hash(d, key) % size];
+  my ($G, $V) = ($ph->[0], $ph->[1]);
+  my $size = scalar(@$G);
+
+  print $FH "
+    int g;
+    unsigned long v;
+    static signed int G[] = {
+";
+  Perfect::Hash::C::_save_c_array(8, $FH, $G);
+  print $FH "    };";
+  print $FH "
+    static signed int V[] = {
+";
+  Perfect::Hash::C::_save_c_array(8, $FH, $V);
+  print $FH "    };
+    g = G[$base\_hash(0, s) % $size];
+    v = g < 0 ? V[-(g-1)] : V[hash(g, s) % $size];
+";
+  if (!$ph->false_positives) { # save and check values
+    ;
+  }
+  print $FH "
+    return v;
+}
+";
+  print $FH "
+/* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
+static inline unsigned $base\_hash (unsigned d, const char *s) {
+    if (!d) d = 0x01000193;
+    for (int c = *s++; c; c = *s++) {
+        d = ((d *  0x01000193) ^ c) & 0xffffffff;
+    }
+    return d;
+}
+";
+  close $FH;
+}
+
+=back
+
+=cut
+
 # local testing: p -d -Ilib lib/Perfect/Hash/HanovPP.pm examples/words20
 unless (caller) {
   require Perfect::Hash;

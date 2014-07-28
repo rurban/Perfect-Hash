@@ -183,23 +183,11 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 sub save_c {
   my $ph = shift;
-  my $fileprefix = shift || "phash";
-  use File::Basename 'basename';
-  my $base = basename $fileprefix;
-  my @options = @_;
-  my @H = @{$ph->[0]};
-  my $FH;
-  open $FH, ">", "$fileprefix.h"
-    or die "> $fileprefix.h @!";
-  print $FH "
-static inline unsigned $base\_hash(const char* s);
-";
-  close $FH;
-  open $FH, ">", "$fileprefix.c"
-    or die "> $fileprefix.c @!";
+  require Perfect::Hash::C;
+  my ($fileprefix, $base) = $ph->_save_c_header(@_);
+  my $FH = $ph->_save_c_funcdecl($ph, $fileprefix, $base);
   # non-binary only so far:
   print $FH "
-static inline unsigned $base\_hash(const char* s) {
     unsigned h = 0; 
     static unsigned char $base\[] = {
 ";

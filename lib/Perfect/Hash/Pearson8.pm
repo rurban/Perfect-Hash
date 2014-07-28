@@ -116,6 +116,7 @@ sub shuffle {
     $_[0]->[$i]= $_[0]->[$j];
     $_[0]->[$j] = $tmp;
   }
+  delete $H->[$last];
 }
 
 =head1 perfecthash $obj, $key
@@ -181,32 +182,21 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 sub save_c {
   my $ph = shift;
-  my $fileprefix = shift || "phash";
-  use File::Basename 'basename';
-  my $base = basename $fileprefix;
-  my @options = @_;
-  my @H = @{$ph->[0]};
-  my $FH;
-  open $FH, ">", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $FH "
-static inline unsigned $base\_hash(const char* s);
+  require Perfect::Hash::C;
+  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
+  my $H;
+  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $H "
+static unsigned char $base\[] = {
 ";
-  close $FH;
-  open $FH, ">", $fileprefix.".c" or die "> $fileprefix.c @!";
+  Perfect::Hash::C::_save_c_array(4, $H, $ph->[0]);
+  print $H "};\n";
+  close $H;
+
+  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
   # non-binary only so far:
   print $FH "
-static inline unsigned $base\_hash(const char* s) {
-    unsigned h = 0; 
-    static unsigned char $base\[] = {
-";
-  for (0 .. 15) {
-    my $from = $_ * 16;
-    my $to = $from + 15;
-    print $FH "        ",join(", ", @H[$from .. $to]);
-    $_ == 15 ? print $FH "\n" : print $FH ",\n";
-  }
-  print $FH "    };";
-  print $FH "
+    unsigned h = 0;
     for (int c = *s++; c; c = *s++) {
         h = $base\[h ^ c];
     }

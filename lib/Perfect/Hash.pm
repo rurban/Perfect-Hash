@@ -35,19 +35,21 @@ There exist various C and a primitive python library to generate code
 to access perfect hashes and minimal versions thereof, but nothing to
 use easily. C<gperf> is not very well suited to create big maps and
 cannot deal with anagrams, but creates fast C code. C<Pearson> hashes
-are also pretty fast, but not guaranteed to be creatable for small
-hashes.  cmph C<CHD> and the other cmph algorithms might be the best
-algorithms for big hashes, but lookup time is slower for smaller
-hashes.
+are simplier and even faster, but not guaranteed to be creatable for
+small or bigger hashes.  cmph C<CHD> and the other cmph algorithms
+might be the best algorithms for big hashes, but lookup time is slower
+for smaller hashes.
 
 As input we need to provide a set of unique keys, either as arrayref
 or hashref.
 
-WARNING: When querying a perfect hash you need to be sure that key
-really exists on some algorithms, as non-existing keys might return
-false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually as in the
-SYNOPSIS.  It's still faster than using a Bloom filter though.
+WARNING: When querying a perfect hash you need to be sure that the key
+really exists on some algorithms, as querying for non-existing keys
+might return false positives.  If you are not sure how the perfect
+hash deals with non-existing keys, you need to check the result
+manually as in the SYNOPSIS or use the option C<-no-false-positives>
+to store the values also. It's still faster than using a Bloom filter
+though.
 
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH::*, Bob, Pearson, Gperf.
@@ -106,11 +108,17 @@ lookup.
 
 Default. Big and slow. Pure perl.
 
-=item -pearsonpp
+=item -pearson8
 
 Very fast lookup, but limited dictionaries, 5-255 keys.
 Planned is a 8-bit pearson only so far, maybe a 16-bit or 
 with binary tree later.
+
+=item -pearsonnp
+
+This creates a non-perfect pearson hash with very fast lookup, and
+unlimited dictionary size.  Collision resolution is done via static
+binary trees.
 
 =item -bob
 
@@ -195,8 +203,8 @@ C<libicu>.
 
 =cut
 
-#our @algos = qw(HanovPP Urban PearsonPP Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP Urban PearsonPP PearsonNP);
+#our @algos = qw(HanovPP Urban Pearson8 Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+our @algos = qw(HanovPP Urban Pearson8 PearsonNP);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;

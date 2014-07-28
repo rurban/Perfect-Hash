@@ -4,6 +4,7 @@ our $VERSION = '0.01';
 use strict;
 #use warnings;
 use integer;
+use bytes;
 our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
@@ -135,6 +136,7 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my $H = $ph->[0];
   my $v = hash($H, $key);
+  # TODO: collision tree
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[2]) {
@@ -150,7 +152,7 @@ sub perfecthash {
 
 sub hash {
   my ($H, $key ) = @_;
-  my $d = length $key;
+  my $d = length $key || 0;
   my $size = scalar @$H - 1;
   for (split //, $key) {
     $d = $H->[$d ^ (255 & ord($_))];
@@ -172,6 +174,56 @@ option C<-no-false-positives>.
 sub false_positives {
   return !exists $_[0]->[1]->{'-no-false-positives'};
 }
+
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
+=cut
+
+sub save_c {
+  my $ph = shift;
+  my $fileprefix = shift || "phash";
+  use File::Basename 'basename';
+  my $base = basename $fileprefix;
+  my @options = @_;
+  my @H = @{$ph->[0]};
+  my $FH;
+  open $FH, ">", "$fileprefix.h"
+    or die "> $fileprefix.h @!";
+  print $FH "
+static inline unsigned $base\_hash(const char* s);
+";
+  close $FH;
+  open $FH, ">", "$fileprefix.c"
+    or die "> $fileprefix.c @!";
+  # non-binary only so far:
+  print $FH "
+static inline unsigned $base\_hash(const char* s) {
+    unsigned h = 0; 
+    static unsigned char $base\[] = {
+";
+  for (0 .. 15) {
+    my $from = $_ * 16;
+    my $to = $from + 15;
+    print $FH "        ",join(", ", @H[$from .. $to]);
+    $_ == 15 ? print $FH "\n" : print $FH ",\n";
+  }
+  print $FH "    };";
+  # TODO: collision tree
+  print $FH "
+    for (int c = *s++; c; c = *s++) {
+        h = $base\[h ^ c];
+    }
+    return h;
+}
+";
+  close $FH;
+}
+
+=back
+
+=cut
 
 # local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearsonpp")'

@@ -8,7 +8,7 @@ lib/Perfect/Hash/CMPH.pm
 lib/Perfect/Hash/CMPH/CHM.pm
 lib/Perfect/Hash/HanovPP.pm
 lib/Perfect/Hash/PearsonNP.pm
-lib/Perfect/Hash/PearsonPP.pm
+lib/Perfect/Hash/Pearson8.pm
 lib/Perfect/Hash/Urban.pm
 lib/Perfect/Hash/XS.pm
 Makefile.PL

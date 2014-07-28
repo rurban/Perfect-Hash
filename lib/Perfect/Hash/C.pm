@@ -40,5 +40,15 @@ strings or numbers only.
 =cut
 
 sub save_c {
-  die 'nyi';
+  # refer to the class save_c method
+  my $obj = shift;
+  if (ref $obj eq __PACKAGE__ or ref $obj eq 'Perfect::Hash::C') {
+    die "wrong class ",ref $obj";
+  } else {
+    $obj->save_c(@_);
+  }
 }
+
+=back
+
+=cut

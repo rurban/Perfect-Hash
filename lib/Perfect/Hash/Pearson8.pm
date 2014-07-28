@@ -1,4 +1,4 @@
-package Perfect::Hash::PearsonPP;
+package Perfect::Hash::Pearson8;
 our $VERSION = '0.01';
 #use coretypes;
 use strict;
@@ -8,16 +8,19 @@ our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
 
+A Pearson hash is generally not perfect, but generates one of the fastest lookups.
+This version is limited to max. 255 keys and thus creates a perfect hash.
+
+Optimal for 5-250 keys.
+
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-Optimal for 5-250 keys.
-
 =head1 new $dict, options
 
-Computes a brute-force perfect pearson hash table using the given
+Computes a brute-force 8-bit Pearson hash table using the given
 dictionary, given as hashref or arrayref, with fast lookup.  This
 generator might fail, returning undef.
 
@@ -56,15 +59,18 @@ sub new {
   }
   my $last = $size-1;
   if ($last > 255) {
-    print "cannot create perfect pearson hash for $size entries > 255\n";
+    warn "cannot create perfect 8-bit pearson hash for $size entries > 255\n";
+    # would need a 16-bit pearson or any-size pearson (see below)
     return undef;
   }
 
   # Step 1: Generate @H
   # round up to ending 1111's
+  # TODO: any size
   my $i = 1;
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
+  
   $hsize = 255;
   #print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
@@ -103,7 +109,7 @@ sub new {
 sub shuffle {
   # the "Knuth Shuffle", a random shuffle to create good permutations
   my $H = $_[0];
-  my $last = scalar(@$H) - 1;
+  my $last = scalar(@$H);
   for my $i (0 .. $last) {
     my $tmp = $_[0]->[$i];
     my $j = $i + int rand($last-$i);
@@ -130,7 +136,7 @@ sub perfecthash {
   my $H = $ph->[0];
   my $v = hash($H, $key);
   # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  # so we can skip the exists $ph->[1]->{-no-false-positives} check for now
   if ($ph->[2]) {
     return ($ph->[2]->[$v] eq $key) ? $v : undef;
   } else {
@@ -144,12 +150,12 @@ sub perfecthash {
 
 sub hash {
   my ($H, $key ) = @_;
-  my $d = length $key;
-  my $size = scalar @$H - 1;
+  my $d = length $key || 0;
+  my $size = scalar @$H;
   for (split //, $key) {
     $d = $H->[($d + ord($_)) % $size];
   }
-  return $d;
+  return $d % $size;
 }
 
 =head1 false_positives
@@ -167,11 +173,58 @@ sub false_positives {
   return !exists $_[0]->[1]->{'-no-false-positives'};
 }
 
-# local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20
-# or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearsonpp")'
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
+=cut
+
+sub save_c {
+  my $ph = shift;
+  my $fileprefix = shift || "phash";
+  use File::Basename 'basename';
+  my $base = basename $fileprefix;
+  my @options = @_;
+  my @H = @{$ph->[0]};
+  my $FH;
+  open $FH, ">", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $FH "
+static inline unsigned $base\_hash(const char* s);
+";
+  close $FH;
+  open $FH, ">", $fileprefix.".c" or die "> $fileprefix.c @!";
+  # non-binary only so far:
+  print $FH "
+static inline unsigned $base\_hash(const char* s) {
+    unsigned h = 0; 
+    static unsigned char $base\[] = {
+";
+  for (0 .. 15) {
+    my $from = $_ * 16;
+    my $to = $from + 15;
+    print $FH "        ",join(", ", @H[$from .. $to]);
+    $_ == 15 ? print $FH "\n" : print $FH ",\n";
+  }
+  print $FH "    };";
+  print $FH "
+    for (int c = *s++; c; c = *s++) {
+        h = $base\[h ^ c];
+    }
+    return h;
+}
+";
+  close $FH;
+}
+
+=back
+
+=cut
+
+# local testing: pb -d lib/Perfect/Hash/Pearson8.pm examples/words20
+# or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson8")'
 unless (caller) {
   require Perfect::Hash;
-  &Perfect::Hash::_test(shift @ARGV, "-pearsonpp", @ARGV)
+  &Perfect::Hash::_test(shift @ARGV, "-pearson8", @ARGV)
 }
 
 1;

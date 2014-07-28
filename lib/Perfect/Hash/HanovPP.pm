@@ -36,16 +36,26 @@ sub new {
   my $dict = shift; #hashref or arrayref
   my %options = map {$_ => 1 } @_;
   my int $size;
+  my $dictarray;
   if (ref $dict eq 'ARRAY') {
     my $i = 0;
     my %dict = map {$_ => $i++} @$dict;
     $size = scalar @$dict;
+    $dictarray = $dict if exists $options{'-no-false-positives'};
     $dict = \%dict;
   } else {
     die "new $class: wrong dict argument. arrayref or hashref expected"
       if ref $dict ne 'HASH';
     $size = scalar(keys %$dict) or
       die "new $class: empty dict argument";
+    if (exists $options{'-no-false-positives'}) {
+      my @arr = ();
+      $#arr = $size;
+      for (sort keys %$dict) {
+        $arr[$_] = $dict->{$_};
+      }
+      $dictarray = \@arr;
+    }
   }
   my $last = $size-1;
 
@@ -116,7 +126,7 @@ sub new {
     $values[$slot] = $dict->{$bucket[0]};
   }
   if (exists $options{'-no-false-positives'}) {
-    return bless [\@G, \@values, \%options, $dict], $class;
+    return bless [\@G, \@values, \%options, $dictarray], $class;
   } else {
     return bless [\@G, \@values, \%options], $class;
   }
@@ -144,7 +154,7 @@ sub perfecthash {
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[3]) {
-    return (exists $ph->[3]->{$v} and $ph->[3]->{$v} eq $key) ? $v : undef;
+    return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {
     return $v;
   }

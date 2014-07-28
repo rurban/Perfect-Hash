@@ -41,7 +41,7 @@ sub new {
     my $i = 0;
     my %dict = map {$_ => $i++} @$dict;
     $size = scalar @$dict;
-    $dictarray = $dict;
+    $dictarray = $dict if exists $options{'-no-false-positives'};
     $dict = \%dict;
   } else {
     die "new $class: wrong dict argument. arrayref or hashref expected"

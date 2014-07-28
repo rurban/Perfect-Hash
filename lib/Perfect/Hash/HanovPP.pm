@@ -4,6 +4,7 @@ use coretypes;
 use strict;
 #use warnings;
 use integer;
+use bytes;
 our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
@@ -208,9 +209,7 @@ static inline unsigned $base\_hash (unsigned d, const char *s);
 ";
   close $H;
   my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
-  # non-binary only so far:
-  #d = G[hash(0, key) % size];
-  #v = d < 0 ? V[-d-1] : V[hash(d, key) % size];
+  # non-binary only so far
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
 

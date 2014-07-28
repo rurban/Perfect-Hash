@@ -11,6 +11,13 @@ push(@extras,
     AUTHOR   => 'Reini Urban')
   if ($ExtUtils::MakeMaker::VERSION >= 5.4301);
 
+#TODO: integrate into proper build and depend rules
+if (! -e "bin/cmph") {
+  system("./configure --prefix=`pwd`");
+  system($Config{'make'}, "-s");
+  system($Config{'make'}, "-s", "install");
+}
+
 WriteMakefile(
   NAME         => 'Perfect::Hash::CMPH',
   XS           => { 'CMPH.xs' => 'CMPH.c' },
@@ -21,9 +28,3 @@ WriteMakefile(
   @extras
 );
 
-#TODO: integrate into proper build and depend rules
-if (grep/--build/,@ARGV) {
-  system("./configure --prefix=`pwd`");
-  system("make");
-  system("make install");
-}

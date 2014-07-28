@@ -1,18 +1,18 @@
-package Perfect::Hash::Pearson8;
+package Perfect::Hash::Pearson;
 our $VERSION = '0.01';
 #use coretypes;
 use strict;
 #use warnings;
 use integer;
-our @ISA = qw(Perfect::Hash);
+use bytes;
+use Perfect::Hash::PearsonNP;
+our @ISA = qw(Perfect::Hash::PearsonNP);
 
 =head1 DESCRIPTION
 
 A Pearson hash is generally not perfect, but generates one of the
-fastest lookups.  This version is limited to max. 255 keys and thus
-creates a perfect hash.
-
-Optimal for 5-250 keys.
+fastest lookups.  This version generates arbitrary sized pearson
+lookup tables and thus creates a perfect hash.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -21,9 +21,8 @@ Peter K. Pearson
 
 =head1 new $dict, options
 
-Computes a brute-force 8-bit Pearson hash table using the given
-dictionary, given as hashref or arrayref, with fast lookup.  This
-generator might fail, returning undef.
+Computes a brute-force n-bit Pearson hash table using the given
+dictionary, given as hashref or arrayref, with fast lookup.
 
 Honored options are: I<-no-false-positives>
 
@@ -59,46 +58,40 @@ sub new {
     }
   }
   my $last = $size-1;
-  if ($last > 255) {
-    warn "cannot create perfect 8-bit pearson hash for $size entries > 255\n";
-    # would need a 16-bit pearson or any-size pearson (see below)
-    return undef;
-  }
 
   # Step 1: Generate @H
-  # round up to ending 1111's
-  # TODO: any size
+  # round up to 2 complements, ending 1111's
   my $i = 1;
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
-  
-  $hsize = 255;
-  #print "size=$size hsize=$hsize\n";
+  print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
   my @H; $#H = $hsize;
   $i = 0;
   $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
+
+  # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
+  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   my $maxbuckets;
   my @N = ();
   my $counter = 0;
-  my $maxcount = 3 * $last; # when to stop the search. should be $last !
-  # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
-  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  my $maxcount = $last; # when to stop the search. should be $last !
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    $N[$_] = 0 for 0..$hsize;
-    $maxbuckets = 0;
-    for (values %$dict) {
-      my $h = hash($H, $_);
-      $N[$h]++;
-      $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
-    }
+    ($buckets, $max) = Perfect::Hash::PearsonNP::cost($H, $dict);
     $counter++;
-    #print "$counter maxbuckets=$maxbuckets\n";
-  } while $maxbuckets > 1 and $counter < $maxcount; # $n!
-  return undef if $maxbuckets != 1;
+    print "$counter sum=$buckets, max=$max\n";
+    if ($buckets > $maxbuckets or $max == 1) {
+      $buckets = $maxbuckets;
+      @best = @$H;
+    }
+  } while ($max > 1 and $counter < $maxcount); # $n!
+
+  @H = @best;
+  $H = \@H;
+  # TODO Step 3: Store binary collision trees if no perfect hash is found
 
   if (exists $options{'-no-false-positives'}) {
     return bless [$H, \%options, $dictarray], $class;
@@ -211,11 +204,11 @@ static unsigned char $base\[] = {
 
 =cut
 
-# local testing: pb -d lib/Perfect/Hash/Pearson8.pm examples/words20
-# or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson8")'
+# local testing: pb -d lib/Perfect/Hash/Pearson.pm examples/words20
+# or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson")'
 unless (caller) {
   require Perfect::Hash;
-  &Perfect::Hash::_test(shift @ARGV, "-pearson8", @ARGV)
+  &Perfect::Hash::_test(shift @ARGV, "-pearson", @ARGV)
 }
 
 1;

@@ -203,8 +203,9 @@ C<libicu>.
 
 =cut
 
-#our @algos = qw(HanovPP Urban Pearson8 Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP Urban Pearson8 PearsonNP);
+#our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP 
+#                Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP);
 our %algo_methods = map {
   my $m = $_;
   s/::/-/g;
@@ -273,20 +274,22 @@ sub save_xs {
 
 Algorithms:
 
-  - L<Perfect::Hash::HanovPP>
-  - L<Perfect::Hash::PearsonPP>
-  - L<Perfect::Hash::Urban>
-  - L<Perfect::Hash::Bob>
-  - L<Perfect::Hash::CMPH::CHD>
-  - L<Perfect::Hash::CMPH::BDZ>
-  - L<Perfect::Hash::CMPH::BRZ>
-  - L<Perfect::Hash::CMPH::CHM>
-  - L<Perfect::Hash::CMPH::FCH>
+L<Perfect::Hash::HanovPP>,
+L<Perfect::Hash::Pearson>,
+L<Perfect::Hash::Pearson8>,
+L<Perfect::Hash::PearsonNP>,
+L<Perfect::Hash::Urban>,
+L<Perfect::Hash::Bob>,
+L<Perfect::Hash::CMPH::CHD>,
+L<Perfect::Hash::CMPH::BDZ>,
+L<Perfect::Hash::CMPH::BRZ>,
+L<Perfect::Hash::CMPH::CHM>,
+L<Perfect::Hash::CMPH::FCH>
 
 Output classes:
 
-  - L<Perfect::Hash::C>
-  - L<Perfect::Hash::XS>
+L<Perfect::Hash::C>,
+L<Perfect::Hash::XS>
 
 =cut
 

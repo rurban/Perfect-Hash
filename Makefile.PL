@@ -1,9 +1,39 @@
 use strict;
 #use 5.005062;
 use ExtUtils::MakeMaker;
+use Config;
 
 # TODO: we should provide an option to provide a B::CC compiled script/phash,
 # which would e.g. use faster versions of the pure perl modules.
+
+# TODO try c compiler and extract cmph and bob then
+#use ExtUtils::Embed;
+
+# Note: These 2 Makefiles will be overwritten later by recursive WriteMakefile
+# So generate all required binaries here
+if (! -e "cmph-2.0/configure") {
+  system("tar xfz cmph-2.0.tar.gz");
+  if (-e "cmph-2.0/configure") {
+    chdir "cmph-2.0";
+    system("./configure --prefix=`pwd`");
+    system($Config{'make'}, "-s");
+    system($Config{'make'}, "-s", "install");
+    chdir "..";
+  }
+}
+
+if (! -e "bob/lookupa.c") {
+  system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git bob");
+  if (-e "bob/lookupa.c") {
+    chdir "bob";
+    my $cc = $Config{cc};
+    if ($cc ne "gcc") {
+      `$^X -pi.bak -e's/gcc/$cc/' Makefile`;
+    }
+    system($Config{'make'}, "-s");
+    chdir "..";
+  }
+}
 
 WriteMakefile
   (
@@ -32,7 +62,6 @@ WriteMakefile
 
 
 package MY;
-use Config;
 
 sub dist {
   local $_ = shift->SUPER::dist(@_);

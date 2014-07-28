@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 use Test::More;
 use Perfect::Hash;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 my $dict;
 for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
@@ -20,9 +21,9 @@ close $d;
 
 for my $m (map {"-$_"} @methods) {
   diag "generating $m ph for ".scalar @dict." entries in $dict...";
-  # TODO: calc time?
+  my $t0 = [gettimeofday];
   my $ph = new Perfect::Hash \@dict, $m;
-  diag "done";
+  diag "done in ",tv_interval($t0),"s\n";
   unless ($ph) {
     ok(1, "SKIP empty ph $m");
     next;

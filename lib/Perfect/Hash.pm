@@ -1,6 +1,7 @@
 package Perfect::Hash;
 our $VERSION = '0.01';
 use Perfect::Hash::HanovPP (); # early load of coretypes when compiled via B::CC
+use Time::HiRes qw(gettimeofday tv_interval);
 
 =head1 NAME
 
@@ -300,8 +301,10 @@ sub _test {
   }
   close $d;
   print "Reading ",scalar @dict, " words from $dict\n";
+  my $t0 = [gettimeofday];
   my $ph = new __PACKAGE__, \@dict, $method;
   return unless $ph;
+  print "generated $method ph in ",tv_interval($t0),"s\n";
 
   unless (@_) {
     # pick some random values

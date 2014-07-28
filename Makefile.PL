@@ -18,6 +18,7 @@ if (! -e "cmph-2.0/configure") {
     system("./configure --prefix=`pwd`");
     system($Config{'make'}, "-s");
     system($Config{'make'}, "-s", "install");
+    rename "Makefile", "Makefile.orig";
     chdir "..";
   }
 }
@@ -31,6 +32,7 @@ if (! -e "bob/lookupa.c") {
       `$^X -pi.bak -e's/gcc/$cc/' Makefile`;
     }
     system($Config{'make'}, "-s");
+    rename "Makefile", "Makefile.orig";
     chdir "..";
   }
 }

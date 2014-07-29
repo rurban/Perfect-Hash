@@ -260,9 +260,11 @@ sub c_hash_impl {
     return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
 static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
+    int c = *s++;
+    int i = 0;
     if (!d) d = 0x01000193;
-    for (int i = 0; i < l; i++) {
-        d = ((d *  0x01000193) ^ s[i]) & 0xffffffff;
+    for (; i < l; i++) {
+        d = ((d * 0x01000193) ^ *s++) & 0xffffffff;
     }
     return d;
 }

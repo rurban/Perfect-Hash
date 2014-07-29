@@ -10,11 +10,12 @@ our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash);
 our $VERSION = '0.01';
 
 use XSLoader;
-XSLoader::load('Perfect::Hash');
+XSLoader::load('Perfect::Hash', $VERSION);
 
 =head1 DESCRIPTION
 
-Improved version HanovPP, using compressed temp. arrays.
+Improved version of HanovPP, using compressed temp. arrays (not yet) 
+and optimized XS methods, ~2x faster than HanovPP.
 
 =head1 new $dict, options
 

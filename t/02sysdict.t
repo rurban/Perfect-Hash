@@ -20,7 +20,7 @@ close $d;
 for my $m (map {"-$_"} @methods) {
   diag "generating $m ph for ".scalar @dict." entries in $dict...";
   my $t0 = [gettimeofday];
-  my $ph = new Perfect::Hash \@dict, $m;
+  my $ph = new Perfect::Hash \@dict, $m, qw(-max-time 10);
   diag "done in ",tv_interval($t0),"s\n";
   unless ($ph) {
     ok(1, "SKIP empty phash $m");

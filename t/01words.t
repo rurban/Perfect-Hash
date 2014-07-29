@@ -45,7 +45,7 @@ for my $m (map {"-$_"} @methods) {
     next;
   }
  TODO: {
-   local $TODO = "$m" if exists $todo{$m};
+   local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
    for my $w (keys %dict) {
      my $v = $ph->perfecthash($w);

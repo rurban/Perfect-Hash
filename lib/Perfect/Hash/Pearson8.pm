@@ -22,13 +22,18 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-=head1 new $dict, options
+=head1 new $dict, @options
 
 Computes a brute-force 8-bit Pearson hash table using the given
 dictionary, given as hashref or arrayref, with fast lookup.  This
 generator might fail, returning undef.
 
-Honored options are: I<-no-false-positives>
+Honored options are:
+
+I<-no-false-positives>
+
+I<-max-time seconds> stops generating a phash at seconds and uses a
+non-perfect, but still fast hash then. Default: 60s.
 
 It returns an object with @H containing the randomized
 pearson lookup table.
@@ -38,14 +43,17 @@ pearson lookup table.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref, file later
+  my $max_time = grep { $_ eq '-max-time' and shift } @_;
+  $max_time = 60 unless $max_time;
   my %options = map {$_ => 1 } @_;
+  $options{'-max-time'} = $max_time;
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size-1;
   if ($last > 255) {
     warn "cannot create perfect 8-bit pearson hash for $size entries > 255\n";
     # would need a 16-bit pearson or any-size pearson (see -pearson)
-    return undef;
+    return;
   }
 
   # Step 1: Generate @H
@@ -67,8 +75,8 @@ sub new {
     shuffle($H);
     (undef, $max) = cost($H, $keys);
     $counter++;
-  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < 60.0); # $n!
-  return undef if $max != 1;
+  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
+  return if $max != 1;
 
   if (exists $options{'-no-false-positives'}) {
     return bless [$size, $H, \%options, $keys], $class;

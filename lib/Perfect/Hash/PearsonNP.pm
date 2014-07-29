@@ -21,12 +21,17 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-=head1 new $dict, options
+=head1 new $dict, @options
 
 Computes a non-prefect, but fast pearson hash table using the given
 dictionary, given as hashref or arrayref, with fast lookup.
 
-Honored options are: I<-no-false-positives>
+Honored options are:
+
+I<-no-false-positives>
+
+I<-max-time seconds> stops generating a phash at seconds and uses a
+non-perfect, but still fast hash then. Default: 60s.
 
 It returns an object with @H containing the randomized
 pearson lookup table of size 255.
@@ -36,7 +41,10 @@ pearson lookup table of size 255.
 sub new {
   my $class = shift or die;
   my $dict = shift; # hashref or arrayref or filename
+  my $max_time = grep { $_ eq '-max-time' and shift } @_;
+  $max_time = 60 unless $max_time;
   my %options = map {$_ => 1 } @_;
+  $options{'-max-time'} = $max_time;
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size-1;
@@ -65,7 +73,7 @@ sub new {
       $maxsum = $sum;
       @best = @$H;
     }
-  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < 60.0); # $n!
+  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
 
   if ($max > 1) {
     @H = @best;

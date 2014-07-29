@@ -3,6 +3,7 @@ our $VERSION = '0.01';
 use coretypes;
 use strict;
 #use warnings;
+use Perfect::Hash;
 use integer;
 use bytes;
 our @ISA = qw(Perfect::Hash);
@@ -19,14 +20,14 @@ Based on:
 Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud, 
 "Practical minimal perfect hash functions for large databases", CACM, 35(1):105-121
 
-=head1 new $dict, options
+=head1 new $dict, @options
 
 Computes a minimal perfect hash table using the given dictionary,
-given as hashref or arrayref.
+given as hashref, arrayref or filename.
 
 Honored options are: I<-no-false-positives>
 
-It returns an object with a list of [\@G, \@V].
+It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
@@ -34,41 +35,30 @@ index of the value in @V.  @V contains the values of the dictionary.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #hashref or arrayref
+  my $dict = shift; #hashref, arrayref or filename
   my %options = map {$_ => 1 } @_;
-  my int $size;
-  my $dictarray;
-  if (ref $dict eq 'ARRAY') {
-    my $i = 0;
-    my %dict = map {$_ => $i++} @$dict;
-    $size = scalar @$dict;
-    $dictarray = $dict if exists $options{'-no-false-positives'};
-    $dict = \%dict;
-  } else {
-    die "new $class: wrong dict argument. arrayref or hashref expected"
-      if ref $dict ne 'HASH';
-    $size = scalar(keys %$dict) or
-      die "new $class: empty dict argument";
-    if (exists $options{'-no-false-positives'}) {
-      my @arr = ();
-      $#arr = $size;
-      for (sort keys %$dict) {
-        $arr[$_] = $dict->{$_};
-      }
-      $dictarray = \@arr;
+  my ($keys, $values) = Perfect::Hash::_dict_init($dict);
+  my $size = scalar @$keys;
+  my $last = $size - 1;
+  if (ref $dict ne 'HASH') {
+    if (@$values) {
+      my %dict = map { $keys->[$_] => $values->[$_] } 0..$last;
+      $dict = \%dict;
+    } else {
+      my %dict = map { $keys->[$_] => $_ } 0..$last;
+      $dict = \%dict;
     }
   }
-  my $last = $size-1;
 
   # Step 1: Place all of the keys into buckets
   my @buckets; $#buckets = $last;
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
   my @G; $#G = $size; @G = map {0} (0..$last);
-  my @values; $#values = $last;
+  my @V; $#V = $last;
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash(0, $_) % $size ]}, $_ for sort keys %$dict;
+  push @{$buckets[ hash(0, $_) % $size ]}, $_ for @$keys;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
@@ -88,18 +78,18 @@ sub new {
     while ($item < scalar(@bucket)) {
       my $slot = hash( $d, $bucket[$item] ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
-      if (defined $values[$slot] or exists $slots{$slot}) {
+      if (defined $V[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-#        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d;
+#       printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d;
 #          unless $d % 100;
         $item++;
       }
     }
     $G[hash(0, $bucket[0]) % $size] = $d;
-    $values[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-#    print "[".join(",",@values),"]\n";
+    $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
+#    print "[".join(",",@V),"]\n";
 #    print "buckets[$i]:",scalar(@bucket)," d=$d\n";
 #      unless $b % 1000;
     $i++;
@@ -110,7 +100,7 @@ sub new {
   # this.
   my @freelist;
   for my $i (0..$last) {
-    push @freelist, $i unless defined $values[$i];
+    push @freelist, $i unless defined $V[$i];
   }
   #print "len[freelist]=",scalar(@freelist),"\n";
 
@@ -124,12 +114,12 @@ sub new {
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.
     $G[hash(0, $bucket[0]) % $size] = - $slot-1;
-    $values[$slot] = $dict->{$bucket[0]};
+    $V[$slot] = $dict->{$bucket[0]};
   }
   if (exists $options{'-no-false-positives'}) {
-    return bless [\@G, \@values, \%options, $dictarray], $class;
+    return bless [\@G, \@V, \%options, $keys], $class;
   } else {
-    return bless [\@G, \@values, \%options], $class;
+    return bless [\@G, \@V, \%options], $class;
   }
 }
 

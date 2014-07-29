@@ -3,7 +3,7 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = keys %Perfect::Hash::algo_methods;
-my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp);
+my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp -pearson8);
 plan tests => scalar(@methods) + 1;
 
 my %dict = map {chr $_ => $_-48} (49..125);
@@ -22,10 +22,10 @@ TODO: {
     my $v = $ph->perfecthash($w);
     $ok = 0 if $v != $c-48;
     unless ($ok) {
-      is($v, $c-48, "method $m for '$w' => $v");
+      is($v, $c-48, "method '$m' for '$w' => $v");
       last;
     }
   }
-  $ok ? ok($ok, "method $m") : 0;
+  $ok ? ok($ok, "method '$m'") : 0;
   }
 }

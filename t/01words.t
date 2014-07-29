@@ -3,8 +3,8 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = keys %Perfect::Hash::algo_methods;
-my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp);
-plan tests => 2*(scalar(@methods) + 0);
+my %todo = map {$_=>1} qw(-urban -pearson -pearsonnp -pearson8);
+plan tests => 2*scalar(@methods);
 
 # test words20 as hashref and arrayref
 my $dict = "examples/words20";

@@ -3,9 +3,11 @@ our $VERSION = '0.01';
 #use coretypes;
 use strict;
 #use warnings;
+use Perfect::Hash;
+use Perfect::Hash::Pearson;
+our @ISA = qw(Perfect::Hash::Pearson);
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash);
 
 =head1 DESCRIPTION
 
@@ -33,30 +35,10 @@ pearson lookup table of size 255.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #hashref or arrayref, file later
+  my $dict = shift; # hashref or arrayref or filename
   my %options = map {$_ => 1 } @_;
-  my $size;
-  my $dictarray;
-  if (ref $dict eq 'ARRAY') {
-    my $i = 0;
-    my %dict = map {$_ => $i++} @$dict;
-    $size = scalar @$dict;
-    $dictarray = $dict;
-    $dict = \%dict;
-  } else {
-    die "new $class: wrong dict argument. arrayref or hashref expected"
-      if ref $dict ne 'HASH';
-    $size = scalar(keys %$dict) or
-      die "new $class: empty dict argument";
-    if (exists $options{'-no-false-positives'}) {
-      my @arr = ();
-      $#arr = $size;
-      for (sort keys %$dict) {
-        $arr[$_] = $dict->{$_};
-      }
-      $dictarray = \@arr;
-    }
-  }
+  my ($keys, $values) = _dict_init($dict);
+  my $size = scalar @$keys;
   my $last = $size-1;
 
   # Step 1: Generate @H
@@ -65,58 +47,40 @@ sub new {
   my $i = 0;
   $H[$_] = $i++ for 0 .. 255; # init with ordered sequence
   my $H = \@H;
-  my @best;
-  my $maxbuckets = 0; # birthday paradoxon
-  my ($buckets, $max, $counter);
-  my $maxcount = 30; # when to stop the search. exhaustive is 255!
+  # expected max: birthday paradoxon
+  my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
+  $maxsum = 0;
+  $maxcount = 30; # when to stop the search. exhaustive is 255!
+  # we should rather set a time-limit like 1 min.
   # Step 2: shuffle @H until we get a good max, only 0 or 1
-  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    ($buckets, $max) = cost($H, $dict);
+    ($sum, $max) = cost($H, $keys);
     $counter++;
-    #print "$counter sum=$buckets, max=$max\n";
-    if ($buckets > $maxbuckets or $max == 1) {
-      $buckets = $maxbuckets;
+    #print "$counter sum=$sum, max=$max\n";
+    if ($sum > $maxsum or $max == 1) {
+      $maxsum = $sum;
       @best = @$H;
     }
-  } while ($max > 1 and $counter < $maxcount); # $n!
-  @H = @best;
-  $H = \@H;
-  # TODO Step 3: Store binary collision trees
+  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < 60.0); # $n!
+
+  if ($max > 1) {
+    @H = @best;
+    $H = \@H;
+    ($sum, $max) = cost($H, $keys);
+    # Step 3: Store collisions as no perfect hash was found
+    print "list of collisions: sum=$sum, maxdepth=$max\n";
+    $C = collisions($H, $keys);
+  }
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [$H, \%options, $dictarray], $class;
+    return bless [$size, $H, $C, \%options, $keys], $class;
   } else {
-    return bless [$H, \%options], $class;
+    return bless [$size, $H, $C, \%options], $class;
   }
-}
-
-sub shuffle {
-  # the "Knuth Shuffle", a random shuffle to create good permutations
-  my $H = $_[0];
-  my $last = scalar(@$H) - 1;
-  for my $i (0 .. $last) {
-    my $tmp = $_[0]->[$i];
-    my $j = $i + int rand($last-$i);
-    $_[0]->[$i]= $_[0]->[$j];
-    $_[0]->[$j] = $tmp;
-  }
-}
-
-sub cost {
-  my ($H, $dict) = @_;
-  my @N = (); $#N = 255;
-  $N[$_] = 0 for 0..255;
-  my ($buckets, $maxbuckets) = (0, 0);
-  for (values %$dict) {
-    my $h = hash($H, $_);
-    $N[$h]++;
-    $buckets++ if $N[$h] > 1;
-    $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
-  }
-  return ($buckets, $maxbuckets);
 }
 
 =head1 perfecthash $obj, $key
@@ -134,30 +98,25 @@ the given dictionary. If not, a wrong index will be returned.
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $H = $ph->[0];
-  my $v = hash($H, $key);
-  # TODO: collision tree
+  my $H = $ph->[1];
+  my $C = $ph->[2];
+  my $v = hash($H, $key, $ph->[0]);
+  # check collisions. todo: binary search
+  if ($C and $C->[$v]) {
+    for (@{$C->[$v]}) {
+      if ($key eq $_->[0]) {
+        $v = $_->[1];
+        last;
+      }
+    }
+  }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
-  if ($ph->[2]) {
-    return ($ph->[2]->[$v] eq $key) ? $v : undef;
+  if ($ph->[4]) {
+    return ($ph->[4]->[$v] eq $key) ? $v : undef;
   } else {
     return $v;
   }
-}
-
-=head1 hash \@H, salt, string
-
-=cut
-
-sub hash {
-  my ($H, $key ) = @_;
-  my $d = length $key || 0;
-  my $size = scalar @$H - 1;
-  for (split //, $key) {
-    $d = $H->[$d ^ (255 & ord($_))];
-  }
-  return $d;
 }
 
 =head1 false_positives
@@ -172,7 +131,7 @@ option C<-no-false-positives>.
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[1]->{'-no-false-positives'};
+  return !exists $_[0]->[3]->{'-no-false-positives'};
 }
 
 =item save_c fileprefix, options
@@ -185,21 +144,21 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   my ($fileprefix, $base) = $ph->_save_c_header(@_);
+  my $H;
+  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $H "
+static unsigned char $base\[] = {
+";
+  Perfect::Hash::C::_save_c_array(4, $H, $ph->[1]);
+  print $H "};\n";
+  # TODO: collision tree|trie
+  my @C = @{$ph->[1]};
+  close $H;
+
   my $FH = $ph->_save_c_funcdecl($ph, $fileprefix, $base);
   # non-binary only so far:
   print $FH "
     unsigned h = 0; 
-    static unsigned char $base\[] = {
-";
-  for (0 .. 15) {
-    my $from = $_ * 16;
-    my $to = $from + 15;
-    print $FH "        ",join(", ", @H[$from .. $to]);
-    $_ == 15 ? print $FH "\n" : print $FH ",\n";
-  }
-  print $FH "    };";
-  # TODO: collision tree
-  print $FH "
     for (int c = *s++; c; c = *s++) {
         h = $base\[h ^ c];
     }
@@ -216,7 +175,6 @@ sub save_c {
 # local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearsonpp")'
 unless (caller) {
-  require Perfect::Hash;
   &Perfect::Hash::_test(shift @ARGV, "-pearsonnp", @ARGV)
 }
 

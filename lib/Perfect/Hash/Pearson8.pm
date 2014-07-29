@@ -3,8 +3,11 @@ our $VERSION = '0.01';
 #use coretypes;
 use strict;
 #use warnings;
+use Perfect::Hash;
+use Perfect::Hash::Pearson;
+our @ISA = qw(Perfect::Hash::Pearson);
 use integer;
-our @ISA = qw(Perfect::Hash);
+use bytes;
 
 =head1 DESCRIPTION
 
@@ -36,88 +39,42 @@ sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref, file later
   my %options = map {$_ => 1 } @_;
-  my $size;
-  my $dictarray;
-  if (ref $dict eq 'ARRAY') {
-    my $i = 0;
-    my %dict = map {$_ => $i++} @$dict;
-    $size = scalar @$dict;
-    $dictarray = $dict if exists $options{'-no-false-positives'};
-    $dict = \%dict;
-  } else {
-    die "new $class: wrong dict argument. arrayref or hashref expected"
-      if ref $dict ne 'HASH';
-    $size = scalar(keys %$dict) or
-      die "new $class: empty dict argument";
-    if (exists $options{'-no-false-positives'}) {
-      my @arr = ();
-      $#arr = $size;
-      for (sort keys %$dict) {
-        $arr[$_] = $dict->{$_};
-      }
-      $dictarray = \@arr;
-    }
-  }
+  my ($keys, $values) = _dict_init($dict);
+  my $size = scalar @$keys;
   my $last = $size-1;
   if ($last > 255) {
     warn "cannot create perfect 8-bit pearson hash for $size entries > 255\n";
-    # would need a 16-bit pearson or any-size pearson (see below)
+    # would need a 16-bit pearson or any-size pearson (see -pearson)
     return undef;
   }
 
   # Step 1: Generate @H
   # round up to ending 1111's
-  # TODO: any size
-  my $i = 1;
-  while (2**$i++ < $size) {}
-  my $hsize = 2**($i-1) - 1;
-  
-  $hsize = 255;
+  my $hsize = 255;
   #print "size=$size hsize=$hsize\n";
   # TODO: bitvector string with vec
   my @H; $#H = $hsize;
-  $i = 0;
+  my $i = 0;
   $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
-  my $maxbuckets;
-  my @N = ();
-  my $counter = 0;
-  my $maxcount = 3 * $last; # when to stop the search. should be $last !
+  my $maxcount = 3 * $last; # when to stop the search. could be n!
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
-  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  my ($max, $counter);
+  my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    $N[$_] = 0 for 0..$hsize;
-    $maxbuckets = 0;
-    for (values %$dict) {
-      my $h = hash($H, $_);
-      $N[$h]++;
-      $maxbuckets = $N[$h] if $maxbuckets < $N[$h];
-    }
+    (undef, $max) = cost($H, $keys);
     $counter++;
-    #print "$counter maxbuckets=$maxbuckets\n";
-  } while $maxbuckets > 1 and $counter < $maxcount; # $n!
-  return undef if $maxbuckets != 1;
+  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < 60.0); # $n!
+  return undef if $max != 1;
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [$H, \%options, $dictarray], $class;
+    return bless [$size, $H, \%options, $keys], $class;
   } else {
-    return bless [$H, \%options], $class;
+    return bless [$size, $H, \%options], $class;
   }
-}
-
-sub shuffle {
-  # the "Knuth Shuffle", a random shuffle to create good permutations
-  my $H = $_[0];
-  my $last = scalar(@$H);
-  for my $i (0 .. $last) {
-    my $tmp = $_[0]->[$i];
-    my $j = $i + int rand($last-$i);
-    $_[0]->[$i]= $_[0]->[$j];
-    $_[0]->[$j] = $tmp;
-  }
-  delete $H->[$last];
 }
 
 =head1 perfecthash $obj, $key
@@ -135,29 +92,14 @@ the given dictionary. If not, a wrong index will be returned.
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $H = $ph->[0];
-  my $v = hash($H, $key);
+  my $v = hash($ph->[1], $key, $ph->[0]);
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[1]->{-no-false-positives} check for now
-  if ($ph->[2]) {
-    return ($ph->[2]->[$v] eq $key) ? $v : undef;
+  if ($ph->[3]) {
+    return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {
     return $v;
   }
-}
-
-=head1 hash \@H, salt, string
-
-=cut
-
-sub hash {
-  my ($H, $key ) = @_;
-  my $d = length $key || 0;
-  my $size = scalar @$H;
-  for (split //, $key) {
-    $d = $H->[($d + ord($_)) % $size];
-  }
-  return $d % $size;
 }
 
 =head1 false_positives
@@ -172,7 +114,7 @@ option C<-no-false-positives>.
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[1]->{'-no-false-positives'};
+  return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
 =item save_c fileprefix, options
@@ -190,7 +132,7 @@ sub save_c {
   print $H "
 static unsigned char $base\[] = {
 ";
-  Perfect::Hash::C::_save_c_array(4, $H, $ph->[0]);
+  Perfect::Hash::C::_save_c_array(4, $H, $ph->[1]);
   print $H "};\n";
   close $H;
 
@@ -214,7 +156,6 @@ static unsigned char $base\[] = {
 # local testing: pb -d lib/Perfect/Hash/Pearson8.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson8")'
 unless (caller) {
-  require Perfect::Hash;
   &Perfect::Hash::_test(shift @ARGV, "-pearson8", @ARGV)
 }
 

@@ -3,6 +3,9 @@ our $VERSION = '0.01';
 use Perfect::Hash::HanovPP (); # early load of coretypes when compiled via B::CC
 use Time::HiRes qw(gettimeofday tv_interval);
 
+use Exporter 'import';
+our @EXPORT = qw(_dict_init gettimeofday tv_interval);
+
 =head1 NAME
 
 Perfect::Hash - generate perfect hashes
@@ -110,15 +113,25 @@ Default. Big and slow. Pure perl.
 
 =item -pearson8
 
-Very fast lookup, but limited dictionaries, 5-255 keys.
-Planned is a 8-bit pearson only so far, maybe a 16-bit or 
-with binary tree later.
+Strict variant of a 8-bit Pearson hash table.
+Very fast lookup, but limited dictionaries with a 8-bit pearson table
+for 5-255 keys.
+Returns undef for invalid dictionaries.
 
 =item -pearsonnp
 
-This creates a non-perfect pearson hash with very fast lookup, and
-unlimited dictionary size.  Collision resolution is done via static
-binary trees.
+"np" for non-perfect. Try to find a 8-bit sized pearson table for the
+given dictionary. Keeps the best found hash table, with no guarantees
+that it is a perfect hash table.  If not, collision resolution is done
+via static binary trees.
+
+=item -pearson
+
+With adjusted the pearson table size.
+Try to find a n-bit sized pearson table for the given
+dictionary. Keeps the best found hash table, with no guarantees that
+it is a perfect hash table.
+If not, collision resolution is done via static binary trees.
 
 =item -bob
 
@@ -212,6 +225,43 @@ our %algo_methods = map {
   lc $_ => "Perfect::Hash::$m"
 } @algos;
 
+# split hash or filename with keys
+# into 2 arrays of keys and values
+sub _dict_init {
+  my $dict = $_[0];
+  if (ref $dict eq 'ARRAY') {
+    return ($dict, []);
+  }
+  elsif (ref $dict ne 'HASH') {
+    if (!ref $dict and -e $dict) {
+      open my $d, "<", $dict or die; {
+        local $/;
+        @keys = split /\n/, <$d>;
+        #TODO: check for key<ws>value or just lineno
+      }
+      close $d;
+      return (\@keys, []);
+    } else {
+      die "wrong dict argument. arrayref, hashref or filename expected";
+    }
+  }
+  # HASHREF:
+  $size = scalar(keys %$dict) or
+    die "new: empty dict argument";
+  my @keys = ();
+  $#keys = $size - 1;
+  my @values = ();
+  $#values = $size - 1;
+  my $i = 0;
+  for (sort keys %$dict) {
+    $keys[$i] = $_;
+    $values[$i] = $dict->{$_};
+    $i++;
+  }
+  undef %$dict;
+  return (\@keys, \@values);
+}
+
 sub new {
   my $class = shift;
   my $dict = shift;
@@ -222,11 +272,10 @@ sub new {
   } else {
     # no algo given, check which would be the best
     unshift @_, $option;
-    # TODO: choose the right default, based on the given options and the dict size
-
+    # TODO: choose the right default, based on the given options and the dict size,
+    # and if we have the compiled methods or only pure-perl available.
     $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
-
-    require Perfect::Hash::HanovPP unless $INC{'Perfect/Hash/HanovPP.pm'};
+    #eval "require $method;";
   }
   return $method->new($dict, @_);
 }

@@ -30,19 +30,21 @@ There exist various C and a primitive python library to generate code
 to access perfect hashes and minimal versions thereof, but nothing to
 use easily. `gperf` is not very well suited to create big maps and
 cannot deal with anagrams, but creates fast C code. `Pearson` hashes
-are also pretty fast, but not guaranteed to be creatable for small
-hashes.  cmph `CHD` and the other cmph algorithms might be the best
-algorithms for big hashes, but lookup time is slower for smaller
-hashes.
+are simplier and even faster, but not guaranteed to be creatable for
+small or bigger hashes.  cmph `CHD` and the other cmph algorithms
+might be the best algorithms for big hashes, but lookup time is slower
+for smaller hashes.
 
 As input we need to provide a set of unique keys, either as arrayref
 or hashref.
 
-WARNING: When querying a perfect hash you need to be sure that key
-really exists on some algorithms, as non-existing keys might return
-false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually as in the
-SYNOPSIS.  It's still faster than using a Bloom filter though.
+WARNING: When querying a perfect hash you need to be sure that the key
+really exists on some algorithms, as querying for non-existing keys
+might return false positives.  If you are not sure how the perfect
+hash deals with non-existing keys, you need to check the result
+manually as in the SYNOPSIS or use the option `-no-false-positives`
+to store the values also. It's still faster than using a Bloom filter
+though.
 
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH::\*, Bob, Pearson, Gperf.
@@ -97,6 +99,28 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
         Default. Big and slow. Pure perl.
 
+    - \-pearson8
+
+        Strict variant of a 8-bit Pearson hash table.
+        Very fast lookup, but limited dictionaries with a 8-bit pearson table
+        for 5-255 keys.
+        Returns undef for invalid dictionaries.
+
+    - \-pearsonnp
+
+        "np" for non-perfect. Try to find a 8-bit sized pearson table for the
+        given dictionary. Keeps the best found hash table, with no guarantees
+        that it is a perfect hash table.  If not, collision resolution is done
+        via static binary trees.
+
+    - \-pearson
+
+        With adjusted the pearson table size.
+        Try to find a n-bit sized pearson table for the given
+        dictionary. Keeps the best found hash table, with no guarantees that
+        it is a perfect hash table.
+        If not, collision resolution is done via static binary trees.
+
     - \-bob
 
         Nice and easy.
@@ -104,11 +128,6 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
     - \-gperf
 
         Pretty fast lookup, but limited dictionaries.
-
-    - \-pearson
-
-        Very fast lookup, but limited dictionaries.
-        Planned is a 8-bit pearson only so far, maybe a 16-bit later.
 
     - \-cmph-chd
 
@@ -198,16 +217,19 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
 Algorithms:
 
-    - L<Perfect::Hash::HanovPP>
-    - L<Perfect::Hash::Bob>
-    - L<Perfect::Hash::Pearson>
-    - L<Perfect::Hash::CMPH::CHD>
-    - L<Perfect::Hash::CMPH::BDZ>
-    - L<Perfect::Hash::CMPH::BRZ>
-    - L<Perfect::Hash::CMPH::CHM>
-    - L<Perfect::Hash::CMPH::FCH>
+[Perfect::Hash::HanovPP](https://metacpan.org/pod/Perfect::Hash::HanovPP),
+[Perfect::Hash::Pearson](https://metacpan.org/pod/Perfect::Hash::Pearson),
+[Perfect::Hash::Pearson8](https://metacpan.org/pod/Perfect::Hash::Pearson8),
+[Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
+[Perfect::Hash::Urban](https://metacpan.org/pod/Perfect::Hash::Urban),
+[Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob),
+[Perfect::Hash::CMPH::CHD](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD),
+[Perfect::Hash::CMPH::BDZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ),
+[Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ),
+[Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
+[Perfect::Hash::CMPH::FCH](https://metacpan.org/pod/Perfect::Hash::CMPH::FCH)
 
 Output classes:
 
-    - L<Perfect::Hash::C>
-    - L<Perfect::Hash::XS>
+[Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C),
+[Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS)

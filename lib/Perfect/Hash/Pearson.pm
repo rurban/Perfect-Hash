@@ -3,16 +3,20 @@ our $VERSION = '0.01';
 #use coretypes;
 use strict;
 #use warnings;
+use Perfect::Hash;
 use integer;
 use bytes;
-use Perfect::Hash::PearsonNP;
-our @ISA = qw(Perfect::Hash::PearsonNP);
+
+use Exporter 'import';
+our @ISA = qw(Perfect::Hash Exporter);
+our @EXPORT = qw(hash shuffle cost collisions);
 
 =head1 DESCRIPTION
 
 A Pearson hash is generally not perfect, but generates one of the
 fastest lookups.  This version generates arbitrary sized pearson
-lookup tables and thus creates a perfect hash.
+lookup tables and thus should be able to find a perfect hash, but
+success is not guaranteed.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -33,34 +37,15 @@ pearson lookup table.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #hashref or arrayref, file later
+  # return Perfect::Hash::PearsonNP::new($class, @_);
+  my $dict = shift; #hashref or arrayref or filename
   my %options = map {$_ => 1 } @_;
-  my $size;
-  my $dictarray;
-  if (ref $dict eq 'ARRAY') {
-    my $i = 0;
-    my %dict = map {$_ => $i++} @$dict;
-    $size = scalar @$dict;
-    $dictarray = $dict if exists $options{'-no-false-positives'};
-    $dict = \%dict;
-  } else {
-    die "new $class: wrong dict argument. arrayref or hashref expected"
-      if ref $dict ne 'HASH';
-    $size = scalar(keys %$dict) or
-      die "new $class: empty dict argument";
-    if (exists $options{'-no-false-positives'}) {
-      my @arr = ();
-      $#arr = $size;
-      for (sort keys %$dict) {
-        $arr[$_] = $dict->{$_};
-      }
-      $dictarray = \@arr;
-    }
-  }
+  my ($keys, $values) = _dict_init($dict);
+  my $size = scalar @$keys;
   my $last = $size-1;
 
   # Step 1: Generate @H
-  # round up to 2 complements, ending 1111's
+  # round up to 2 complements, with ending 1111's
   my $i = 1;
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
@@ -72,31 +57,38 @@ sub new {
   my $H = \@H;
 
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
-  # This is the problem: https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
-  my $maxbuckets;
-  my @N = ();
-  my $counter = 0;
-  my $maxcount = $last; # when to stop the search. should be $last !
+  # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+  # expected max: birthday paradoxon
+  my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
+  $maxsum = 0;
+  $maxcount = $last; # when to stop the search. should be $last !
+  # we should rather set a time-limit like 1 min.
+  my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
     shuffle($H);
-    ($buckets, $max) = Perfect::Hash::PearsonNP::cost($H, $dict);
+    ($sum, $max) = cost($H, $keys);
     $counter++;
-    print "$counter sum=$buckets, max=$max\n";
-    if ($buckets > $maxbuckets or $max == 1) {
-      $buckets = $maxbuckets;
+    #print "$counter sum=$sum, max=$max\n";
+    if ($sum > $maxsum or $max == 1) {
+      $maxsum = $sum;
       @best = @$H;
     }
-  } while ($max > 1 and $counter < $maxcount); # $n!
+  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < 60.0);
 
-  @H = @best;
-  $H = \@H;
-  # TODO Step 3: Store binary collision trees if no perfect hash is found
+  if ($max > 1) {
+    @H = @best;
+    $H = \@H;
+    ($sum, $max) = cost($H, $keys);
+    # Step 3: Store collisions as no perfect hash was found
+    print "list of collisions: sum=$sum, maxdepth=$max\n";
+    $C = collisions($H, $keys);
+  }
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [$H, \%options, $dictarray], $class;
+    return bless [$size, $H, $C, \%options, $keys], $class;
   } else {
-    return bless [$H, \%options], $class;
+    return bless [$size, $H, $C, \%options], $class;
   }
 }
 
@@ -111,6 +103,49 @@ sub shuffle {
     $_[0]->[$j] = $tmp;
   }
   delete $H->[$last];
+}
+
+sub cost {
+  my ($H, $keys) = @_;
+  my @N = (); $#N = scalar(@$H) - 1;
+  $N[$_] = 0 for 0..$#N;
+  my ($sum, $max) = (0, 0);
+  my $size = scalar @$keys;
+  for (@$keys) {
+    my $h = hash($H, $_, $size);
+    $N[$h]++;
+    $sum++ if $N[$h] > 1;
+    $max = $N[$h] if $max < $N[$h];
+  }
+  return ($sum, $max);
+}
+
+sub collisions {
+  my ($H, $keys) = @_;
+  my @C = (); $#C = scalar(@$H) - 1;
+  $C[$_] = [] for 0..$#C;
+  my $i = 0;
+  my $size = scalar @$keys;
+  for (@$keys) {
+    my $h = hash($H, $_, $size); # e.g. a=>1 b=>11 c=>111
+    push @{$C[$h]}, [$i, $_];
+    $i++;
+  }
+  return \@C;
+}
+
+=head1 hash \@H, salt, string
+
+=cut
+
+sub hash {
+  my ($H, $key, $size ) = @_;
+  my $d = length $key || 0;
+  my $hsize = scalar @$H;
+  for (split //, $key) { # under use bytes
+    $d = $H->[($d ^ ord($_)) % $hsize];
+  }
+  return $d % $size;
 }
 
 =head1 perfecthash $obj, $key
@@ -128,29 +163,25 @@ the given dictionary. If not, a wrong index will be returned.
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $H = $ph->[0];
-  my $v = hash($H, $key);
+  my $H = $ph->[1];
+  my $C = $ph->[2];
+  my $v = hash($H, $key, $ph->[0]);
+  # check collisions
+  if ($C and $C->[$v]) {
+    for (@{$C->[$v]}) {
+      if ($key eq $_->[0]) {
+        $v = $_->[1];
+        last;
+      }
+    }
+  }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[1]->{-no-false-positives} check for now
-  if ($ph->[2]) {
-    return ($ph->[2]->[$v] eq $key) ? $v : undef;
+  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  if ($ph->[4]) {
+    return ($ph->[4]->[$v] eq $key) ? $v : undef;
   } else {
     return $v;
   }
-}
-
-=head1 hash \@H, salt, string
-
-=cut
-
-sub hash {
-  my ($H, $key ) = @_;
-  my $d = length $key || 0;
-  my $size = scalar @$H;
-  for (split //, $key) {
-    $d = $H->[($d + ord($_)) % $size];
-  }
-  return $d % $size;
 }
 
 =head1 false_positives
@@ -162,43 +193,9 @@ you searched for a non-existing key.
 The default is 1, unless you created the hash with the
 option C<-no-false-positives>.
 
-=cut
-
-sub false_positives {
-  return !exists $_[0]->[1]->{'-no-false-positives'};
-}
-
 =item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
-
-=cut
-
-sub save_c {
-  my $ph = shift;
-  require Perfect::Hash::C;
-  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
-  my $H;
-  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H "
-static unsigned char $base\[] = {
-";
-  Perfect::Hash::C::_save_c_array(4, $H, $ph->[0]);
-  print $H "};\n";
-  close $H;
-
-  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
-  # non-binary only so far:
-  print $FH "
-    unsigned h = 0;
-    for (int c = *s++; c; c = *s++) {
-        h = $base\[h ^ c];
-    }
-    return h;
-}
-";
-  close $FH;
-}
 
 =back
 
@@ -207,7 +204,6 @@ static unsigned char $base\[] = {
 # local testing: pb -d lib/Perfect/Hash/Pearson.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson")'
 unless (caller) {
-  require Perfect::Hash;
   &Perfect::Hash::_test(shift @ARGV, "-pearson", @ARGV)
 }
 

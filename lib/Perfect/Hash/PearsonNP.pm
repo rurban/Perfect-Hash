@@ -57,7 +57,6 @@ sub new {
   my $H = \@H;
   # expected max: birthday paradoxon
   my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
-  $maxsum = 0;
   $maxcount = 30; # when to stop the search. exhaustive is 255!
   # we should rather set a time-limit like 1 min.
   # Step 2: shuffle @H until we get a good max, only 0 or 1
@@ -69,7 +68,7 @@ sub new {
     ($sum, $max) = cost($H, $keys);
     $counter++;
     #print "$counter sum=$sum, max=$max\n";
-    if ($sum > $maxsum or $max == 1) {
+    if (!defined($maxsum) or $sum < $maxsum or $max == 1) {
       $maxsum = $sum;
       @best = @$H;
     }
@@ -81,7 +80,7 @@ sub new {
     ($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
     print "list of collisions: sum=$sum, maxdepth=$max\n";
-    $C = collisions($H, $keys);
+    $C = collisions($H, $keys, $values);
   }
 
   if (exists $options{'-no-false-positives'}) {
@@ -110,7 +109,8 @@ sub perfecthash {
   my $C = $ph->[2];
   my $v = hash($H, $key, $ph->[0]);
   # check collisions. todo: binary search
-  if ($C and $C->[$v]) {
+  if ($C and $C->[$v] and @{$C->[$v]} > 1) {
+    print "check ".scalar @{$C->[$v]}." collisions for $key\n" if $ph->[3]->{-debug};
     for (@{$C->[$v]}) {
       if ($key eq $_->[0]) {
         $v = $_->[1];

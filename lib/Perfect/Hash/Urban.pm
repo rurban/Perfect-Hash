@@ -180,7 +180,7 @@ zlib. A good name might be Compress::Zlib, oh my.
 
 =cut
 
-# local testing: pb -d lib/Perfect/Hash/Urban.pm examples/words20
+# local testing: pb -d lib/Perfect/Hash/Urban.pm examples/words20 -debug
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-urban")'
 unless (caller) {
   &Perfect::Hash::_test(shift @ARGV, "-urban", @ARGV)

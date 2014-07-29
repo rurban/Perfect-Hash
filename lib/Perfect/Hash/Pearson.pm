@@ -68,7 +68,6 @@ sub new {
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   # expected max: birthday paradoxon
   my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
-  $maxsum = 0;
   $maxcount = $last; # when to stop the search. should be $last !
   # we should rather set a time-limit like 1 min.
   my $t0 = [gettimeofday];
@@ -77,8 +76,8 @@ sub new {
     shuffle($H);
     ($sum, $max) = cost($H, $keys);
     $counter++;
-    #print "$counter sum=$sum, max=$max\n";
-    if ($sum > $maxsum or $max == 1) {
+    print "$counter sum=$sum, max=$max\n" if $options{-debug};
+    if (!defined($maxsum) or $sum < $maxsum or $max == 1) {
       $maxsum = $sum;
       @best = @$H;
     }
@@ -90,7 +89,7 @@ sub new {
     ($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
     print "list of collisions: sum=$sum, maxdepth=$max\n";
-    $C = collisions($H, $keys);
+    $C = collisions($H, $keys, $values);
   }
 
   if (exists $options{'-no-false-positives'}) {
@@ -129,16 +128,18 @@ sub cost {
 }
 
 sub collisions {
-  my ($H, $keys) = @_;
-  my @C = (); $#C = scalar(@$H) - 1;
+  my ($H, $keys, $values) = @_;
+  my $size = scalar(@$keys);
+  my @C = (); $#C = $size - 1;
   $C[$_] = [] for 0..$#C;
+  unless (@$values) { $values = [0 .. $size-1]; }
   my $i = 0;
-  my $size = scalar @$keys;
   for (@$keys) {
     my $h = hash($H, $_, $size); # e.g. a=>1 b=>11 c=>111
-    push @{$C[$h]}, [$i, $_];
+    push @{$C[$h]}, [$_, $values->[$i]];
     $i++;
   }
+  @C = map { scalar @$_ > 1 ? $_ : undef } @C;
   return \@C;
 }
 
@@ -174,8 +175,8 @@ sub perfecthash {
   my $H = $ph->[1];
   my $C = $ph->[2];
   my $v = hash($H, $key, $ph->[0]);
-  # check collisions
-  if ($C and $C->[$v]) {
+  if ($C and $C->[$v] and @{$C->[$v]} > 1) {
+    print "check ".scalar @{$C->[$v]}." collisions for $key\n" if $ph->[3]->{-debug};
     for (@{$C->[$v]}) {
       if ($key eq $_->[0]) {
         $v = $_->[1];

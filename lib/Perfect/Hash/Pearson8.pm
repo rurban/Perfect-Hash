@@ -1,13 +1,13 @@
 package Perfect::Hash::Pearson8;
-our $VERSION = '0.01';
 #use coretypes;
 use strict;
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::Pearson;
-our @ISA = qw(Perfect::Hash::Pearson);
 use integer;
 use bytes;
+our @ISA = qw(Perfect::Hash::Pearson);
+our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 

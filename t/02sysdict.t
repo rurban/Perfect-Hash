@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 use Test::More;
 use Perfect::Hash;
-use Time::HiRes qw(gettimeofday tv_interval);
 
 my $dict;
 for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
@@ -10,7 +9,6 @@ for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
 plan skip_all => "no system dict found" unless -e $dict;
 
 my @methods = keys %Perfect::Hash::algo_methods;
-my %todo = map {$_=>1} qw(-urban -pearsonpp -pearsonnp -pearson8);
 plan tests => scalar(@methods);
 
 open my $d, $dict or die; {
@@ -25,11 +23,11 @@ for my $m (map {"-$_"} @methods) {
   my $ph = new Perfect::Hash \@dict, $m;
   diag "done in ",tv_interval($t0),"s\n";
   unless ($ph) {
-    ok(1, "SKIP empty ph $m");
+    ok(1, "SKIP empty phash $m");
     next;
   }
 TODO: {
-  local $TODO = "$m" if exists $todo{$m};
+  local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
   my $ok = 1;
   my $i = 0;
   for my $w (@dict) {

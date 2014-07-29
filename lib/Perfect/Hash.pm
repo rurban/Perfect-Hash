@@ -1,4 +1,8 @@
 package Perfect::Hash;
+use strict;
+use integer;
+use bytes;
+
 our $VERSION = '0.01';
 use Perfect::Hash::HanovPP (); # early load of coretypes when compiled via B::CC
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -219,21 +223,23 @@ C<libicu>.
 #our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP 
 #                Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
 our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP);
+our %algo_todo = map {$_=>1} qw(-urban -pearson8 -pearson -pearsonnp);
 our %algo_methods = map {
-  my $m = $_;
-  s/::/-/g;
-  lc $_ => "Perfect::Hash::$m"
+  my ($m, $o) = ($_, $_);
+  $o =~ s/::/-/g;
+  lc $o => "Perfect::Hash::$m"
 } @algos;
 
 # split hash or filename with keys
 # into 2 arrays of keys and values
 sub _dict_init {
-  my $dict = $_[0];
+  my $dict = shift;
   if (ref $dict eq 'ARRAY') {
     return ($dict, []);
   }
   elsif (ref $dict ne 'HASH') {
     if (!ref $dict and -e $dict) {
+      my @keys;
       open my $d, "<", $dict or die; {
         local $/;
         @keys = split /\n/, <$d>;
@@ -246,7 +252,7 @@ sub _dict_init {
     }
   }
   # HASHREF:
-  $size = scalar(keys %$dict) or
+  my $size = scalar(keys %$dict) or
     die "new: empty dict argument";
   my @keys = ();
   $#keys = $size - 1;
@@ -258,7 +264,6 @@ sub _dict_init {
     $values[$i] = $dict->{$_};
     $i++;
   }
-  undef %$dict;
   return (\@keys, \@values);
 }
 

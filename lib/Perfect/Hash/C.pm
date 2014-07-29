@@ -42,7 +42,7 @@ sub _save_c_header {
   # refer to the class save_c method
   my $ph = shift;
   if (ref $ph eq __PACKAGE__ or ref $ph eq 'Perfect::Hash::C') {
-    die "wrong class ",ref $obj;
+    die "wrong class: ",ref $ph;
   }
   my $fileprefix = shift || "phash";
   use File::Basename 'basename';
@@ -50,7 +50,7 @@ sub _save_c_header {
   #my @options = @_;
   my @H = @{$ph->[0]};
   my $FH;
-  open $FH, ">", $fileprefix.".h" or die "> $fileprefix.h @!";
+  open $FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
   print $FH "
 static inline unsigned $base\_lookup(const char* s);
 ";
@@ -66,7 +66,8 @@ Internal helper method for save_c
 
 sub _save_c_funcdecl {
   my ($ph, $fileprefix, $base) = @_;
-  open $FH, ">", $fileprefix.".c" or die "> $fileprefix.c @!";
+  my $FH;
+  open $FH, ">", $fileprefix.".c" or die "$fileprefix.c: @!";
   # non-binary only so far:
   print $FH "
 #include \"$base.h\"

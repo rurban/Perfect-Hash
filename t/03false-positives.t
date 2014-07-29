@@ -15,8 +15,8 @@ close $d;
 for my $m (map {"-$_"} @methods) {
   my $ph = new Perfect::Hash \@dict, $m, '-no-false-positives';
   unless ($ph) {
-    ok(1, "SKIP empty ph $m");
-    ok(1, "SKIP empty ph $m");
+    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty phash $m");
     next;
   }
   my $w = 'good';

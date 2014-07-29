@@ -193,6 +193,12 @@ you searched for a non-existing key.
 The default is 1, unless you created the hash with the
 option C<-no-false-positives>.
 
+=cut
+
+sub false_positives {
+  return !exists $_[0]->[3]->{'-no-false-positives'};
+}
+
 =item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.

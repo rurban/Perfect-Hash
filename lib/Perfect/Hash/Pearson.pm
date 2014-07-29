@@ -8,7 +8,7 @@ use integer;
 use bytes;
 
 use Exporter 'import';
-our @ISA = qw(Perfect::Hash Exporter);
+our @ISA = qw(Perfect::Hash Perfect::Hash::C Exporter);
 our @EXPORT = qw(hash shuffle cost collisions);
 
 =head1 DESCRIPTION
@@ -98,6 +98,10 @@ sub new {
   } else {
     return bless [$size, $H, $C, \%options], $class;
   }
+}
+
+sub option {
+  return $_[0]->[3]->{$_[1]};
 }
 
 sub shuffle {
@@ -214,6 +218,52 @@ sub false_positives {
 =item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
+
+=cut
+
+# for all 3 Pearson classes
+sub save_c {
+  my $ph = shift;
+  require Perfect::Hash::C;
+  Perfect::Hash::C->import();
+  my ($fileprefix, $base) = $ph->_save_c_header(@_);
+  my $H;
+  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
+  print $H "
+static unsigned char $base\[] = {
+";
+  _save_c_array(4, $H, $ph->[1]);
+  print $H "};\n";
+  # TODO: collision tree|trie
+  my @C = @{$ph->[1]};
+  print $H "/* TODO collision tree/trie */\n";
+  close $H;
+
+  my $FH = $ph->_save_c_funcdecl($fileprefix, $base);
+  # non-binary only so far:
+  if ($ph->option('-nul')) {
+    print $FH "
+    unsigned h = 0;
+    for (int i = 0; i < l; i++) {
+        h = $base\[h ^ s[i]];
+    }
+    return h;
+}
+";
+  } else {
+    print $FH "
+    unsigned h = 0;
+    for (int c = *s++; c; c = *s++) {
+        h = $base\[h ^ c];
+    }
+    return h;
+}
+";
+  }
+  close $FH;
+}
+
+sub save_xs { die "NYI" }
 
 =back
 

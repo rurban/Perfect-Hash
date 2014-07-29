@@ -5,7 +5,7 @@ use strict;
 use Perfect::Hash;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash);
+our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 our $VERSION = '0.01';
 
 =head1 DESCRIPTION
@@ -125,6 +125,10 @@ sub new {
   }
 }
 
+sub option {
+  return $_[0]->[2]->{$_[1]};
+}
+
 =head1 perfecthash $obj, $key
 
 Look up a $key in the minimal perfect hash table
@@ -190,18 +194,17 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 =cut
 
+# for HanovPP and Urban
 sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
-  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
+  Perfect::Hash::C->import();
+  my ($fileprefix, $base) = $ph->_save_c_header(@_);
   my $H;
   open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H "
-static inline unsigned $base\_hash (unsigned d, const char *s);
-";
+  print $H $ph->c_hash_decl($base);
   close $H;
-  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
-  # non-binary only so far
+  my $FH = $ph->_save_c_funcdecl($fileprefix, $base);
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
 
@@ -210,16 +213,23 @@ static inline unsigned $base\_hash (unsigned d, const char *s);
     unsigned long v;
     static signed int G[] = {
 ";
-  Perfect::Hash::C::_save_c_array(8, $FH, $G);
+  _save_c_array(8, $FH, $G);
   print $FH "    };";
   print $FH "
     static signed int V[] = {
 ";
-  Perfect::Hash::C::_save_c_array(8, $FH, $V);
-  print $FH "    };
+  _save_c_array(8, $FH, $V);
+  if ($ph->option('-nul')) {
+    print $FH "    };
+    g = G[$base\_hash_len(0, s, l) % $size];
+    v = g < 0 ? V[-(g-1)] : V[hash(g, s, l) % $size];
+";
+  } else {
+    print $FH "    };
     g = G[$base\_hash(0, s) % $size];
     v = g < 0 ? V[-(g-1)] : V[hash(g, s) % $size];
 ";
+  }
   if (!$ph->false_positives) { # save and check values
     ;
   }
@@ -227,7 +237,38 @@ static inline unsigned $base\_hash (unsigned d, const char *s);
     return v;
 }
 ";
-  print $FH "
+  print $FH $ph->c_hash_impl($base);
+  close $FH;
+}
+
+sub c_hash_decl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    "
+static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l);
+";
+  } else {
+    "
+static inline unsigned $base\_hash (unsigned d, const char *s);
+";
+  }
+}
+
+sub c_hash_impl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    return "
+/* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
+static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
+    if (!d) d = 0x01000193;
+    for (int i = 0; i < l; i++) {
+        d = ((d *  0x01000193) ^ s[i]) & 0xffffffff;
+    }
+    return d;
+}
+";
+  } else {
+    return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
 static inline unsigned $base\_hash (unsigned d, const char *s) {
     if (!d) d = 0x01000193;
@@ -237,7 +278,7 @@ static inline unsigned $base\_hash (unsigned d, const char *s) {
     return d;
 }
 ";
-  close $FH;
+  }
 }
 
 =back

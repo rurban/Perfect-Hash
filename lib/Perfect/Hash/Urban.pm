@@ -3,9 +3,10 @@ use coretypes;
 use strict;
 #use warnings;
 use Perfect::Hash;
+use Perfect::Hash::HanovPP;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash);
+our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash);
 our $VERSION = '0.01';
 
 use XSLoader;
@@ -140,7 +141,7 @@ the given dictionary. If not, a wrong index will be returned.
 
 =cut
 
-sub perfecthash {
+sub _not_perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
@@ -166,7 +167,7 @@ option C<-no-false-positives>.
 
 =cut
 
-sub false_positives {
+sub _not_false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
@@ -178,7 +179,46 @@ Because Compress::Raw::Zlib::crc32 doesn't use libz, it only uses the
 slow SW fallback version.  We really need a interface library to
 zlib. A good name might be Compress::Zlib, oh my.
 
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
 =cut
+
+sub c_hash_decl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    return "
+#include \"zlib.h\"
+static inline unsigned $base\_hash_len (unsigned d, const char *s, const int len);
+";
+  } else {
+    return "
+#include \"zlib.h\"
+static inline unsigned $base\_hash (unsigned d, const char *s);
+";
+  }
+}
+sub c_hash_impl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    return "
+/* libz crc32 */
+static inline unsigned $base\_hash_len (unsigned d, const char *s, const int len) {
+    return crc32(d, s, len);
+}
+"
+  } else {
+    return "
+/* libz crc32 */
+static inline unsigned $base\_hash (unsigned d, const char *s) {
+    return crc32(d, s, strlen(s));
+}
+";
+  }
+}
+
+sub save_xs { die "NYI" }
 
 # local testing: pb -d lib/Perfect/Hash/Urban.pm examples/words20 -debug
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-urban")'

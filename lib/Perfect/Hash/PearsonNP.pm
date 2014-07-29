@@ -142,40 +142,6 @@ sub false_positives {
   return !exists $_[0]->[3]->{'-no-false-positives'};
 }
 
-=item save_c fileprefix, options
-
-Generates a $fileprefix.c and $fileprefix.h file.
-
-=cut
-
-sub save_c {
-  my $ph = shift;
-  require Perfect::Hash::C;
-  my ($fileprefix, $base) = $ph->_save_c_header(@_);
-  my $H;
-  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H "
-static unsigned char $base\[] = {
-";
-  Perfect::Hash::C::_save_c_array(4, $H, $ph->[1]);
-  print $H "};\n";
-  # TODO: collision tree|trie
-  my @C = @{$ph->[1]};
-  close $H;
-
-  my $FH = $ph->_save_c_funcdecl($ph, $fileprefix, $base);
-  # non-binary only so far:
-  print $FH "
-    unsigned h = 0; 
-    for (int c = *s++; c; c = *s++) {
-        h = $base\[h ^ c];
-    }
-    return h;
-}
-";
-  close $FH;
-}
-
 =back
 
 =cut

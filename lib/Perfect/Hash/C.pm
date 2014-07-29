@@ -1,6 +1,9 @@
 package Perfect::Hash::C;
 our $VERSION = '0.01';
-our @ISA = qw(Perfect::Hash);
+our @ISA = qw(Perfect::Hash Exporter);
+
+use Exporter 'import';
+our @EXPORT = qw(_save_c_array);
 
 =head1 NAME
 
@@ -14,9 +17,8 @@ Perfect::Hash::C - generate C code for perfect hashes
     my $ph = new Perfect:Hash $hash, -for-c;
     $ph->save_c("ph"); # => ph.c, ph.h
 
-    my @dict = split/\n/,`cat /usr/share.dict/words`;
-    my $ph2 = Perfect::Hash->new(\@dict, -minimal, -for-c);
-    $ph2->save_c("ph2"); # => ph2.c, ph2.h
+    Perfect::Hash->new([split/\n/,`cat /usr/share/dict/words`])->save_c;
+    # => phash.c, phash.h
 
 =head1 DESCRIPTION
 

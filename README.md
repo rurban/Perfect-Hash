@@ -101,25 +101,32 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
     - \-pearson8
 
-        Strict variant of a 8-bit Pearson hash table.
-        Very fast lookup, but limited dictionaries with a 8-bit pearson table
-        for 5-255 keys.
-        Returns undef for invalid dictionaries.
-
-    - \-pearsonnp
-
-        "np" for non-perfect. Try to find a 8-bit sized pearson table for the
-        given dictionary. Keeps the best found hash table, with no guarantees
-        that it is a perfect hash table.  If not, collision resolution is done
-        via static binary trees.
+        Strict variant of a 8-bit (256 byte) Pearson hash table.  Generates
+        very fast lookup, but limited dictionaries with a 8-bit pearson table
+        for 5-255 keys.  Returns undef for invalid dictionaries.
 
     - \-pearson
 
-        With adjusted the pearson table size.
+        Non-perfect variant with adjusted pearson table size.
         Try to find a n-bit sized pearson table for the given
         dictionary. Keeps the best found hash table, with no guarantees that
         it is a perfect hash table.
         If not, collision resolution is done via static binary trees.
+
+        This version generates arbitrary sized pearson lookup tables and thus
+        should be able to find a perfect hash, but success is very
+        unlikely. The generated lookup might be however still faster than most
+        other hash tables for <100.000 keys.
+
+    - \-pearsonnp
+
+        "np" for non-perfect. Try to find a 8-bit (256 byte) sized pearson
+        table for the given dictionary. Keeps the best found hash table, with
+        no guarantees that it is a perfect hash table.  If not, collision
+        resolution is done via static binary trees.
+
+        This is also a very fast variant as the 256 byte table is guaranteed to
+        fit into every CPU cache.
 
     - \-bob
 

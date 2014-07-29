@@ -16,7 +16,8 @@ our @EXPORT = qw(hash shuffle cost collisions);
 A Pearson hash is generally not perfect, but generates one of the
 fastest lookups.  This version generates arbitrary sized pearson
 lookup tables and thus should be able to find a perfect hash, but
-success is not guaranteed.
+success is very unlikely. The generated lookup might be however still
+faster than most other hash tables for <100.000 keys.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -162,6 +163,8 @@ sub hash {
 Look up a $key in the pearson hash table
 and return the associated index into the initially 
 given $dict.
+
+Note that the hash is probably not perfect.
 
 With -no-false-positives it checks if the index is correct,
 otherwise it will return undef.

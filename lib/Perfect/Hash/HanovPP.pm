@@ -1,5 +1,4 @@
 package Perfect::Hash::HanovPP;
-our $VERSION = '0.01';
 use coretypes;
 use strict;
 #use warnings;
@@ -7,6 +6,7 @@ use Perfect::Hash;
 use integer;
 use bytes;
 our @ISA = qw(Perfect::Hash);
+our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
@@ -68,7 +68,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-#    print "len[$i]=",scalar(@bucket),"\n";
+    print "len[$i]=",scalar(@bucket),"\n" if $options{-debug};
     my int $d = 1;
     my int $item = 0;
     my %slots;
@@ -82,15 +82,15 @@ sub new {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-#       printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d;
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d if $options{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
     $G[hash(0, $bucket[0]) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-#    print "[".join(",",@V),"]\n";
-#    print "buckets[$i]:",scalar(@bucket)," d=$d\n";
+    print "[".join(",",@V),"]\n" if $options{-debug};
+    print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
   }
@@ -102,9 +102,9 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $V[$i];
   }
-  #print "len[freelist]=",scalar(@freelist),"\n";
+  print "len[freelist]=",scalar(@freelist),"\n"  if $options{-debug};
 
-  #print "xrange(",$last - $#sorted - 1,", $size)\n";
+  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
   while (@sorted) {
     $i = $sorted[0];
     my @bucket = @{$buckets->[$i]};
@@ -116,6 +116,8 @@ sub new {
     $G[hash(0, $bucket[0]) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
+  print "[".join(",",@G),"],\n[".join(",",@V),"]\n" if $options{-debug};
+
   if (exists $options{'-no-false-positives'}) {
     return bless [\@G, \@V, \%options, $keys], $class;
   } else {
@@ -244,7 +246,6 @@ static inline unsigned $base\_hash (unsigned d, const char *s) {
 
 # local testing: p -d -Ilib lib/Perfect/Hash/HanovPP.pm examples/words20
 unless (caller) {
-  require Perfect::Hash;
   &Perfect::Hash::_test(@ARGV)
 }
 

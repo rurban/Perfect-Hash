@@ -1,10 +1,12 @@
 package Perfect::Hash::Urban;
-our $VERSION = '0.01';
 use coretypes;
 use strict;
 #use warnings;
+use Perfect::Hash;
 use integer;
+use bytes;
 our @ISA = qw(Perfect::Hash);
+our $VERSION = '0.01';
 
 use XSLoader;
 XSLoader::load('Perfect::Hash');
@@ -16,9 +18,10 @@ Improved version HanovPP, using compressed temp. arrays.
 =head1 new $dict, options
 
 Computes a minimal perfect hash table using the given dictionary,
-given as hashref or arrayref.
+given as hashref, arrayref or filename.
 
 Honored options are: I<-no-false-positives>
+
 This version needs O(3n) space so far, but this is gotta get better soon.
 
 It returns an object with a compressed bitvector of @G containing the
@@ -29,44 +32,33 @@ in @V.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #hashref or arrayref
+  my $dict = shift; #hashref, arrayref or filename
   my %options = map {$_ => 1 } @_;
-  my int $size;
-  my $olddict;
-  if (ref $dict eq 'ARRAY') {
-    my $i = 0;
-    my %dict = map {$_ => $i++} @$dict;
-    $size = scalar @$dict;
-    $olddict = $dict;
-    $dict = \%dict;
-  } else {
-    die "new $class: wrong dict argument. arrayref or hashref expected"
-      if ref $dict ne 'HASH';
-    $size = scalar(keys %$dict) or
-      die "new $class: empty dict argument";
-    if (exists $options{'-no-false-positives'}) {
-      my @arr = ();
-      $#arr = $size;
-      for (sort keys %$dict) {
-        $arr[$_] = $dict->{$_};
-      }
-      $olddict = \@arr;
+  my ($keys, $values) = Perfect::Hash::_dict_init($dict);
+  my $size = scalar @$keys;
+  my $last = $size - 1;
+  if (ref $dict ne 'HASH') {
+    if (@$values) {
+      my %dict = map { $keys->[$_] => $values->[$_] } 0..$last;
+      $dict = \%dict;
+    } else {
+      my %dict = map { $keys->[$_] => $_ } 0..$last;
+      $dict = \%dict;
     }
   }
-  my $last = $size-1;
 
   # Step 1: Place all of the keys into buckets
   my @buckets; $#buckets = $last;
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
   # TODO: rather use a bitvector for G. And for '-no-false-positives' ditto:
-  # @values as compressed index into \@dict
+  # @V as compressed index into @keys
   my @G; $#G = $size; @G = map {0} (0..$last);
-  my @values; $#values = $last;
+  my @V; $#V = $last;
   hash(0); # initialize crc
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash($_) % $size ]}, $_ for sort keys %$dict;
+  push @{$buckets[ hash($_, 0) % $size ]}, $_ for @$keys;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
@@ -76,7 +68,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-#    print "len[$i]=",scalar(@bucket),"\n";
+    print "len[$i]=",scalar(@bucket),"\n" if $options{-debug};
     my int $d = 1;
     my int $item = 0;
     my %slots;
@@ -86,19 +78,19 @@ sub new {
     while ($item < scalar(@bucket)) {
       my $slot = hash( $bucket[$item], $d ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
-      if (defined $values[$slot] or exists $slots{$slot}) {
+      if (defined $V[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-#        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d;
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d if $options{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
     $G[hash($bucket[0], $d) % $size] = $d;
-    $values[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-#    print "[".join(",",@values),"]\n";
-#    print "buckets[$i]:",scalar(@bucket)," d=$d\n";
+    $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
+    print "[".join(",",@V),"]\n" if $options{-debug};
+    print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
   }
@@ -108,11 +100,11 @@ sub new {
   # this.
   my @freelist;
   for my $i (0..$last) {
-    push @freelist, $i unless defined $values[$i];
+    push @freelist, $i unless defined $V[$i];
   }
-  #print "len[freelist]=",scalar(@freelist),"\n";
+  print "len[freelist]=",scalar(@freelist),"\n" if $options{-debug};
 
-  #print "xrange(",$last - $#sorted - 1,", $size)\n";
+  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
   while (@sorted) {
     $i = $sorted[0];
     my @bucket = @{$buckets->[$i]};
@@ -121,16 +113,17 @@ sub new {
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.
-    $G[hash($bucket[0]) % $size] = - $slot-1;
-    $values[$slot] = $dict->{$bucket[0]};
+    $G[hash($bucket[0], 0) % $size] = - $slot-1;
+    $V[$slot] = $dict->{$bucket[0]};
   }
+  print "[".join(",",@G),"],\n[".join(",",@V),"]\n" if $options{-debug};
   # Last step: compress G and V into bitvectors with vect
   # ...
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [\@G, \@values, \%options, $olddict], $class;
+    return bless [\@G, \@V, \%options, $keys], $class;
   } else {
-    return bless [\@G, \@values, \%options], $class;
+    return bless [\@G, \@V, \%options], $class;
   }
 }
 
@@ -181,15 +174,15 @@ sub false_positives {
 
 Try to use a hw-assisted crc32 from libz (aka zlib).
 
-Actually Compress::Raw::Zlib::crc32 doesn't use libz, it only uses the slow SW version.
-We really need a interface library to zlib. A good name might be Compress::Zlib, oh my.
+Because Compress::Raw::Zlib::crc32 doesn't use libz, it only uses the
+slow SW fallback version.  We really need a interface library to
+zlib. A good name might be Compress::Zlib, oh my.
 
 =cut
 
 # local testing: pb -d lib/Perfect/Hash/Urban.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-urban")'
 unless (caller) {
-  require Perfect::Hash;
   &Perfect::Hash::_test(shift @ARGV, "-urban", @ARGV)
 }
 

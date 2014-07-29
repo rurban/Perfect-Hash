@@ -367,7 +367,7 @@ sub _test {
   close $d;
   print "Reading ",scalar @dict, " words from $dict\n";
   my $t0 = [gettimeofday];
-  my $ph = new __PACKAGE__, \@dict, $method;
+  my $ph = new __PACKAGE__, \@dict, $method, @_;
   return unless $ph;
   print "generated $method ph in ",tv_interval($t0),"s\n";
 

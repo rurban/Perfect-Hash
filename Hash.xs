@@ -20,8 +20,12 @@ hash(buf, seed=0)
   SV*   buf
   unsigned long seed;
 CODE:
-	if (items < 2)
-	  RETVAL = crc32(0, SvPOK(buf) ? SvPVX(buf) : NULL, SvPOK(buf) ? SvCUR(buf) : 0);
+    if (items < 2) {
+      if (SvPOK(buf))
+        RETVAL = crc32(0, SvPVX(buf), SvCUR(buf));
+      else
+        RETVAL = crc32(0, NULL, 0);
+    }
 	else
 	  RETVAL = crc32(seed, SvPVX(buf), SvCUR(buf));
 OUTPUT:

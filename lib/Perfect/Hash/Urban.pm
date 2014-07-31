@@ -142,6 +142,7 @@ the given dictionary. If not, a wrong index will be returned.
 
 =cut
 
+# use the new XS version now
 sub _not_perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
@@ -168,6 +169,7 @@ option C<-no-false-positives>.
 
 =cut
 
+# use the HanovPP version now
 sub _not_false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
@@ -176,9 +178,13 @@ sub _not_false_positives {
 
 Try to use a hw-assisted crc32 from libz (aka zlib).
 
-Because Compress::Raw::Zlib::crc32 doesn't use libz, it only uses the
+Because Compress::Raw::Zlib::crc32 doesn't use zlib, it only uses the
 slow SW fallback version.  We really need a interface library to
 zlib. A good name might be Compress::Zlib, oh my.
+
+=cut
+
+#see the XS implementation in Hash.xs
 
 =item save_c fileprefix, options
 

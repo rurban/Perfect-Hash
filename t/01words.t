@@ -2,7 +2,7 @@
 use Test::More;
 use Perfect::Hash;
 
-my @methods = keys %Perfect::Hash::algo_methods;
+my @methods = sort keys %Perfect::Hash::algo_methods;
 plan tests => 2*scalar(@methods);
 
 # test words20 as hashref and arrayref

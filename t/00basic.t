@@ -2,7 +2,7 @@
 use Test::More;
 use Perfect::Hash;
 
-my @methods = keys %Perfect::Hash::algo_methods;
+my @methods = sort keys %Perfect::Hash::algo_methods;
 plan tests => scalar(@methods) + 1;
 
 my %dict = map {chr $_ => $_-48} (49..125);

@@ -8,7 +8,7 @@ for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
 }
 plan skip_all => "no system dict found" unless -e $dict;
 
-my @methods = keys %Perfect::Hash::algo_methods;
+my @methods = sort keys %Perfect::Hash::algo_methods;
 plan tests => scalar(@methods);
 
 open my $d, $dict or die; {

@@ -192,33 +192,26 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 =cut
 
-sub c_hash_decl {
-  my ($ph, $base) = @_;
-  if ($ph->option('-nul')) {
-    return "
-#include \"zlib.h\"
-static inline unsigned $base\_hash_len (unsigned d, const char *s, const int len);
-";
-  } else {
-    return "
-#include \"zlib.h\"
-static inline unsigned $base\_hash (unsigned d, const char *s);
-";
-  }
-}
 sub c_hash_impl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     return "
+#include \"zlib.h\"
+
 /* libz crc32 */
-static inline unsigned $base\_hash_len (unsigned d, const char *s, const int len) {
+inline
+unsigned $base\_hash_len (unsigned d, const char *s, const int len) {
     return crc32(d, s, len);
 }
 "
   } else {
     return "
+#include <string.h>
+#include \"zlib.h\"
+
 /* libz crc32 */
-static inline unsigned $base\_hash (unsigned d, const char *s) {
+inline
+unsigned $base\_hash (unsigned d, const char *s) {
     return crc32(d, s, strlen(s));
 }
 ";

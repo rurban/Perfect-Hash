@@ -34,13 +34,15 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 
 =over
 
+=item _save_h_header fileprefix, options
 =item _save_c_header fileprefix, options
+=item _save_c_funcdecl ph, FH
 
-Internal helper method for save_c
+Internal helper methods for save_c
 
 =cut
 
-sub _save_c_header {
+sub _save_h_header {
   # refer to the class save_c method
   my $ph = shift;
   if (ref $ph eq __PACKAGE__ or ref $ph eq 'Perfect::Hash::C') {
@@ -53,29 +55,41 @@ sub _save_c_header {
   my @H = @{$ph->[0]};
   my $FH;
   open $FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
-  print $FH "
-static inline unsigned $base\_lookup(const char* s);
-";
+  if ($ph->option('-nul')) {
+    print $FH "
+inline
+unsigned $base\_lookup(const char* s, int l);\n";
+  } else {
+    print $FH "
+inline
+unsigned $base\_lookup(const char* s);\n";
+  }
   close $FH;
   return ($fileprefix, $base);
 }
 
-=item _save_c_funcdecl ph, fileprefix, base
-
-Internal helper method for save_c
-
-=cut
-
-sub _save_c_funcdecl {
+sub _save_c_header {
   my ($ph, $fileprefix, $base) = @_;
   my $FH;
   open $FH, ">", $fileprefix.".c" or die "$fileprefix.c: @!";
   # non-binary only so far:
   print $FH "
 #include \"$base.h\"
-
-static inline unsigned $base\_lookup(const char* s) {";
+";
   return $FH;
+}
+
+sub _save_c_funcdecl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    "
+inline
+unsigned $base\_lookup(const char* s, int l) {";
+  } else {
+    "
+inline
+unsigned $base\_lookup(const char* s) {";
+  }
 }
 
 =item _save_c_array FH, array

@@ -199,15 +199,13 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
-  my ($fileprefix, $base) = $ph->_save_c_header(@_);
-  my $H;
-  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H $ph->c_hash_decl($base);
-  close $H;
-  my $FH = $ph->_save_c_funcdecl($fileprefix, $base);
+  my ($fileprefix, $base) = $ph->_save_h_header(@_);
+  my $FH = $ph->_save_c_header($fileprefix, $base);
+  print $FH $ph->c_hash_impl($base);
+  print $FH $ph->_save_c_funcdecl($base);
+
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
-
   print $FH "
     int g;
     unsigned long v;
@@ -222,12 +220,12 @@ sub save_c {
   if ($ph->option('-nul')) {
     print $FH "    };
     g = G[$base\_hash_len(0, s, l) % $size];
-    v = g < 0 ? V[-(g-1)] : V[hash(g, s, l) % $size];
+    v = g < 0 ? V[-(g-1)] : V[$base\_hash(g, s, l) % $size];
 ";
   } else {
     print $FH "    };
     g = G[$base\_hash(0, s) % $size];
-    v = g < 0 ? V[-(g-1)] : V[hash(g, s) % $size];
+    v = g < 0 ? V[-(g-1)] : V[$base\_hash(g, s) % $size];
 ";
   }
   if (!$ph->false_positives) { # save and check values
@@ -237,21 +235,7 @@ sub save_c {
     return v;
 }
 ";
-  print $FH $ph->c_hash_impl($base);
   close $FH;
-}
-
-sub c_hash_decl {
-  my ($ph, $base) = @_;
-  if ($ph->option('-nul')) {
-    "
-static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l);
-";
-  } else {
-    "
-static inline unsigned $base\_hash (unsigned d, const char *s);
-";
-  }
 }
 
 sub c_hash_impl {
@@ -259,8 +243,9 @@ sub c_hash_impl {
   if ($ph->option('-nul')) {
     return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
-    int c = *s++;
+inline
+unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
+    unsigned char c = *s;
     int i = 0;
     if (!d) d = 0x01000193;
     for (; i < l; i++) {
@@ -272,9 +257,11 @@ static inline unsigned $base\_hash_len (unsigned d, const char *s, const int l) 
   } else {
     return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-static inline unsigned $base\_hash (unsigned d, const char *s) {
+inline
+unsigned $base\_hash (unsigned d, const char *s) {
+    unsigned char c;
     if (!d) d = 0x01000193;
-    for (int c = *s++; c; c = *s++) {
+    for (c = *s++; c; c = *s++) {
         d = ((d *  0x01000193) ^ c) & 0xffffffff;
     }
     return d;

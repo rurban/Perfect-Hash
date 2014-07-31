@@ -226,7 +226,7 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
-  my ($fileprefix, $base) = $ph->_save_c_header(@_);
+  my ($fileprefix, $base) = $ph->_save_h_header(@_);
   my $H;
   open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
   print $H "
@@ -239,12 +239,15 @@ static unsigned char $base\[] = {
   print $H "/* TODO collision tree/trie */\n";
   close $H;
 
-  my $FH = $ph->_save_c_funcdecl($fileprefix, $base);
+  my $FH = $ph->_save_c_header($fileprefix, $base);
+  print $FH $ph->c_hash_impl($base);
+  print $FH $ph->_save_c_funcdecl($base);
   # non-binary only so far:
   if ($ph->option('-nul')) {
     print $FH "
     unsigned h = 0;
-    for (int i = 0; i < l; i++) {
+    int i;
+    for (i=0; i<l; i++) {
         h = $base\[h ^ s[i]];
     }
     return h;
@@ -253,7 +256,8 @@ static unsigned char $base\[] = {
   } else {
     print $FH "
     unsigned h = 0;
-    for (int c = *s++; c; c = *s++) {
+    unsigned char c;
+    for (c=*s++; c; c=*s++) {
         h = $base\[h ^ c];
     }
     return h;
@@ -262,6 +266,8 @@ static unsigned char $base\[] = {
   }
   close $FH;
 }
+
+sub c_hash_impl {""}
 
 sub save_xs { die "NYI" }
 

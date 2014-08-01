@@ -17,15 +17,20 @@ open my $d, $dict or die; {
 }
 close $d;
 
-my $cmd = $Config{cc}." -I. ".ccflags." -ophash main.c phash.c ".ldopts;
-chomp $cmd;
-$cmd .= " -lz";
+sub cmd {
+  my $m = shift;
+  # TODO: Win32 /Of
+  my $cmd = $Config{cc}." -I. ".ccflags." -ophash main.c phash.c ".ldopts;
+  chomp $cmd; # oh yes! ldopts contains an ending \n
+  $cmd .= " -lz" if $m eq '-urban';
+  return $cmd;
+}
 
 sub wmain {
   my ($i, $aol) = @_;
   $aol = 0 unless $aol;
   my $i1 = $i +1;
-  # and the we need a main also
+  # and then we need a main also
   open my $FH, ">", "main.c";
   print $FH '
 #include <stdio.h>
@@ -62,9 +67,10 @@ for my $m (map {"-$_"} @methods) {
   $i++;
   $ph->save_c("phash");
   ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
+  my $cmd = cmd($m);
   diag($cmd);
   my $retval = system($cmd);
-  if (ok(!($retval>>8), "could compile")) {
+  if (ok(!($retval>>8), "could compile $m")) {
     $retval = system("./phash");
     #lock $tb->{Curr_Test};
     $tb->{Curr_Test}++;
@@ -72,6 +78,6 @@ for my $m (map {"-$_"} @methods) {
   } else {
     ok(1) for 0..1;
   }
-  ok(!($retval>>8), "could run");
+  ok(!($retval>>8), "could run $m");
   unlink("phash","phash.c","phash.h","main.c");
 }

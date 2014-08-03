@@ -1,11 +1,12 @@
 package Perfect::Hash::Urban;
-use coretypes;
+#use coretypes;
 use strict;
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::HanovPP;
 use integer;
 use bytes;
+use Config;
 our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash);
 our $VERSION = '0.01';
 
@@ -53,9 +54,8 @@ sub new {
   my @buckets; $#buckets = $last;
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
-  # TODO: rather use a bitvector for G. And for '-no-false-positives' ditto:
-  # @V as compressed index into @keys
   my @G; $#G = $size; @G = map {0} (0..$last);
+  # And for '-no-false-positives' ditto: @V as compressed index into @keys
   my @V; $#V = $last;
   hash(0); # initialize crc
 
@@ -71,8 +71,8 @@ sub new {
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
     print "len[$i]=",scalar(@bucket),"\n" if $options{-debug};
-    my int $d = 1;
-    my int $item = 0;
+    my $d = 1;
+    my $item = 0;
     my %slots;
 
     # Repeatedly try different values of $d (the seed) until we find a hash function
@@ -118,14 +118,37 @@ sub new {
     $G[hash($bucket[0], 0) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
-  print "[".join(",",@G),"],\n[".join(",",@V),"]\n" if $options{-debug};
-  # Last step: compress G and V into bitvectors with vect
-  # ...
+
+  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
+  # Last step: compress G and V into bitvectors accessed via vec().
+  # Needed bits per index: length sprintf "%b",$size
+  # Since perl cannot access multi-byte bits via vec, it needs to be a power
+  # of two from 1 to 32, with a portable warning for 64.
+  # Devel::Size, with n=20: 88 vs 1664+1656 byte
+  # We should rather roll our own vec function or switch to Bit::BitVector
+  my $bits = 1+length(sprintf "%b",$size); # +1 for negative values
+  for (2,4,8,16,32,($Config{ptrsize}==8?(64):())) {
+    next if $bits > $_;
+    $bits = $_; last;
+  }
+  my $G = "\0" x int($bits * $size / 4);
+  for my $i (0..$#G) {
+    vec($G, $i, $bits) = $G[$i] if $G[$i];
+  }
+  for my $i (0..$#V) {
+    vec($G, $i+$size, $bits) = $V[$i] if $V[$i];
+  }
+  printf("\$G\[$bits]=\"%s\":%d\n", unpack("h*", $G), length($G))
+    if $options{-debug};
 
   if (exists $options{'-no-false-positives'}) {
-    return bless [\@G, \@V, \%options, $keys], $class;
+    if (exists $options{'-debug'}) {
+      return bless [$G, $bits, \%options, $keys, \@G, \@V], $class;
+    } else {
+      return bless [$G, $bits, \%options, $keys], $class;
+    }
   } else {
-    return bless [\@G, \@V, \%options], $class;
+    return bless [$G, $bits, \%options], $class;
   }
 }
 
@@ -143,12 +166,22 @@ the given dictionary. If not, a wrong index will be returned.
 =cut
 
 # use the new XS version now
-sub _not_perfecthash {
+sub pp_perfecthash {
   my ($ph, $key ) = @_;
-  my ($G, $V) = ($ph->[0], $ph->[1]);
-  my $size = scalar(@$G);
-  my $d = $G->[hash($key) % $size];
-  my $v = $d < 0 ? $V->[- $d-1] : $V->[hash($key, $d) % $size];
+  my ($G, $bits) = ($ph->[0], $ph->[1]);
+  my $size = 4 * length($G) / $bits;
+  my $voff = $size;
+  my $h = hash($key) % $size;
+  my $d = vec($G, $h, $bits);
+  # fix negative sign of d
+  $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
+  my $v = $d < 0
+    ? vec($G, $voff + (- $d-1), $bits)
+    : $d == 0 ? vec($G, $voff + $h, $bits)
+              : vec($G, $voff + hash($key, $d) % $size, $bits);
+  if ($ph->[2]->{'-debug'}) {
+    printf("ph: h=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
+  }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[3]) {
@@ -170,7 +203,7 @@ option C<-no-false-positives>.
 =cut
 
 # use the HanovPP version now
-sub _not_false_positives {
+sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
@@ -219,6 +252,20 @@ unsigned $base\_hash (unsigned d, const char *s) {
 }
 
 sub save_xs { die "NYI" }
+
+sub _test_tables {
+  my $ph = Perfect::Hash::Urban->new("examples/words20",qw(-debug -no-false-positives));
+  my $keys = $ph->[3];
+  my $G = $ph->[4];
+  my $V = $ph->[5];
+  for (0..19) {
+    my $k = $keys->[$_];
+    printf "%2d ph=%2d pph=%2s G=%3d V=%3d h(0)=%2d %s\n",
+      $_,$ph->perfecthash($k),$ph->pp_perfecthash($k),
+      $G->[$_],$V->[$_],
+      hash($k)%20,$k;
+  }
+}
 
 # local testing: pb -d lib/Perfect/Hash/Urban.pm examples/words20 -debug
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-urban")'

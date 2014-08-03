@@ -6,7 +6,7 @@ use Perfect::Hash;
 use Perfect::Hash::Pearson;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash::Pearson);
+our @ISA = qw(Perfect::Hash::Pearson Perfect::Hash Perfect::Hash::C);
 our $VERSION = '0.01';
 
 =head1 DESCRIPTION

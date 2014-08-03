@@ -34,15 +34,15 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 
 =over
 
-=item _save_h_header fileprefix, options
-=item _save_c_header fileprefix, options
-=item _save_c_funcdecl ph, FH
+=item save_h_header fileprefix, options
+=item save_c_header fileprefix, options
+=item c_funcdecl ph, FH
 
-Internal helper methods for save_c
+Helper methods for save_c
 
 =cut
 
-sub _save_h_header {
+sub save_h_header {
   # refer to the class save_c method
   my $ph = shift;
   if (ref $ph eq __PACKAGE__ or ref $ph eq 'Perfect::Hash::C') {
@@ -55,20 +55,12 @@ sub _save_h_header {
   my @H = @{$ph->[0]};
   my $FH;
   open $FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
-  if ($ph->option('-nul')) {
-    print $FH "
-inline
-unsigned $base\_lookup(const char* s, int l);\n";
-  } else {
-    print $FH "
-inline
-unsigned $base\_lookup(const char* s);\n";
-  }
+  print $FH c_funcdecl($ph, $base).";\n";
   close $FH;
   return ($fileprefix, $base);
 }
 
-sub _save_c_header {
+sub save_c_header {
   my ($ph, $fileprefix, $base) = @_;
   my $FH;
   open $FH, ">", $fileprefix.".c" or die "$fileprefix.c: @!";
@@ -79,16 +71,16 @@ sub _save_c_header {
   return $FH;
 }
 
-sub _save_c_funcdecl {
+sub c_funcdecl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     "
 inline
-unsigned $base\_lookup(const char* s, int l) {";
+long $base\_lookup(const char* s, int l)";
   } else {
     "
 inline
-unsigned $base\_lookup(const char* s) {";
+long $base\_lookup(const char* s)";
   }
 }
 
@@ -99,15 +91,17 @@ Internal helper method for save_c
 =cut
 
 sub _save_c_array {
-  my ($ident, $FH, $G) = @_;
+  my ($ident, $FH, $G, $fmt) = @_;
+  $fmt = "%3d" unless $fmt;
   my $size = scalar @$G;
-  for (0 .. int($size / 16)) {
+  my $last = $size - 1;
+  for (0 .. int($size / 16) + 1) {
     my $from = $_ * 16;
     my $to = $from + 15;
+    $to = $last if $to > $last;
     print $FH " " x $ident;
     for ($from .. $to) {
-      printf $FH "%3d,",$G->[$_];
-      last if $to >= $size;
+      printf $FH $fmt.",", $G->[$_];
     }
     print $FH "\n";
   }

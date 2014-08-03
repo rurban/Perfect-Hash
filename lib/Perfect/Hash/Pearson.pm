@@ -226,44 +226,54 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
-  my ($fileprefix, $base) = $ph->_save_h_header(@_);
-  my $H;
-  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H "
-static unsigned char $base\[] = {
-";
-  _save_c_array(4, $H, $ph->[1]);
-  print $H "};\n";
-  # TODO: collision tree|trie
-  my @C = @{$ph->[1]};
-  print $H "/* TODO collision tree/trie */\n";
-  close $H;
-
-  my $FH = $ph->_save_c_header($fileprefix, $base);
+  my ($fileprefix, $base) = $ph->save_h_header(@_);
+  my $FH = $ph->save_c_header($fileprefix, $base);
   print $FH $ph->c_hash_impl($base);
-  print $FH $ph->_save_c_funcdecl($base);
-  # non-binary only so far:
+  print $FH $ph->c_funcdecl($base)." {";
+  print $FH "
+    unsigned h = 0;
+    static unsigned char $base\[] = {
+";
+  my $H = $ph->[1];
+  my $C = $ph->[2];
+  _save_c_array(4, $FH, $H, "%3d");
+  print $FH "    };\n";
+  print $FH "    /* TODO collision tree/trie */\n";
+  if (!$ph->false_positives) { # store keys
+    my $keys = $ph->[4];
+    print $FH "
+    /* keys */
+    static const char* K[] = {
+";
+    _save_c_array(8, $FH, $keys, "\"%s\"");
+    print $FH "    };";
+  }
   if ($ph->option('-nul')) {
     print $FH "
-    unsigned h = 0;
     int i;
     for (i=0; i<l; i++) {
         h = $base\[h ^ s[i]];
-    }
-    return h;
-}
-";
+    }";
   } else {
     print $FH "
-    unsigned h = 0;
     unsigned char c;
     for (c=*s++; c; c=*s++) {
         h = $base\[h ^ c];
+    }";
+  }
+  if (!$ph->false_positives) { # check keys
+    if ($ph->option('-nul')) {
+      print $FH "
+    if (strncmp(K[h],s,l)) h = -1;";
+    } else {
+      print $FH "
+    if (strcmp(K[h],s)) h = -1;";
     }
+  }
+  print $FH "
     return h;
 }
 ";
-  }
   close $FH;
 }
 

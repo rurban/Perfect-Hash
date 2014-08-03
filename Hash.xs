@@ -54,25 +54,34 @@ OUTPUT:
 
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
 
-SV*
+#define VEC(G, index, bits) (*(IV*)((G + (index * bits/8))) & (1<<bits)-1)
+
+# TODO: return SV* and store SV's in values, not just indices.
+# use AV * V, not the 2nd half of SvPVX(G).
+
+IV
 perfecthash(ph, key)
   SV* ph
   SV* key;
 CODE:
     AV *ref = (AV*)SvRV(ph);
-    AV *g = (AV*)SvRV(AvARRAY(ref)[0]);
-    SV **ga = AvARRAY(g);
-    UV size = AvFILL(g);
-    SV **va = AvARRAY((AV*)SvRV(AvARRAY(ref)[1]));
-    IV d = SvIVX(ga[ crc32(0, SvPVX(key), SvCUR(key)) % size]);
-    SV *v = d < 0 ? va[-d-1] : va[ crc32(d, SvPVX(key), SvCUR(key)) % size];
+    SV *g = AvARRAY(ref)[0];
+    char *G = SvPVX(g);
+    IV bits = SvIVX(AvARRAY(ref)[1]);
+    UV size = 4 * SvCUR(g) / bits; /* 40 = (20 * BITS / 4); 20 = 40 * 4 / BITS */
+    char *V = SvPVX(g)+size;
+    UV h = crc32(0, SvPVX(key), SvCUR(key)) % size;
+    IV d = VEC(G, bits, h);
+    IV v = d < 0
+      ? VEC(V, -d-1, bits)
+      : d == 0 ? VEC(V, h, bits)
+               : VEC(V, crc32(d, SvPVX(key), SvCUR(key)) % size, bits);
     if (AvFILL(ref) > 2) {
       SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
-      IV iv = SvIVX(v);
-      RETVAL = (SvCUR(key) == SvCUR(keys[iv]) && memEQ(SvPVX(keys[iv]), SvPVX(key), SvCUR(key)))
-        ? SvREFCNT_inc_NN(v) : &PL_sv_undef;
+      RETVAL = (SvCUR(key) == SvCUR(keys[v]) && memEQ(SvPVX(keys[v]), SvPVX(key), SvCUR(key)))
+        ? v : -1;
     } else {
-      RETVAL = SvREFCNT_inc_NN(v);
+      RETVAL = v;
     }
 OUTPUT:
     RETVAL

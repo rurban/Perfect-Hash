@@ -146,8 +146,13 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
-  my $d = $G->[hash(0, $key) % $size];
-  my $v = $d < 0 ? $V->[- $d-1] : $V->[hash($d, $key) % $size];
+  my $h = hash(0, $key) % $size;
+  my $d = $G->[$h];
+  my $v = $d < 0
+        ? $V->[- $d-1]
+        : $d == 0
+          ? $V->[$h]
+          : $V->[hash($d, $key) % $size];
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[3]) {
@@ -163,9 +168,9 @@ Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>, which increases the required
-space from 2n to B<4n> (a perl hash holds the keys and the values).
+The default is 1, unless you created the hash with the option
+C<-no-false-positives>, which increases the required space from
+2n to B<3n>.
 
 =cut
 
@@ -182,7 +187,7 @@ pure-perl FNV-1 hash function as in http://isthe.com/chongo/tech/comp/fnv/
 sub hash {
   my int $d = shift || 0x01000193;
   my str $str = shift;
-  for my $c (split//,$str) {
+  for my $c (split//, $str) {
     $d = ( ($d * 0x01000193) ^ ord($c) ) & 0xffffffff;
   }
   return $d
@@ -199,37 +204,87 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
-  my ($fileprefix, $base) = $ph->_save_h_header(@_);
-  my $FH = $ph->_save_c_header($fileprefix, $base);
+  my ($fileprefix, $base) = $ph->save_h_header(@_);
+  my $FH = $ph->save_c_header($fileprefix, $base);
   print $FH $ph->c_hash_impl($base);
-  print $FH $ph->_save_c_funcdecl($base);
+  print $FH $ph->c_funcdecl($base)." {";
 
   my ($G, $V) = ($ph->[0], $ph->[1]);
-  my $size = scalar(@$G);
+  my $size;
+  if (ref $ph eq 'Perfect::Hash::Urban') {
+    my (@V, @G);
+    my $bits = $ph->[1];
+    $size = 4 * length($G) / $bits;
+    my $voff = $size;
+    for my $i (0..$size-1) {
+      my $d = vec($G, $i, $bits);
+      $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
+      $G[$i] = $d;
+    }
+    # TODO: if @V contains only int indices
+    for my $i (0..$size-1) {
+      $V[$i] = vec($G, $i+$size, $bits);
+    }
+    $G = \@G;
+    $V = \@V;
+  } else {
+    $size = scalar(@$G);
+  }
   print $FH "
-    int g;
+    int d;
+    unsigned h;
     unsigned long v;
-    static signed int G[] = {
+    /* hash indices, direct < 0, indirect > 0 */
+    static const signed int G[] = {
 ";
-  _save_c_array(8, $FH, $G);
+  _save_c_array(8, $FH, $G, "%3d");
   print $FH "    };";
   print $FH "
-    static signed int V[] = {
+    /* values */
+    static const signed long V[] = {
 ";
-  _save_c_array(8, $FH, $V);
+  _save_c_array(8, $FH, $V, "%3d");
+  print $FH "    };";
+  if (!$ph->false_positives) { # store keys
+    my $keys = $ph->[3];
+    print $FH "
+    /* keys */
+    static const char* K[] = {
+";
+    _save_c_array(8, $FH, $keys, "\"%s\"");
+    print $FH "    };";
+  }
   if ($ph->option('-nul')) {
-    print $FH "    };
-    g = G[$base\_hash_len(0, s, l) % $size];
-    v = g < 0 ? V[-(g-1)] : V[$base\_hash(g, s, l) % $size];
+    print $FH "
+    h = $base\_hash_len(0, s, l) % $size;
+    d = G[h];
+    v = d < 0
+        ? V[-d-1]
+        : g == 0
+          ? V[h]
+          : V[$base\_hash_len(d, s, l) % $size];
 ";
   } else {
-    print $FH "    };
-    g = G[$base\_hash(0, s) % $size];
-    v = g < 0 ? V[-(g-1)] : V[$base\_hash(g, s) % $size];
+    print $FH "
+    h = $base\_hash(0, s) % $size;
+    d = G[h];
+    v = d < 0
+        ? V[-d-1]
+        : d == 0
+          ? V[h]
+          : V[$base\_hash(d, s) % $size];
 ";
   }
-  if (!$ph->false_positives) { # save and check values
-    ;
+  if (!$ph->false_positives) { # check keys
+    if ($ph->option('-nul')) {
+      print $FH "
+    if (strncmp(K[v],s,l)) v = -1;
+";
+    } else {
+      print $FH "
+    if (strcmp(K[v],s)) v = -1;
+";
+    }
   }
   print $FH "
     return v;
@@ -243,7 +298,7 @@ sub c_hash_impl {
   if ($ph->option('-nul')) {
     return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-inline
+static inline
 unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
     unsigned char c = *s;
     int i = 0;
@@ -257,7 +312,7 @@ unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
   } else {
     return "
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-inline
+static inline
 unsigned $base\_hash (unsigned d, const char *s) {
     unsigned char c;
     if (!d) d = 0x01000193;

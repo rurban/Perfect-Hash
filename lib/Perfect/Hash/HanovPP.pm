@@ -341,7 +341,7 @@ sub _test_tables {
   for (0..19) {
     my $k = $keys->[$_];
     my $d = $G->[$_] < 0 ? 0 : $G->[$_];
-    printf "%2d ph=%2d   G[%2d]=%3d V[%2d]=%3d   h(%2d,%d)=%2d %s\n",
+    printf "%2d: ph=%2d   G[%2d]=%3d  V[%2d]=%3d   h(%2d,%d)=%2d %s\n",
       $_,$ph->perfecthash($k),
       $_,$G->[$_],$_,$V->[$_],
       $_,$d,hash($k,$d)%20,

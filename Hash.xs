@@ -78,7 +78,7 @@ CODE:
       ? VEC(V, -d-1, bits)
       : d == 0 ? VEC(V, h, bits)
                : VEC(V, crc32(d, SvPVX(key), SvCUR(key)) % size, bits);
-#ifdef DEBUGGING
+#ifdef DEBUGGING_PHASH
     if (hv_exists((HV*)SvRV(AvARRAY(ref)[2]), "-debug", 6)) {
       printf("\nxs: h0=%2d d=%3d v=%2d\t",h, d>0 ? crc32(d,SvPVX(key),SvCUR(key))%size : d, v);
     }

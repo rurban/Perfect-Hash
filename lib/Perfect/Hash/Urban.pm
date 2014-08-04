@@ -84,15 +84,15 @@ sub new {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d if $options{-debug};
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
-    $G[hash($bucket[0], $d) % $size] = $d;
+    $G[hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
     print "V=[".join(",",@V),"]\n" if $options{-debug};
-    print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
+    print "buckets[$i]:",scalar(@bucket)," d=$d @bucket\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
   }
@@ -261,7 +261,7 @@ sub _test_tables {
   for (0..19) {
     my $k = $keys->[$_];
     my $d = $G->[$_] < 0 ? 0 : $G->[$_];
-    printf "%2d ph=%2d pph=%2s  G[%2d]=%3d V[%2d]=%3d  h(%2d,%d)=%2d %s\n",
+    printf "%2d: ph=%2d pph=%2s  G[%2d]=%3d  V[%2d]=%3d  h(%2d,%d)=%2d %s\n",
       $_,$ph->perfecthash($k),$ph->pp_perfecthash($k),
       $_,$G->[$_],$_,$V->[$_],
       $_,$d,hash($k,$d)%20,

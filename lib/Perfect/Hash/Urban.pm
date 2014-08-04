@@ -254,17 +254,18 @@ unsigned $base\_hash (unsigned d, const char *s) {
 sub save_xs { die "NYI" }
 
 sub _test_tables {
-  my $ph = Perfect::Hash::Urban->new("examples/words20",qw(-debug -no-false-positives));
+  my $ph = Perfect::Hash::Urban->new("examples/words1000",qw(-debug -no-false-positives));
   my $keys = $ph->[3];
+  my $size = scalar @$keys;
   my $G = $ph->[4];
   my $V = $ph->[5];
-  for (0..19) {
+  for (0..$size-1) {
     my $k = $keys->[$_];
     my $d = $G->[$_] < 0 ? 0 : $G->[$_];
     printf "%2d: ph=%2d pph=%2s  G[%2d]=%3d  V[%2d]=%3d  h(%2d,%d)=%2d %s\n",
       $_,$ph->perfecthash($k),$ph->pp_perfecthash($k),
       $_,$G->[$_],$_,$V->[$_],
-      $_,$d,hash($k,$d)%20,
+      $_,$d,hash($k,$d)%$size,
       $k;
   }
 }

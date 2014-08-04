@@ -5,7 +5,8 @@ use Perfect::Hash;
 my @methods = sort keys %Perfect::Hash::algo_methods;
 plan tests => scalar(@methods) + 1;
 
-my %dict = map {chr $_ => $_-48} (49..125);
+my %dict = map {chr $_ => $_-48} (48..125);
+delete $dict{'\\'};
 for my $m ("", map {"-$_"} @methods) {
   my $ph = new Perfect::Hash \%dict, $m;
   unless ($ph) {
@@ -15,12 +16,12 @@ for my $m ("", map {"-$_"} @methods) {
  TODO: {
    local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
-   for my $c (49..125) {
-     my $w = chr $c;
+   for my $w (sort keys %dict) {
+     my $o = ord $w;
      my $v = $ph->perfecthash($w);
-     $ok = 0 if $v != $c-48;
+     $ok = 0 if $v != $o - 48;
      unless ($ok) {
-       is($v, $c-48, "method '$m' for '$w' => $v");
+       is($v, $o - 48, "method '$m' for '$w' => $v");
        last;
      }
    }

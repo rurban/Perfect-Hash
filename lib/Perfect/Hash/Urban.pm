@@ -70,7 +70,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-    print "len[$i]=",scalar(@bucket),"\n" if $options{-debug};
+    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options{-debug};
     my $d = 1;
     my $item = 0;
     my %slots;
@@ -91,7 +91,7 @@ sub new {
     }
     $G[hash($bucket[0], $d) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "[".join(",",@V),"]\n" if $options{-debug};
+    print "V=[".join(",",@V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
@@ -104,7 +104,7 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $V[$i];
   }
-  print "len[freelist]=",scalar(@freelist),"\n" if $options{-debug};
+  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options{-debug};
 
   print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
   while (@sorted) {
@@ -171,7 +171,7 @@ sub pp_perfecthash {
   my ($G, $bits) = ($ph->[0], $ph->[1]);
   my $size = 4 * length($G) / $bits;
   my $voff = $size;
-  my $h = hash($key) % $size;
+  my $h = hash($key, 0) % $size;
   my $d = vec($G, $h, $bits);
   # fix negative sign of d
   $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
@@ -180,7 +180,7 @@ sub pp_perfecthash {
     : $d == 0 ? vec($G, $voff + $h, $bits)
               : vec($G, $voff + hash($key, $d) % $size, $bits);
   if ($ph->[2]->{'-debug'}) {
-    printf("ph: h=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
+    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
   }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
@@ -211,7 +211,7 @@ sub false_positives {
 
 Try to use a hw-assisted crc32 from libz (aka zlib).
 
-Because Compress::Raw::Zlib::crc32 doesn't use zlib, it only uses the
+Because Compress::Raw::Zlib::crc32 does not use zlib, it only uses the
 slow SW fallback version.  We really need a interface library to
 zlib. A good name might be Compress::Zlib, oh my.
 
@@ -260,10 +260,12 @@ sub _test_tables {
   my $V = $ph->[5];
   for (0..19) {
     my $k = $keys->[$_];
-    printf "%2d ph=%2d pph=%2s G=%3d V=%3d h(0)=%2d %s\n",
+    my $d = $G->[$_] < 0 ? 0 : $G->[$_];
+    printf "%2d ph=%2d pph=%2s  G[%2d]=%3d V[%2d]=%3d  h(%2d,%d)=%2d %s\n",
       $_,$ph->perfecthash($k),$ph->pp_perfecthash($k),
-      $G->[$_],$V->[$_],
-      hash($k)%20,$k;
+      $_,$G->[$_],$_,$V->[$_],
+      $_,$d,hash($k,$d)%20,
+      $k;
   }
 }
 

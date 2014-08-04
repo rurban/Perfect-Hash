@@ -58,7 +58,7 @@ sub new {
   my @V; $#V = $last;
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash(0, $_) % $size ]}, $_ for @$keys;
+  push @{$buckets[ hash($_, 0) % $size ]}, $_ for @$keys;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
@@ -68,7 +68,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-    print "len[$i]=",scalar(@bucket),"\n" if $options{-debug};
+    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options{-debug};
     my int $d = 1;
     my int $item = 0;
     my %slots;
@@ -76,20 +76,20 @@ sub new {
     # Repeatedly try different values of $d (the seed) until we find a hash function
     # that places all items in the bucket into free slots.
     while ($item < scalar(@bucket)) {
-      my $slot = hash( $d, $bucket[$item] ) % $size;
+      my $slot = hash($bucket[$item], $d) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-        printf "slots[$slot]=$item, d=0x%x, $bucket[$item] from @bucket\n", $d if $options{-debug};
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
-    $G[hash(0, $bucket[0]) % $size] = $d;
+    $G[hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "[".join(",",@V),"]\n" if $options{-debug};
+    print "V=[".join(",",@V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
@@ -102,7 +102,7 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $V[$i];
   }
-  print "len[freelist]=",scalar(@freelist),"\n"  if $options{-debug};
+  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options{-debug};
 
   print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
   while (@sorted) {
@@ -113,10 +113,10 @@ sub new {
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.
-    $G[hash(0, $bucket[0]) % $size] = - $slot-1;
+    $G[hash($bucket[0], 0) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
-  print "[".join(",",@G),"],\n[".join(",",@V),"]\n" if $options{-debug};
+  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
 
   if (exists $options{'-no-false-positives'}) {
     return bless [\@G, \@V, \%options, $keys], $class;
@@ -146,13 +146,16 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
-  my $h = hash(0, $key) % $size;
+  my $h = hash($key, 0) % $size;
   my $d = $G->[$h];
   my $v = $d < 0
         ? $V->[- $d-1]
         : $d == 0
           ? $V->[$h]
-          : $V->[hash($d, $key) % $size];
+          : $V->[hash($key, $d) % $size];
+  if ($ph->[2]->{'-debug'}) {
+    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
+  }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
   if ($ph->[3]) {
@@ -178,15 +181,15 @@ sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
-=head1 hash salt, string
+=head1 hash string, [seed]
 
 pure-perl FNV-1 hash function as in http://isthe.com/chongo/tech/comp/fnv/
 
 =cut
 
 sub hash {
-  my int $d = shift || 0x01000193;
   my str $str = shift;
+  my int $d = shift || 0x01000193;
   for my $c (split//, $str) {
     $d = ( ($d * 0x01000193) ^ ord($c) ) & 0xffffffff;
   }
@@ -328,6 +331,23 @@ unsigned $base\_hash (unsigned d, const char *s) {
 =back
 
 =cut
+
+sub _test_tables {
+  my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));
+  my $keys = $ph->[3];
+  # bless [\@G, \@V, \%options, $keys], $class;
+  my $G = $ph->[0];
+  my $V = $ph->[1];
+  for (0..19) {
+    my $k = $keys->[$_];
+    my $d = $G->[$_] < 0 ? 0 : $G->[$_];
+    printf "%2d ph=%2d   G[%2d]=%3d V[%2d]=%3d   h(%2d,%d)=%2d %s\n",
+      $_,$ph->perfecthash($k),
+      $_,$G->[$_],$_,$V->[$_],
+      $_,$d,hash($k,$d)%20,
+      $k;
+  }
+}
 
 # local testing: p -d -Ilib lib/Perfect/Hash/HanovPP.pm examples/words20
 unless (caller) {

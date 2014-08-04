@@ -354,7 +354,6 @@ L<Perfect::Hash::XS>
 
 =cut
 
-
 &_test(@ARGV) unless caller;
 
 # usage: perl -Ilib lib/Perfect/Hash.pm

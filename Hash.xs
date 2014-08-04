@@ -54,7 +54,7 @@ OUTPUT:
 
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
 
-#define VEC(G, index, bits) (*(IV*)((G + (index * bits/8))) & (1<<bits)-1)
+#define VEC(G, index, bits) (*(IV*)((G + (index * bits/8))) & ((1<<bits)-1))
 
 # TODO: return SV* and store SV's in values, not just indices.
 # use AV * V, not the 2nd half of SvPVX(G).
@@ -71,11 +71,18 @@ CODE:
     UV size = 4 * SvCUR(g) / bits; /* 40 = (20 * BITS / 4); 20 = 40 * 4 / BITS */
     char *V = SvPVX(g)+size;
     UV h = crc32(0, SvPVX(key), SvCUR(key)) % size;
-    IV d = VEC(G, bits, h);
+    IV d = VEC(G, h, bits);
+    if (d >= 1<<(bits-1))
+      d = (d - (1<<bits));
     IV v = d < 0
       ? VEC(V, -d-1, bits)
       : d == 0 ? VEC(V, h, bits)
                : VEC(V, crc32(d, SvPVX(key), SvCUR(key)) % size, bits);
+#ifdef DEBUGGING
+    if (hv_exists((HV*)SvRV(AvARRAY(ref)[2]), "-debug", 6)) {
+      printf("\nxs: h0=%2d d=%3d v=%2d\t",h, d>0 ? crc32(d,SvPVX(key),SvCUR(key))%size : d, v);
+    }
+#endif
     if (AvFILL(ref) > 2) {
       SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
       RETVAL = (SvCUR(key) == SvCUR(keys[v]) && memEQ(SvPVX(keys[v]), SvPVX(key), SvCUR(key)))
@@ -87,17 +94,17 @@ OUTPUT:
     RETVAL
 
 UV
-hash(buf, seed=0)
-  SV* buf
+hash(key, seed=0)
+  SV* key
   UV  seed;
 CODE:
     if (items < 2) {
-      if (SvPOK(buf))
-        RETVAL = crc32(0, SvPVX(buf), SvCUR(buf));
+      if (SvPOK(key))
+        RETVAL = crc32(0, SvPVX(key), SvCUR(key));
       else
         RETVAL = crc32(0, NULL, 0);
     }
 	else
-	  RETVAL = crc32(seed, SvPVX(buf), SvCUR(buf));
+	  RETVAL = crc32(seed, SvPVX(key), SvCUR(key));
 OUTPUT:
     RETVAL

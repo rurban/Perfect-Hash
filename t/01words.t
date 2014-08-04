@@ -51,7 +51,7 @@ for my $m (map {"-$_"} @methods) {
      my $v = $ph->perfecthash($w);
      $ok = 0 if $v ne $dict{$w};
      unless ($ok) {
-       is($dict{$w}, $v, "method $m  with hashref for '$w' => $v");
+       is($dict{$w}, $v, "method $m with hashref for '$w' => $v");
        last;
      }
    }

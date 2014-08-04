@@ -15,17 +15,22 @@ XSLoader::load('Perfect::Hash', $VERSION);
 
 =head1 DESCRIPTION
 
-Improved version of HanovPP, using compressed temp. arrays (not yet) 
+Improved version of HanovPP, using compressed temp. arrays
 and optimized XS methods, ~2x faster than HanovPP.
+Can only store index values.
 
-=head1 new $dict, options
+=head1 new \@dict, options
 
 Computes a minimal perfect hash table using the given dictionary,
-given as hashref, arrayref or filename.
+given as arrayref or filename.
 
 Honored options are: I<-no-false-positives>
 
-This version needs O(3n) space so far, but this is gotta get better soon.
+This version is algorithmically the same as HanovPP, but uses a faster
+hash function (crc32 from libz) and compressed bitvectors for the
+intermediate table and the integer-only values table, so it is limited
+to arrayrefs and filenames only. hashrefs with strings as values
+cannot be represented for now.
 
 It returns an object with a compressed bitvector of @G containing the
 intermediate table of seeds needed to compute the index of the value
@@ -164,6 +169,12 @@ Without -no-false-positives, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
+
+sub perfecthash {
+  my ($ph, $key ) = @_;
+  my $v = $ph->iv_perfecthash($key);
+  return $v == -1 ? undef : $v;
+}
 
 # use the new XS version now
 sub pp_perfecthash {

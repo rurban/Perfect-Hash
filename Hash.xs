@@ -81,7 +81,7 @@ MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
 # use AV * V, not the 2nd half of SvPVX(G).
 
 IV
-perfecthash(ph, key)
+iv_perfecthash(ph, key)
   SV* ph
   SV* key;
 CODE:

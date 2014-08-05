@@ -17,7 +17,9 @@ XSLoader::load('Perfect::Hash', $VERSION);
 
 Improved version of HanovPP, using compressed temp. arrays
 and optimized XS methods, ~2x faster than HanovPP.
-Can only store index values.
+Can only store index values, not strings.
+
+WARNING: This version is still instable.
 
 =head1 new \@dict, options
 
@@ -27,10 +29,10 @@ given as arrayref or filename.
 Honored options are: I<-no-false-positives>
 
 This version is algorithmically the same as HanovPP, but uses a faster
-hash function (crc32 from libz) and compressed bitvectors for the
-intermediate table and the integer-only values table, so it is limited
-to arrayrefs and filenames only. hashrefs with strings as values
-cannot be represented for now.
+hash function (crc32 from libz) and ~300x smaller compressed
+bitvectors for the intermediate table and the integer-only values
+table, so it is limited to arrayrefs and filenames only. hashrefs with
+strings as values cannot be represented for now.
 
 It returns an object with a compressed bitvector of @G containing the
 intermediate table of seeds needed to compute the index of the value
@@ -40,12 +42,19 @@ in @V.
 
 sub new {
   my $class = shift or die;
-  my $dict = shift; #hashref, arrayref or filename
+  my $dict = shift; # arrayref or filename
   my %options = map {$_ => 1 } @_;
   my ($keys, $values) = Perfect::Hash::_dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size - 1;
-  if (ref $dict ne 'HASH') {
+  if (ref $dict eq 'HASH') {
+    # check the types of all values, need to be integers in 0..size
+    for (values %$dict) {
+      die "invalid dict hashref with value $_. require values as integers in 0..$size\n"
+        if $_ < 0 or $_ > $size;
+    }
+  }
+  else {
     if (@$values) {
       my %dict = map { $keys->[$_] => $values->[$_] } 0..$last;
       $dict = \%dict;
@@ -130,7 +139,7 @@ sub new {
   # Since perl cannot access multi-byte bits via vec, it needs to be a power
   # of two from 1 to 32, with a portable warning for 64.
   # Devel::Size, with n=20: 88 vs 1664+1656 byte
-  # We should rather roll our own vec function or switch to Bit::BitVector
+  # Note: We should rather roll our own vec function or switch to Bit::BitVector
   my $bits = 1+length(sprintf "%b",$size); # +1 for negative values
   for (2,4,8,16,32,($Config{ptrsize}==8?(64):())) {
     next if $bits > $_;

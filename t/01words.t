@@ -3,6 +3,9 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+if (@ARGV and grep /^-/, @ARGV) {
+  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+}
 plan tests => 2*scalar(@methods);
 
 # test words20 as hashref and arrayref

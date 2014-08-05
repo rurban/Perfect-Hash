@@ -24,6 +24,8 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
+WARNING: This version is still instable.
+
 =head1 new $dict, @options
 
 Computes a brute-force n-bit Pearson hash table using the given

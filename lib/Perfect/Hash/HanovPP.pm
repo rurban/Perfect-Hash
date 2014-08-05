@@ -20,6 +20,8 @@ Based on:
 Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud, 
 "Practical minimal perfect hash functions for large databases", CACM, 35(1):105-121
 
+This version is stable and relatively fast even for bigger dictionaries.
+
 =head1 new $dict, @options
 
 Computes a minimal perfect hash table using the given dictionary,

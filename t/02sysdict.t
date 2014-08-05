@@ -9,6 +9,9 @@ for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
 plan skip_all => "no system dict found" unless -e $dict;
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+if (@ARGV and grep /^-/, @ARGV) {
+  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+}
 plan tests => scalar(@methods);
 
 open my $d, $dict or die; {

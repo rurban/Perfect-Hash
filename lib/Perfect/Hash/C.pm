@@ -95,7 +95,7 @@ sub _save_c_array {
   $fmt = "%3d" unless $fmt;
   my $size = scalar @$G;
   my $last = $size - 1;
-  for (0 .. int($size / 16) + 1) {
+  for (0 .. int($size / 16)) {
     my $from = $_ * 16;
     my $to = $from + 15;
     $to = $last if $to > $last;
@@ -103,7 +103,7 @@ sub _save_c_array {
     for ($from .. $to) {
       printf $FH $fmt.",", $G->[$_];
     }
-    print $FH "\n";
+    print $FH "\n" if $ident;
   }
 }
 

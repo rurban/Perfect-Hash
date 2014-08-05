@@ -78,6 +78,7 @@ OUTPUT:
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
 
 # TODO: return SV* and store SV's in values, not just indices.
+# maybe check for indices optimization as stored now.
 # use AV * V, not the 2nd half of SvPVX(G).
 
 IV

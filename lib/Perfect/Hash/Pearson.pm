@@ -58,7 +58,7 @@ sub new {
   my $i = 1;
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
-  print "size=$size hsize=$hsize\n";
+  print "size=$size hsize=$hsize\n" if $options{'-debug'};
   # TODO: bitvector string with vec
   my @H; $#H = $hsize;
   $i = 0;
@@ -77,7 +77,7 @@ sub new {
     shuffle($H);
     ($sum, $max) = cost($H, $keys);
     $counter++;
-    print "$counter sum=$sum, max=$max\n" if $options{-debug};
+    print "$counter sum=$sum, max=$max\n" if $options{'-debug'};
     if (!defined($maxsum) or $sum < $maxsum or $max == 1) {
       $maxsum = $sum;
       @best = @$H;
@@ -89,7 +89,7 @@ sub new {
     $H = \@H;
     ($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
-    print "list of collisions: sum=$sum, maxdepth=$max\n";
+    print "list of collisions: sum=$sum, maxdepth=$max\n" if $options{'-debug'};
     $C = collisions($H, $keys, $values);
   }
 
@@ -231,20 +231,50 @@ sub save_c {
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
   print $FH "
-    unsigned h = 0;
+    long h = 0;
     static unsigned char $base\[] = {
 ";
+  my $size = $ph->[0];
   my $H = $ph->[1];
-  my $C = $ph->[2];
-  _save_c_array(4, $FH, $H, "%3d");
+  my $hsize = scalar @$H;
+  _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
-  print $FH "    /* TODO collision tree/trie */\n";
+  print $FH "    /* collisions */";
+  my $C = $ph->[2];
+  my $i = 0;
+  for my $coll (@$C) {
+    if ($coll and @$coll) {
+      print $FH "
+    static const char *Ck_$i\[] = {";
+      my @ci = map { $_->[0] } @$coll;
+      _save_c_array(0, $FH, \@ci, "\"%s\"");
+      print $FH " };";
+      print $FH "
+    static const int   Cv_$i\[] = {";
+      my @cv = map { $_->[1] } @$coll;
+      _save_c_array(0, $FH, \@cv, "%d");
+      print $FH " };";
+    }
+    $i++;
+  }
+  $i = 0;
+  print $FH "
+    static const char *Ck[$size];
+    static const int  *Cv[$size];
+    /* TODO static init */";
+  for my $coll (@$C) {
+    if ($coll and @$coll) {
+      print $FH "
+    Ck[$i] = (void*)&Ck_$i;
+    Cv[$i] = (void*)&Cv_$i;";
+    }
+    $i++;
+  }
   if (!$ph->false_positives) { # store keys
     my $keys = $ph->[4];
     print $FH "
     /* keys */
-    static const char* K[] = {
-";
+    static const char* K[] = {\n";
     _save_c_array(8, $FH, $keys, "\"%s\"");
     print $FH "    };";
   }
@@ -257,8 +287,27 @@ sub save_c {
   } else {
     print $FH "
     unsigned char c;
-    for (c=*s++; c; c=*s++) {
-        h = $base\[h ^ c];
+    for (c=*s++; c; c=*s++) {";
+    if (ref $ph eq 'Perfect::Hash::Pearson') {
+      print $FH "
+        h = $base\[(h ^ c) % $hsize];";
+    } else {
+      print $FH "
+        h = $base\[h ^ c];";
+    }
+    print $FH "
+    }";
+  }
+  print $FH "
+    h = h % $size;" if ref $ph eq 'Perfect::Hash::Pearson';
+  if (@$C) {
+      print $FH "
+    if (Ck[h]) {
+      int i=0;
+      char **ck = Ck[h];
+      for (;i<sizeof(ck);i++) {
+        if (0==strcmp(ck[i],s)) return Cv[h][i];
+      }
     }";
   }
   if (!$ph->false_positives) { # check keys

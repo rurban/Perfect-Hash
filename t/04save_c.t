@@ -6,6 +6,9 @@ use Config;
 use ExtUtils::Embed qw(ccflags ldopts);
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+if (@ARGV and grep /^-/, @ARGV) {
+  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+}
 my $tb = Test::More->builder;
 
 $tb->plan(tests => 5*scalar(@methods));
@@ -71,10 +74,10 @@ for my $m (map {"-$_"} @methods) {
   diag($cmd);
   my $retval = system($cmd);
   if (ok(!($retval>>8), "could compile $m")) {
-    $retval = system("./phash");
-    #lock $tb->{Curr_Test};
-    $tb->{Curr_Test}++;
-    $tb->{Curr_Test}++;
+    my $retstr = `./phash`;
+    $retval = $?;
+    like($retstr, qr/^ok \d+ - c lookup exists/m, "c lookup exists");
+    like($retstr, qr/^ok \d+ - c lookup notexists/m, "c lookup notexists");
   } else {
     ok(1) for 0..1;
   }

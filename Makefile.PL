@@ -12,21 +12,14 @@ use Config;
 # Note: These 2 Makefiles will be overwritten later by recursive WriteMakefile
 # So generate all required binaries here
 if (! -e "cmph-2.0/configure") {
+  print "Extracting cmph-2.0.tar.gz\n";
   system("tar xfz cmph-2.0.tar.gz");
-  if (-e "cmph-2.0/configure") {
-    chdir "cmph-2.0";
-    system("autoreconf -i");
-    system("./configure --prefix=`pwd`");
-    system($Config{'make'}, "-s");
-    system($Config{'make'}, "-s", "install");
-    rename "Makefile", "Makefile.orig";
-    chdir "..";
-  }
 }
 
 if (! -e "bob/lookupa.c") {
+  print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";
   system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git bob");
-  if (-e "bob/lookupa.c") {
+  if (-e "bob/lookupa.c" and !-e "bob/perfect".$Config{exe_ext}) {
     chdir "bob";
     my $cc = $Config{cc};
     if ($cc ne "gcc") {

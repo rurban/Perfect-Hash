@@ -12,10 +12,13 @@ push(@extras,
   if ($ExtUtils::MakeMaker::VERSION >= 5.4301);
 
 #TODO: integrate into proper build and depend rules
-if (! -e "bin/cmph") {
+if (! -e "bin/cmph".$Config{exe_ext}) {
+  print "building cmph-2.0\n";
+  system("autoreconf -i");
   system("./configure --prefix=`pwd`");
   system($Config{'make'}, "-s");
   system($Config{'make'}, "-s", "install");
+  rename "Makefile", "Makefile.orig";
 }
 
 WriteMakefile(

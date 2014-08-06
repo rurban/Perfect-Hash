@@ -3,8 +3,20 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+my @opts = ();
 if (@ARGV and grep /^-/, @ARGV) {
-  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+  my @m = ();
+  for (@ARGV) {
+    my ($m) = /^-(.*)/;
+    if (exists $Perfect::Hash::algo_methods{$m}) {
+      push @m, $_;
+    } else {
+      push @opts, $_;
+    }
+  }
+  @methods = @m if @m;
+} else {
+  @methods = map {"-$_"} @methods;
 }
 plan tests => 2*scalar(@methods);
 
@@ -16,8 +28,8 @@ open my $d, $dict or die; {
 }
 close $d;
 
-for my $m (map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash \@dict, $m;
+for my $m (@methods) {
+  my $ph = new Perfect::Hash \@dict, $m, @opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     next;
@@ -41,8 +53,8 @@ for my $m (map {"-$_"} @methods) {
 
 my $line = 1;
 my %dict = map { $_ => $line++ } @dict;
-for my $m (map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash \%dict, $m;
+for my $m (@methods) {
+  my $ph = new Perfect::Hash \%dict, $m, @opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     next;
@@ -54,7 +66,7 @@ for my $m (map {"-$_"} @methods) {
      my $v = $ph->perfecthash($w);
      $ok = 0 if $v ne $dict{$w};
      unless ($ok) {
-       is($dict{$w}, $v, "method $m with hashref for '$w' => $v");
+       is($v, $dict{$w}, "method $m with hashref for '$w' => $v");
        last;
      }
    }

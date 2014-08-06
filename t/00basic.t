@@ -3,15 +3,27 @@ use Test::More;
 use Perfect::Hash;
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+my @opts = ();
 if (@ARGV and grep /^-/, @ARGV) {
-  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+  my @m = ();
+  for (@ARGV) {
+    my ($m) = /^-(.*)/;
+    if (exists $Perfect::Hash::algo_methods{$m}) {
+      push @m, $_;
+    } else {
+      push @opts, $_;
+    }
+  }
+  @methods = @m if @m;
+} else {
+  @methods = ("", map {"-$_"} @methods);
 }
-plan tests => scalar(@methods) + 1;
+plan tests => scalar(@methods);
 
 my %dict = map {chr $_ => $_-48} (48..125);
 delete $dict{'\\'};
-for my $m ("", map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash \%dict, $m;
+for my $m (@methods) {
+  my $ph = new Perfect::Hash \%dict, $m, @opts;
   unless ($ph) {
     ok(1, "SKIP empty ph $m");
     next;

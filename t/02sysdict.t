@@ -9,8 +9,20 @@ for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
 plan skip_all => "no system dict found" unless -e $dict;
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+my @opts = ();
 if (@ARGV and grep /^-/, @ARGV) {
-  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+  my @m = ();
+  for (@ARGV) {
+    my ($m) = /^-(.*)/;
+    if (exists $Perfect::Hash::algo_methods{$m}) {
+      push @m, $_;
+    } else {
+      push @opts, $_;
+    }
+  }
+  @methods = @m if @m;
+} else {
+  @methods = map {"-$_"} @methods;
 }
 plan tests => scalar(@methods);
 
@@ -20,10 +32,10 @@ open my $d, $dict or die; {
 }
 close $d;
 
-for my $m (map {"-$_"} @methods) {
+for my $m (@methods) {
   diag "generating $m ph for ".scalar @dict." entries in $dict...";
   my $t0 = [gettimeofday];
-  my $ph = new Perfect::Hash \@dict, $m, qw(-max-time 10);
+  my $ph = new Perfect::Hash \@dict, $m, qw(-max-time 10), @opts;
   diag "done in ",tv_interval($t0),"s\n";
   unless ($ph) {
     ok(1, "SKIP empty phash $m");

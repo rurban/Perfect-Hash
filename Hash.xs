@@ -27,25 +27,34 @@ unsigned fnv_hash_len (unsigned d, const char *s, const int l) {
     return d;
 }
 
-#define VEC(G, index, bits) (IV)((*(IV*)(G + ((index) * bits/8))) & ((1<<bits)-1))
+/* #define VEC(G, index, bits) (IV)((*(IV*)(G + ((index) * bits/8))) & ((1<<bits)-1)) */
 
+/* Urban TODO: return SV* and store SV's in values, not just indices.
+   maybe check for indices optimization as stored now.
+   use AV * V, not the 2nd half of SvPVX(G). */
+
+static inline
 IV vec(char *G, IV index, IV bits) {
   if (bits == 8)
     return *(char*)(G + index) & 255;
   else if (bits == 4)
     return *(char*)(G + (index / 2)) & 15;
   else if (bits == 16) {
-    int l = *(int*)(G + index) & 65535;
+    short l = *(short*)((short*)G + index); /* __UINT16_MAX__ */
     return (IV)l;
   }
   else if (bits == 32) {
-    long l = *(long*)(G + index);
+#if INTSIZE == 4
+    int l = *(int*)((int*)G + index); /* __UINT32_MAX__ */
+#else
+    long l = *(long*)((long*)G + index);
+#endif
     return (IV)l;
   }
-#ifdef HAVE_QUAD
+#ifdef HAS_QUAD
   else if (bits == 64) {
-    long long l = *(long long*)(G + index);
-    return (IV)l;
+    IV l = *(long long*)((long long*)G + index);
+    return l;
   }
 #endif
 }
@@ -77,10 +86,6 @@ OUTPUT:
 
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
 
-# TODO: return SV* and store SV's in values, not just indices.
-# maybe check for indices optimization as stored now.
-# use AV * V, not the 2nd half of SvPVX(G).
-
 IV
 iv_perfecthash(ph, key)
   SV* ph
@@ -94,25 +99,36 @@ CODE:
     char *V = SvPVX(g)+size;
     UV h = crc32(0, SvPVX(key), SvCUR(key)) % size;
     IV d = vec(G, h, bits);
-    if (d >= 1<<(bits-1))
-      d = (d - (1<<bits));
+    if (bits == 32) {
+      if (d >= INT32_MAX)
+        d = (long)(d - UINT32_MAX);
+    }
+    else if (bits == 64) {
+      if (d >= INT64_MAX)
+        d = (IV)((long long)(d - UINT64_MAX));
+    }
+    else {
+      if (d >= 1<<(bits-1))
+        d = (d - (1<<bits));
+    }
     IV v = d < 0
       ? vec(V, -d-1, bits)
       : d == 0 ? vec(V, h, bits)
                : vec(V, (UV)crc32(d, SvPVX(key), SvCUR(key)) % size, bits);
-#ifdef DEBUGGING_PHASH
+#ifdef DEBUGGING
     if (hv_exists((HV*)SvRV(AvARRAY(ref)[2]), "-debug", 6)) {
       printf("\nxs: h0=%2d d=%3d v=%2d\t",h, d>0 ? crc32(d,SvPVX(key),SvCUR(key))%size : d, v);
     }
 #endif
-    if (v > size) {
+    if (AvFILL(ref) > 2) {
+      AV *av = (AV*)SvRV(AvARRAY(ref)[3]);
+      SV **keys = AvARRAY(av);
+      if (v >= AvFILL(av)) {
 #ifdef DEBUGGING
-      assert(v<size);
+        assert(v < size);
 #endif
-      RETVAL = -1;
-    }
-    else if (AvFILL(ref) > 2) {
-      SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
+        RETVAL = -1;
+      }
       RETVAL = (SvCUR(key) == SvCUR(keys[v]) && memEQ(SvPVX(keys[v]), SvPVX(key), SvCUR(key)))
         ? v : -1;
     } else {
@@ -136,3 +152,40 @@ CODE:
 	  RETVAL = crc32(seed, SvPVX(key), SvCUR(key));
 OUTPUT:
     RETVAL
+
+IV
+nvecget(v, index, bits)
+  SV* v
+  IV  index
+  IV  bits
+CODE:
+  char *V = SvPVX(v);
+  RETVAL = vec(V, index, bits);
+OUTPUT:
+  RETVAL
+
+void
+nvecset(v, index, bits, value)
+  SV* v
+  IV  index
+  IV  bits
+  IV  value
+CODE:
+  char *V = SvPVX(v);
+  if (bits == 8)
+    *(char*)(V + index) = value & 255;
+  else if (bits == 4) /* TODO: shift and mask ? */
+    *(char*)(V + (index / 2)) = value & 15;
+  else if (bits == 16)
+    *(short*)((short*)V + index) = value & 65535;
+  else if (bits == 32) {
+#if INTSIZE == 4
+    *(int*)((int*)V + index) = value & 65535;
+#else
+    *(long*)((long*)V + index) = value & 2147483647;
+#endif
+  }
+#ifdef HAS_QUAD
+  else if (bits == 64)
+    *(long long*)((long long*)V + index) = (long long)value;
+#endif

@@ -43,7 +43,10 @@ in @V.
 sub new {
   my $class = shift or die;
   my $dict = shift; # arrayref or filename
+  #my $max_time = grep { $_ eq '-max-time' and shift } @_;
+  #$max_time = 60 unless $max_time;
   my %options = map {$_ => 1 } @_;
+  #$options{'-max-time'} = $max_time;
   my ($keys, $values) = Perfect::Hash::_dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size - 1;
@@ -71,7 +74,7 @@ sub new {
   my @G; $#G = $size; @G = map {0} (0..$last);
   # And for '-no-false-positives' ditto: @V as compressed index into @keys
   my @V; $#V = $last;
-  hash(0); # initialize crc
+  #hash(0); # initialize crc
 
   # Step 1: Place all of the keys into buckets
   push @{$buckets[ hash($_, 0) % $size ]}, $_ for @$keys;
@@ -91,6 +94,7 @@ sub new {
 
     # Repeatedly try different values of $d (the seed) until we find a hash function
     # that places all items in the bucket into free slots.
+    # Note: The resulting G indices ($d) can be MAX_LONG
     while ($item < scalar(@bucket)) {
       my $slot = hash( $bucket[$item], $d ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
@@ -105,7 +109,7 @@ sub new {
     }
     $G[hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "V=[".join(",",@V),"]\n" if $options{-debug};
+    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d @bucket\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;
@@ -139,18 +143,25 @@ sub new {
   # Since perl cannot access multi-byte bits via vec, it needs to be a power
   # of two from 1 to 32, with a portable warning for 64.
   # Devel::Size, with n=20: 88 vs 1664+1656 byte
-  # Note: We should rather roll our own vec function or switch to Bit::BitVector
-  my $bits = 1+length(sprintf "%b",$size); # +1 for negative values
+  # We use our own fast vec function. http://blogs.perl.org/users/rurban/2014/08/vec-is-slow-little-endian-and-limited.html
+  # find min and max G entries:
+  my ($min, $max) = (0, 0);
+  for (@G) {
+    $min = $_ if $_ < $min;
+    $max = $_ if $_ > $max;
+  }
+  my $maxindex = abs($min) > $max ? abs($min) : $max;
+  my $bits = 1+length(sprintf "%b",$maxindex); # +1 for negative values
   for (2,4,8,16,32,($Config{ptrsize}==8?(64):())) {
     next if $bits > $_;
     $bits = $_; last;
   }
   my $G = "\0" x int($bits * $size / 4);
   for my $i (0..$#G) {
-    vec($G, $i, $bits) = $G[$i] if $G[$i];
+    nvecset($G, $i, $bits, $G[$i]) if $G[$i];
   }
   for my $i (0..$#V) {
-    vec($G, $i+$size, $bits) = $V[$i] if $V[$i];
+    nvecset($G, $i+$size, $bits, $V[$i]) if $V[$i];
   }
   printf("\$G\[$bits]=\"%s\":%d\n", unpack("h*", $G), length($G))
     if $options{-debug};
@@ -192,13 +203,13 @@ sub pp_perfecthash {
   my $size = 4 * length($G) / $bits;
   my $voff = $size;
   my $h = hash($key, 0) % $size;
-  my $d = vec($G, $h, $bits);
+  my $d = nvecget($G, $h, $bits);
   # fix negative sign of d
   $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
   my $v = $d < 0
-    ? vec($G, $voff + (- $d-1), $bits)
-    : $d == 0 ? vec($G, $voff + $h, $bits)
-              : vec($G, $voff + hash($key, $d) % $size, $bits);
+    ? nvecget($G, $voff + (- $d-1), $bits)
+    : $d == 0 ? nvecget($G, $voff + $h, $bits)
+              : nvecget($G, $voff + hash($key, $d) % $size, $bits);
   if ($ph->[2]->{'-debug'}) {
     printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
   }

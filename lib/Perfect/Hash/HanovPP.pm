@@ -92,7 +92,7 @@ sub new {
     }
     $G[hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "V=[".join(",",@V),"]\n" if $options{-debug};
+    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
 #      unless $b % 1000;
     $i++;

@@ -151,7 +151,8 @@ sub new {
     $max = $_ if $_ > $max;
   }
   my $maxindex = abs($min) > $max ? abs($min) : $max;
-  my $bits = 1+length(sprintf "%b",$maxindex); # +1 for negative values
+  my $bits = length(sprintf "%b", $maxindex);
+  $bits += 1 if $min < 0; # one more bit for negative values
   for (2,4,8,16,32,($Config{ptrsize}==8?(64):())) {
     next if $bits > $_;
     $bits = $_; last;

@@ -39,20 +39,11 @@ print OUT <<'!NO!SUBS!';
 use Perfect::Hash;
 use Getopt::Long;
 use Pod::Usage;
-my $Options = {};
+my $options = {};
 
 sub opt(*) {
   my $opt = shift;
-  return exists($Options->{$opt}) && ($Options->{$opt} || 0);
-}
-
-sub helpme {
-  print version(),"\n";
-  if (opt('v')) {
-    pod2usage( -verbose => opt('v') );
-  } else {
-    pod2usage( -verbose => 0 );
-  }
+  return exists($options->{$opt}) && ($options->{$opt} || 0);
 }
 
 sub version {
@@ -67,9 +58,13 @@ phash [method] [options...] keyfile
 
 Methods:
 --hanovpp
+--urban
+--pearsonnp
 
 Options:
 --no-false-positives
+--nul
+--for-c
 
 Planned:
 --minimal
@@ -79,7 +74,6 @@ Planned:
 --for-xs
 --hash=name
 --pic
---nul
 --null-strings
 --7bit
 --ignore-case
@@ -89,10 +83,46 @@ EOF
   exit;
 }
 
-GetOptions( $Options,
-  'help|h',
+sub helpme {
+  print version(),"\n";
+  if (opt('v')) {
+    pod2usage( -verbose => opt('v') );
+  } else {
+    pod2usage( -verbose => 0 );
+  }
+  _usage_and_die;
+}
+
+GetOptions
+  ($options,
+   'help|h',
+   'hanovpp',
+   'urban',
+   'pearson',
+   'pearson8',
+   'pearsonnp',
+   'false-positives!',
+   'nul',
+   '7bit',
+   'prefix=s',
+   'for-c!',
+   'ignore-case',
+   'unicode-ignore-case',
+   'optimal-speed',
+   'optimal-size',
+   'minimal',
   );
 helpme() if opt('help'); # And exit
+my $keyfile = shift or _usage_and_die();
+my @options = map { ("-".$_, $options->{$_} == 1 ? () : $options->{$_}) } keys %$options;
+
+my $ph = new Perfect::Hash $keyfile, @options;
+# TODO: check for other output formatters and load it.
+if ($options->{'for-xs'}) {
+  $ph->save_xs($options->{prefix});
+} else {
+  $ph->save_c($options->{prefix});
+}
 
 !NO!SUBS!
 

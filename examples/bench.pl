@@ -84,6 +84,7 @@ int main () {
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 for my $m (@methods) {
+  next if $m eq '-pearson8';
   for my $opt (#"-no-false-positives -nul -7bit",
                "-no-false-positives -nul",
                #"-no-false-positives -7bit",

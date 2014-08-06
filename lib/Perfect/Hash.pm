@@ -90,7 +90,7 @@ The following algorithms and options are planned:
 
 =over 4
 
-=item -minimal
+=item -minimal (not yet)
 
 Selects the best available method for a minimal hash, given the
 dictionary size, the options, and if the compiled algos are available.
@@ -100,20 +100,26 @@ dictionary size, the options, and if the compiled algos are available.
 Stores the values with the hash also, and checks the found key against
 the value to avoid false positives. Needs much more space.
 
-=item -optimal-size
+=item -optimal-size (not yet)
 
 Tries various hashes, and uses the one which will create the smallest
 hash in memory. Those hashes usually will not store the value, so you
 might need to check the result for a false-positive.
 
-=item -optimal-speed
+=item -optimal-speed (not yet)
 
 Tries various hashes, and uses the one which will use the fastest
 lookup.
 
 =item -hanovpp
 
-Default. Big and slow. Pure perl.
+Default pure perl method.
+
+=item -urban
+
+Improved version of HanovPP, using compressed temp. arrays and
+optimized XS methods, ~2x faster (zlib crc32) and 300x smaller than
+HanovPP.  Can only store index values, not strings.
 
 =item -pearson8
 
@@ -144,25 +150,25 @@ resolution is done via static binary trees.
 This is also a very fast variant as the 256 byte table is guaranteed to
 fit into every CPU cache.
 
-=item -bob
+=item -bob (not yet)
 
 Nice and easy.
 
-=item -gperf
+=item -gperf (not yet)
 
 Pretty fast lookup, but limited dictionaries.
 
-=item -cmph-chd
+=item -cmph-chd (not yet)
 
 The current state of the art for bigger dictionaries.
 
-=item -cmph-bdz
+=item -cmph-bdz (not yet)
 
-=item -cmph-brz
+=item -cmph-brz (not yet)
 
-=item -cmph-chm
+=item -cmph-chm (not yet)
 
-=item -cmph-fch
+=item -cmph-fch (not yet)
 
 =item -for-c
 
@@ -172,7 +178,7 @@ Optimize for C libraries
 
 Optimize for shared Perl XS code. Stores the values as perl types.
 
-=item -hash=C<name>
+=item -hash=C<name> (not yet)
 
 Use the specified hash function instead of the default.
 Only useful for hardware assisted C<crc32> and C<aes> system calls,
@@ -185,7 +191,7 @@ probe with slow software fallback code.  C<crc32-libz> does all this
 also, and is especially optimized for long keys to hash them in
 parallel.
 
-=item -pic
+=item -pic (not yet)
 
 Optimize the generated table for inclusion in shared libraries via a
 constant stringpool. This reduces the startup time of programs using a
@@ -230,7 +236,7 @@ C<libicu>.
 #our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP 
 #                Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
 our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP);
-our %algo_todo = map {$_=>1} qw(-pearson8 -pearson -pearsonnp);
+our %algo_todo = map {$_=>1} qw(-pearson -pearsonnp -pearson8);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;
@@ -333,7 +339,7 @@ sub save_xs {
 
 =head1 SEE ALSO
 
-Algorithms:
+=head2 Algorithms
 
 L<Perfect::Hash::HanovPP>,
 L<Perfect::Hash::Pearson>,
@@ -341,13 +347,14 @@ L<Perfect::Hash::Pearson8>,
 L<Perfect::Hash::PearsonNP>,
 L<Perfect::Hash::Urban>,
 L<Perfect::Hash::Bob>,
+L<Perfect::Hash::Gperf>,
 L<Perfect::Hash::CMPH::CHD>,
 L<Perfect::Hash::CMPH::BDZ>,
 L<Perfect::Hash::CMPH::BRZ>,
 L<Perfect::Hash::CMPH::CHM>,
 L<Perfect::Hash::CMPH::FCH>
 
-Output classes:
+=head2 Output classes
 
 L<Perfect::Hash::C>,
 L<Perfect::Hash::XS>

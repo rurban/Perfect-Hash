@@ -74,7 +74,7 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
     The following algorithms and options are planned:
 
-    - \-minimal
+    - \-minimal (not yet)
 
         Selects the best available method for a minimal hash, given the
         dictionary size, the options, and if the compiled algos are available.
@@ -84,20 +84,26 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         Stores the values with the hash also, and checks the found key against
         the value to avoid false positives. Needs much more space.
 
-    - \-optimal-size
+    - \-optimal-size (not yet)
 
         Tries various hashes, and uses the one which will create the smallest
         hash in memory. Those hashes usually will not store the value, so you
         might need to check the result for a false-positive.
 
-    - \-optimal-speed
+    - \-optimal-speed (not yet)
 
         Tries various hashes, and uses the one which will use the fastest
         lookup.
 
     - \-hanovpp
 
-        Default. Big and slow. Pure perl.
+        Default pure perl method.
+
+    - \-urban
+
+        Improved version of HanovPP, using compressed temp. arrays and
+        optimized XS methods, ~2x faster (zlib crc32) and 300x smaller than
+        HanovPP.  Can only store index values, not strings.
 
     - \-pearson8
 
@@ -128,22 +134,22 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         This is also a very fast variant as the 256 byte table is guaranteed to
         fit into every CPU cache.
 
-    - \-bob
+    - \-bob (not yet)
 
         Nice and easy.
 
-    - \-gperf
+    - \-gperf (not yet)
 
         Pretty fast lookup, but limited dictionaries.
 
-    - \-cmph-chd
+    - \-cmph-chd (not yet)
 
         The current state of the art for bigger dictionaries.
 
-    - \-cmph-bdz
-    - \-cmph-brz
-    - \-cmph-chm
-    - \-cmph-fch
+    - \-cmph-bdz (not yet)
+    - \-cmph-brz (not yet)
+    - \-cmph-chm (not yet)
+    - \-cmph-fch (not yet)
     - \-for-c
 
         Optimize for C libraries
@@ -152,7 +158,7 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
         Optimize for shared Perl XS code. Stores the values as perl types.
 
-    - \-hash=`name`
+    - \-hash=`name` (not yet)
 
         Use the specified hash function instead of the default.
         Only useful for hardware assisted `crc32` and `aes` system calls,
@@ -165,7 +171,7 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         also, and is especially optimized for long keys to hash them in
         parallel.
 
-    - \-pic
+    - \-pic (not yet)
 
         Optimize the generated table for inclusion in shared libraries via a
         constant stringpool. This reduces the startup time of programs using a
@@ -222,7 +228,7 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
 # SEE ALSO
 
-Algorithms:
+## Algorithms
 
 [Perfect::Hash::HanovPP](https://metacpan.org/pod/Perfect::Hash::HanovPP),
 [Perfect::Hash::Pearson](https://metacpan.org/pod/Perfect::Hash::Pearson),
@@ -230,13 +236,14 @@ Algorithms:
 [Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
 [Perfect::Hash::Urban](https://metacpan.org/pod/Perfect::Hash::Urban),
 [Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob),
+[Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf),
 [Perfect::Hash::CMPH::CHD](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD),
 [Perfect::Hash::CMPH::BDZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ),
 [Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ),
 [Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
 [Perfect::Hash::CMPH::FCH](https://metacpan.org/pod/Perfect::Hash::CMPH::FCH)
 
-Output classes:
+## Output classes
 
 [Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C),
 [Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS)

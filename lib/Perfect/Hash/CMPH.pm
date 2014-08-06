@@ -35,6 +35,8 @@ sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
+sub save_c { warn "NYI" }
+
 =back
 
 =head1 LICENSE

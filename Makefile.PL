@@ -43,6 +43,9 @@ WriteMakefile
      #'coretypes' => 0,
    },
    AUTHOR        => 'Reini Urban',
+   clean => { FILES => "Hash.c.gcov Hash.xs.gcov Hash.gcda Hash.gcno "
+                      ."cover_db perf.data script/phash" },
+
    ($ExtUtils::MakeMaker::VERSION gt '6.46' ?
     ('META_MERGE'  =>
      {

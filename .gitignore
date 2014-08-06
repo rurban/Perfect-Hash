@@ -1,6 +1,7 @@
 *~
 *.bs
 *.o
+.coveralls.yml
 /Debian_CPANTS.txt
 /Perfect-Hash-*.tar.gz
 /cmph-*.tar.gz

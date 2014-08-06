@@ -28,6 +28,7 @@ WriteMakefile(
   INC          => '-Iinclude',
   LIBS         => '-Llib -lcmph',
   VERSION_FROM => '../lib/Perfect/Hash/CMPH.pm',
+  clean => { FILES => "CMPH.gcno" },
   @extras
 );
 

@@ -15,9 +15,15 @@ Makefile.old
 Hash.c
 Hash.o
 Hash.obj
-/blib
+Hash.c.gcov
+Hash.xs.gcov
+Hash.gcda
+Hash.gcno
 pm_to_blib
+/blib
+/cover_db
 /perf.data
+/log.test-*
 cmph-2.0/bin/
 cmph-2.0/blib/
 cmph-2.0/cmph.pc

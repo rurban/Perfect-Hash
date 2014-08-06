@@ -64,17 +64,20 @@ for my $m (map {"-$_"} @methods) {
   wmain((4*$i)+3, $ph->perfecthash('AOL'));
   $i++;
   $ph->save_c("phash");
-  ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
-  my $cmd = cmd($m);
-  diag($cmd);
-  my $retval = system($cmd);
-  if (ok(!($retval>>8), "could compile $m")) {
-    my $retstr = `./phash`;
-    $retval = $?;
-    like($retstr, qr/^ok \d+ - c lookup exists/m, "c lookup exists");
+  if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
+    my $cmd = cmd($m);
+    diag($cmd);
+    my $retval = system($cmd);
+    if (ok(!($retval>>8), "could compile $m")) {
+      my $retstr = `./phash`;
+      $retval = $?;
+      like($retstr, qr/^ok \d+ - c lookup exists/m, "c lookup exists");
+    } else {
+      ok(1, "SKIP");
+    }
+    ok(!($retval>>8), "could run $m");
   } else {
-    ok(1);
+    ok(1, "SKIP") for 0..2;
   }
-  ok(!($retval>>8), "could run $m");
-  #unlink("phash","phash.c","phash.h","main.c");
+  unlink("phash","phash.c","phash.h","main.c");
 }

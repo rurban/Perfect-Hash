@@ -234,10 +234,13 @@ C<libicu>.
 =cut
 
 #our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP 
-#                Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
+# Bob Gperf CMPH::BMZ8 CMPH::BRZ
+# CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH);
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
-                CMPH::BMZ CMPH::BMZ8 CMPH::CHM CMPH::BRZ CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH);
-our %algo_todo = map {$_=>1} qw(-pearson -pearsonnp -pearson8);
+                CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH);
+our %algo_todo = map {$_=>1}
+             qw(-pearson -pearsonnp -pearson8
+                -cmph-bmz -cmph-bmz8 -cmph-chm -cmph-brz -cmph-fch -cmph-bdz -cmph-bdz_ph -cmph-chd -cmph-chd_ph);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;

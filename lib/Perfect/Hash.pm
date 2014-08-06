@@ -235,7 +235,7 @@ C<libicu>.
 
 #our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP 
 #                Bob Gperf CMPH::CHD CMPH::BDZ CMPH::BRZ CMPH::CHM CMPH::FCH);
-our @algos = qw(HanovPP Urban Pearson8 Pearson PearsonNP);
+our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP);
 our %algo_todo = map {$_=>1} qw(-pearson -pearsonnp -pearson8);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);

@@ -12,6 +12,7 @@ lib/Perfect/Hash/Bob.pm
 lib/Perfect/Hash/C.pm
 lib/Perfect/Hash/CMPH.pm
 lib/Perfect/Hash/CMPH/CHM.pm
+lib/Perfect/Hash/Hanov.pm
 lib/Perfect/Hash/HanovPP.pm
 lib/Perfect/Hash/Pearson.pm
 lib/Perfect/Hash/PearsonNP.pm

@@ -61,6 +61,22 @@ IV vec(char *G, IV index, IV bits) {
 
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Hanov
 
+UV
+hash(key, seed=0)
+  SV* key
+  UV  seed;
+CODE:
+    if (items < 2) {
+      if (SvPOK(key))
+        RETVAL = crc32(0, SvPVX(key), SvCUR(key));
+      else
+        RETVAL = crc32(0, NULL, 0);
+    }
+	else
+	  RETVAL = crc32(seed, SvPVX(key), SvCUR(key));
+OUTPUT:
+    RETVAL
+
 SV*
 perfecthash(ph, key)
   SV* ph
@@ -71,8 +87,13 @@ CODE:
     SV **ga = AvARRAY(g);
     UV size = AvFILL(g) + 1;
     SV **va = AvARRAY((AV*)SvRV(AvARRAY(ref)[1]));
-    IV d  = SvIVX(ga[fnv_hash_len(0, SvPVX(key), SvCUR(key)) % size]);
-    SV *v = d < 0 ? va[-d-1] : va[fnv_hash_len(d, SvPVX(key), SvCUR(key)) % size];
+    UV h  = crc32(0, SvPVX(key), SvCUR(key)) % size;
+    IV d  = SvIVX(ga[h]);
+    SV *v = d < 0
+      ? va[-d-1]
+      : d == 0
+        ? va[h]
+        : va[crc32(d, SvPVX(key), SvCUR(key)) % size];
     if (AvFILL(ref) > 2) {
       SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
       IV iv = SvIVX(v);

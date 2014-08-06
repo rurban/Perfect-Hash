@@ -13,6 +13,13 @@ XSLoader::load();
 XS interface to the cmph library, the current state of the art library
 for perfect hashes and minimal perfect hashes.
 
+=cut
+
+# filename only so far
+sub new {
+  return _new(@_);
+}
+
 =head1 false_positives
 
 Returns 1 if the hash might return false positives,

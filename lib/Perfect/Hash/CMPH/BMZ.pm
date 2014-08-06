@@ -1,4 +1,4 @@
-package Perfect::Hash::CMPH::CHM;
+package Perfect::Hash::CMPH::BMZ;
 
 our $VERSION = '0.01';
 use strict;
@@ -8,8 +8,8 @@ our @ISA = qw(Perfect::Hash::CMPH Perfect::Hash);
 
 =head1 DESCRIPTION
 
-XS interface to the cmph-2.0 CHM algorithm.
-See http://cmph.sourceforge.net/chm.html
+XS interface to the cmph-2.0 BMZ algorithm.
+See http://cmph.sourceforge.net/chd.html
 
 =head1 METHDOS
 

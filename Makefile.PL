@@ -15,6 +15,7 @@ if (! -e "cmph-2.0/configure") {
   system("tar xfz cmph-2.0.tar.gz");
   if (-e "cmph-2.0/configure") {
     chdir "cmph-2.0";
+    system("autoreconf -i");
     system("./configure --prefix=`pwd`");
     system($Config{'make'}, "-s");
     system($Config{'make'}, "-s", "install");

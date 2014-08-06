@@ -313,8 +313,15 @@ sub save_c {
   if ($ph->option('-nul')) {
     print $FH "
     int i;
-    for (i=0; i<l; i++) {
-        h = $base\[h ^ s[i]];
+    for (i=0; i<l; i++) {";
+    if (ref $ph eq 'Perfect::Hash::Pearson') {
+      print $FH "
+        h = $base\[(h ^ s[i]) % $hsize];";
+    } else {
+      print $FH "
+        h = $base\[h ^ s[i]];";
+    }
+    print $FH "
     }";
   } else {
     print $FH "

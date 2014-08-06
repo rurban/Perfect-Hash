@@ -266,7 +266,7 @@ sub save_c {
     d = G[h];
     v = d < 0
         ? V[-d-1]
-        : g == 0
+        : d == 0
           ? V[h]
           : V[$base\_hash_len(d, s, l) % $size];
 ";

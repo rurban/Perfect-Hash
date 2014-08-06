@@ -27,3 +27,4 @@ t/01words.t
 t/02sysdict.t
 t/03false-positives.t
 t/04save_c.t
+t/04save_c_nul.t

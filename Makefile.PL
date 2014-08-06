@@ -46,7 +46,7 @@ WriteMakefile
    'EXE_FILES'  => [ 'script/phash' ],
    'LIBS'       => "-lz",
    'PREREQ_PM'	=> {
-     'coretypes' => 0,
+     #'coretypes' => 0,
    },
    AUTHOR        => 'Reini Urban',
    ($ExtUtils::MakeMaker::VERSION gt '6.46' ?

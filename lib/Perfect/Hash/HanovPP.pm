@@ -1,5 +1,6 @@
 package Perfect::Hash::HanovPP;
-use coretypes;
+#use coretypes;
+BEGIN {$int::x = $num::x = $str::x}
 use strict;
 #use warnings;
 use Perfect::Hash;

@@ -47,6 +47,7 @@ use B;
 
 sub wmain {
   my $dict = $_[0];
+  my $opt = $_[1];
   # we need a main
   open my $FH, ">", "main.c";
   print $FH '#include <stdio.h>
@@ -67,7 +68,11 @@ int main () {
   int i;
   int err = 0;
   for (i=0; i < ',$size,'; i++) {
-    long h = phash_lookup(testkeys[i]);
+    long h = phash_lookup(testkeys[i]';
+  if ($opt =~ /-nul/) {
+    print $FH ', strlen(testkeys[i])';
+  }
+  print $FH ');
     if (h<0) err++;
   }
   return err;
@@ -79,13 +84,13 @@ int main () {
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 for my $m (@methods) {
-  for my $opt ("-no-false-positives -nul -7bit",
+  for my $opt (#"-no-false-positives -nul -7bit",
                "-no-false-positives -nul",
-               "-no-false-positives -7bit",
+               #"-no-false-positives -7bit",
                "-no-false-positives",
-               "-nul -7bit",
+               #"-nul -7bit",
                "-nul",
-               "-7bit",
+               #"-7bit",
                "")
   {
     my $t0 = [gettimeofday];
@@ -96,7 +101,7 @@ for my $m (@methods) {
       next;
     }
     # use size/5 random entries
-    wmain(\@dict);
+    wmain(\@dict, $opt);
     $i++;
     $ph->save_c("phash");
     #ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
@@ -104,11 +109,11 @@ for my $m (@methods) {
     #diag($cmd);
     $t0 = [gettimeofday];
     my $retval = system($cmd." 2>/dev/null");
-    print "  compiled in ",tv_interval($t0),"\n";
+    print "$m compiled in ",tv_interval($t0),"\n";
     if (!($retval>>8)) {
       my $t1 = [gettimeofday];
       my $retstr = `./phash`;
-      print "  lookups in ",tv_interval($t0),"\n";
+      print "$m lookups in ",tv_interval($t0)," with $opt\n";
       $retval = $?;
       if ($retval>>8) {
         print $retval>>8, " errors\n";

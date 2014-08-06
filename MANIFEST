@@ -6,6 +6,7 @@ cmph-2.0/CMPH.xs
 examples/epmh.py
 examples/words1000
 examples/words20
+examples/bench.pl
 lib/Perfect/Hash.pm
 lib/Perfect/Hash/Bob.pm
 lib/Perfect/Hash/C.pm
@@ -25,3 +26,4 @@ t/00basic.t
 t/01words.t
 t/02sysdict.t
 t/03false-positives.t
+t/04save_c.t

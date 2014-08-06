@@ -228,6 +228,8 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
 # SEE ALSO
 
+`script/phash` for the frontend.
+
 ## Algorithms
 
 [Perfect::Hash::HanovPP](https://metacpan.org/pod/Perfect::Hash::HanovPP),

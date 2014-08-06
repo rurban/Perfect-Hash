@@ -339,7 +339,7 @@ sub save_xs {
 
 =head1 SEE ALSO
 
-L<script/phash> for the frontend.
+F<script/phash> for the frontend.
 
 =head2 Algorithms
 

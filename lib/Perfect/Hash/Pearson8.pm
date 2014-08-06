@@ -33,10 +33,10 @@ Honored options are:
 I<-no-false-positives>
 
 I<-max-time seconds> stops generating a phash at seconds and uses a
-non-perfect, but still fast hash then. Default: 60s.
+non-perfect, but still fast hash then. Default: 60 seconds.
 
-It returns an object with @H containing the randomized
-pearson lookup table.
+It returns an object with \@H containing the randomized
+pearson lookup table or undef if none was found.
 
 =cut
 

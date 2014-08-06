@@ -156,7 +156,7 @@ sub collisions {
 
 sub hash {
   my ($H, $key, $size ) = @_;
-  my $d = length $key || 0;
+  my $d = 0;
   my $hsize = scalar @$H;
   for (split //, $key) { # under use bytes
     $d = $H->[($d ^ ord($_)) % $hsize];
@@ -234,6 +234,7 @@ sub save_c {
   print $FH $ph->c_funcdecl($base)." {";
   print $FH "
     long h = 0;
+    const char *key = s;
     static unsigned char $base\[] = {
 ";
   my $size = $ph->[0];
@@ -243,9 +244,11 @@ sub save_c {
   print $FH "    };\n";
   print $FH "    /* collisions */";
   my $C = $ph->[2];
+  my $collisions;
   my $i = 0;
   for my $coll (@$C) {
     if ($coll and @$coll) {
+      $collisions++;
       print $FH "
     static const char *Ck_$i\[] = {";
       my @ci = map { $_->[0] } @$coll;
@@ -259,18 +262,45 @@ sub save_c {
     }
     $i++;
   }
-  $i = 0;
-  print $FH "
-    static const char *Ck[$size];
-    static const int  *Cv[$size];
-    /* TODO static init */";
-  for my $coll (@$C) {
-    if ($coll and @$coll) {
-      print $FH "
-    Ck[$i] = (void*)&Ck_$i;
-    Cv[$i] = (void*)&Cv_$i;";
+  if ($collisions) {
+    $i = 0;
+    print $FH "
+    static const char *Ck[] = { ";
+    for my $coll (@$C) {
+      if ($coll and @$coll) {
+        print $FH "
+        (void*)&Ck_$i, ";
+      } else {
+        print $FH "0, ";
+      }
+      $i++;
     }
-    $i++;
+    print $FH "};";
+    $i = 0;
+    print $FH "
+    static const int *Cv[] = { ";
+    for my $coll (@$C) {
+      if ($coll and @$coll) {
+        print $FH "
+        (void*)&Cv_$i, ";
+      } else {
+        print $FH "0, ";
+      }
+      $i++;
+    }
+    print $FH "};";
+    print $FH "
+    static const int Cs[] = { ";
+    $i = 0;
+    for my $coll (@$C) {
+      if ($coll and @$coll) {
+        print $FH scalar @$coll,", ";
+      } else {
+        print $FH "0, ";
+      }
+      $i++;
+    }
+    print $FH "};";
   }
   if (!$ph->false_positives) { # store keys
     my $keys = $ph->[4];
@@ -301,24 +331,24 @@ sub save_c {
     }";
   }
   print $FH "
-    h = h % $size;" if ref $ph eq 'Perfect::Hash::Pearson';
-  if (@$C) {
+    h = h % $size;" if $hsize != $size;
+  if ($collisions) {
       print $FH "
     if (Ck[h]) {
-      int i=0;
-      char **ck = Ck[h];
-      for (;i<sizeof(ck);i++) {
-        if (0==strcmp(ck[i],s)) return Cv[h][i];
+      const char **ck = (const char **)Ck[h];
+      int i = 0;
+      for (; i < Cs[h]; i++) {
+        if (0 == strcmp(ck[i],key)) return Cv[h][i];
       }
     }";
   }
   if (!$ph->false_positives) { # check keys
     if ($ph->option('-nul')) {
       print $FH "
-    if (strncmp(K[h],s,l)) h = -1;";
+    if (strncmp(K[h],key,l)) h = -1;";
     } else {
       print $FH "
-    if (strcmp(K[h],s)) h = -1;";
+    if (strcmp(K[h],key)) h = -1;";
     }
   }
   print $FH "

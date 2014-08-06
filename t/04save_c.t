@@ -41,15 +41,16 @@ sub wmain {
 
 int main () {
   int err = 0;
-  if (phash_lookup("AOL") == '.$aol.')
-    printf("ok %d - c lookup exists\n", '.$i.');
-  else {
-    printf("not ok %d - c lookup exists\n", '.$i.'); err++;
+  long h = phash_lookup("AOL");
+  if (h == '.$aol.') {
+    printf("ok %d - c lookup exists %d\n", '.$i.', h);
+  } else {
+    printf("not ok %d - c lookup exists %d\n", '.$i.', h); err++;
   }
-  if (phash_lookup("notexist") == -1)
-    printf("ok %d - c lookup notexists\n", '.$i1.');
-  else {
-    printf("not ok %d - TODO c lookup notexists\n", '.$i1.');
+  if ((h = phash_lookup("notexist")) == -1) {
+    printf("ok %d - c lookup notexists %d\n", '.$i1.', h);
+  } else {
+    printf("not ok %d - c lookup notexists %d\n", '.$i1.', h); err++;
   }
   return err;
 }

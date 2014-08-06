@@ -58,7 +58,6 @@ sub new {
   # expected max: birthday paradoxon
   my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
   $maxcount = 30; # when to stop the search. exhaustive is 255!
-  # we should rather set a time-limit like 1 min.
   # Step 2: shuffle @H until we get a good max, only 0 or 1
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   my $t0 = [gettimeofday];
@@ -79,7 +78,8 @@ sub new {
     $H = \@H;
     ($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
-    print "list of collisions: sum=$sum, maxdepth=$max\n";
+    print "list of collisions: sum=$sum, maxdepth=$max\n"
+      if $options{'-debug'};
     $C = collisions($H, $keys, $values);
   }
 

@@ -15,33 +15,37 @@ for perfect hashes and minimal perfect hashes.
 
 L<http://cmph.sourceforge.net>
 
+=head1 METHODS
+
+=head2 new $filename, @options
+
+filename only so far
+
 =cut
 
-# filename only so far
 # TODO support arrayref and hashref converted to arrayrefs, as byte-packed vector
 # for the cmph io_vector or io_byte_vector adapter.
 sub new {
   return _new(@_);
 }
 
-=head1 false_positives
+=head2 perfecthash $ph
 
-Returns 1 if the hash might return false positives,
-i.e. will return the index of an existing key when
-you searched for a non-existing key.
+XS method
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+=head2 false_positives
+
+Returns 0, as cmph hashes always store the keys.
+
+=head2 save_c NYI
 
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
+  return 0
 }
 
-sub save_c { warn "NYI" }
-
-=back
+sub save_c { warn "save_c NYI" }
 
 =head1 LICENSE
 

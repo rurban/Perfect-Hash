@@ -1,5 +1,6 @@
 bob/Makefile.PL
 bob/Bob.xs
+Changes
 cmph-2.0.tar.gz
 cmph-2.0/Makefile.PL
 cmph-2.0/CMPH.xs
@@ -29,6 +30,9 @@ lib/Perfect/Hash/Urban.pm
 lib/Perfect/Hash/XS.pm
 Makefile.PL
 MANIFEST
+META.json
+META.yml
+ppport.h
 README.md
 script/phash.PL
 t/00basic.t
@@ -37,3 +41,7 @@ t/02sysdict.t
 t/03false-positives.t
 t/04save_c.t
 t/04save_c_nul.t
+t/z_kwalitee.t
+t/z_meta.t
+t/z_pod-coverage.t
+t/z_pod.t

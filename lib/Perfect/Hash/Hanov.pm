@@ -17,7 +17,9 @@ HanovPP with crc32
 
 This version is stable and relatively fast even for bigger dictionaries.
 
-=head1 new $dict, @options
+=head1 METHODS
+
+=head2 new $dict, @options
 
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
@@ -28,7 +30,7 @@ It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
-=head1 perfecthash $obj, $key
+=head2 perfecthash $obj, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
@@ -39,7 +41,7 @@ otherwise it will return undef.
 Without -no-false-positives, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
-=head1 false_positives
+=head2 false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -49,23 +51,23 @@ The default is 1, unless you created the hash with the option
 C<-no-false-positives>, which increases the required space from
 2n to B<3n>.
 
-=head1 hash string, [salt]
+=head2 hash string, [salt]
 
 Use the hw-assisted crc32 from libz (aka zlib).
 
-=item save_c fileprefix, options
+=head2 save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
+
+=head2 c_hash_impl $ph, $base
+
+String for C code for the hash function, depending on C<-nul>.
 
 =cut
 
 sub c_hash_impl {
   return Perfect::Hash::Urban::c_hash_impl(@_);
 }
-
-=back
-
-=cut
 
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));

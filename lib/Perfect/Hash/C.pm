@@ -1,4 +1,5 @@
 package Perfect::Hash::C;
+use strict;
 our $VERSION = '0.01';
 our @ISA = qw(Perfect::Hash Exporter);
 
@@ -35,7 +36,9 @@ or with typed values. (Perl XS, C++, strings vs numbers, ...)
 =over
 
 =item save_h_header fileprefix, options
+
 =item save_c_header fileprefix, options
+
 =item c_funcdecl ph, FH
 
 Helper methods for save_c

@@ -21,7 +21,9 @@ Can only store index values, not strings.
 
 WARNING: This version is still instable.
 
-=head1 new \@dict, options
+=head1 METHODS
+
+=head2 new \@dict, options
 
 Computes a minimal perfect hash table using the given dictionary,
 given as arrayref or filename.
@@ -178,7 +180,7 @@ sub new {
   }
 }
 
-=head1 perfecthash $obj, $key
+=head2 perfecthash $obj, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
@@ -196,6 +198,24 @@ sub perfecthash {
   my $v = $ph->iv_perfecthash($key);
   return $v == -1 ? undef : $v;
 }
+
+=head2 iv_perfecthash $obj, $key
+
+XS version, for integer hash values only
+
+=head2 nvecget $string, $index, $bits
+
+fast endian-less, vec version for bits>4
+
+=head2 nvecset $string, $index, $bits, $value
+
+fast endian-less, vec version for bits>4
+
+=head2 pp_perfecthash $obj, $key
+
+unused pure-perl version, just for reference
+
+=cut
 
 # use the new XS version now
 sub pp_perfecthash {
@@ -223,7 +243,7 @@ sub pp_perfecthash {
   }
 }
 
-=head1 false_positives
+=head2 false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -239,7 +259,7 @@ sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
-=head1 hash string, [salt]
+=head2 hash string, [salt]
 
 Try to use a hw-assisted crc32 from libz (aka zlib).
 
@@ -251,9 +271,13 @@ zlib. A good name might be Compress::Zlib, oh my.
 
 #see the XS implementation in Hash.xs
 
-=item save_c fileprefix, options
+=head2 save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
+
+=head2 c_hash_impl $ph, $base
+
+String for C code for the hash function, depending on C<-nul>.
 
 =cut
 
@@ -283,7 +307,11 @@ unsigned long $base\_hash (unsigned d, const char *s) {
   }
 }
 
-sub save_xs { die "NYI" }
+=head2 save_xs NYI
+
+=cut
+
+sub save_xs { die "save_xs NYI" }
 
 sub _test_tables {
   my $ph = Perfect::Hash::Urban->new("examples/words1000",qw(-debug -no-false-positives));

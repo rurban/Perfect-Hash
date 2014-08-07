@@ -36,6 +36,7 @@ $Config{startperl}
 # In the following, perl variables are not expanded during extraction.
 
 print OUT <<'!NO!SUBS!';
+use strict;
 use Perfect::Hash;
 use Getopt::Long;
 use Pod::Usage;

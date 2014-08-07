@@ -12,7 +12,17 @@ XSLoader::load();
 
 XS interface to bob jenkins perfect hashes.
 
-=head1 false_positives
+=head1 METHDOS
+
+=head2 new $filename, @options
+
+NYI
+
+=head2 perfecthash $ph
+
+XS method
+
+=head2 false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -26,8 +36,6 @@ option C<-no-false-positives>.
 sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
-
-=back
 
 =head1 LICENSE
 

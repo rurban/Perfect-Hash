@@ -1,4 +1,5 @@
 package Perfect::Hash::XS;
+use strict;
 our $VERSION = '0.01';
 use Perfect::Hash::C;
 our @ISA = qw(Perfect::Hash::C Perfect::Hash);
@@ -35,6 +36,8 @@ This is a replacement for cdb databases or write-once or only daily Storable con
 =item save_xs filename, options
 
 Generated XS code, with the perl values saved as perl types.
+
+=back
 
 =cut
 

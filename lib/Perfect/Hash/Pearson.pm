@@ -26,7 +26,9 @@ Peter K. Pearson
 
 WARNING: This version is still instable.
 
-=head1 new $dict, @options
+=head1 METHODS
+
+=head2 new $dict, @options
 
 Computes a brute-force n-bit Pearson hash table using the given
 dictionary, given as hashref or arrayref, with fast lookup.
@@ -106,6 +108,16 @@ sub option {
   return $_[0]->[3]->{$_[1]};
 }
 
+=head2 option $ph
+
+Access the option hash in $ph
+
+=head2 shuffle
+
+Helper method to calculate a pearson permutation table via Knuth Random Shuffle.
+
+=cut
+
 sub shuffle {
   # the "Knuth Shuffle", a random shuffle to create good permutations
   my $H = $_[0];
@@ -118,6 +130,12 @@ sub shuffle {
   }
   delete $H->[$last];
 }
+
+=head2 cost
+
+Helper method to calculate the cost for the current pearson permutation table.
+
+=cut
 
 sub cost {
   my ($H, $keys) = @_;
@@ -133,6 +151,12 @@ sub cost {
   }
   return ($sum, $max);
 }
+
+=head2 collisions
+
+Helper method to gather arrayref of arrayrefs of all collisions.
+
+=cut
 
 sub collisions {
   my ($H, $keys, $values) = @_;
@@ -150,7 +174,7 @@ sub collisions {
   return \@C;
 }
 
-=head1 hash \@H, salt, string
+=head2 hash \@H, salt, string
 
 =cut
 
@@ -164,7 +188,7 @@ sub hash {
   return $d % $size;
 }
 
-=head1 perfecthash $obj, $key
+=head2 perfecthash $obj, $key
 
 Look up a $key in the pearson hash table
 and return the associated index into the initially 
@@ -202,7 +226,7 @@ sub perfecthash {
   }
 }
 
-=head1 false_positives
+=head2 false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -217,13 +241,16 @@ sub false_positives {
   return !exists $_[0]->[3]->{'-no-false-positives'};
 }
 
-=item save_c fileprefix, options
+=head2 save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
+=head2 save_c $ph
+
+Generate C code for all 3 Pearson classes
+
 =cut
 
-# for all 3 Pearson classes
 sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
@@ -365,13 +392,21 @@ sub save_c {
   close $FH;
 }
 
-sub c_hash_impl {""}
+=head2 c_hash_impl $ph, $base
 
-sub save_xs { die "NYI" }
-
-=back
+String for C code for the hash function, depending on C<-nul>.
 
 =cut
+
+sub c_hash_impl {""}
+
+=head2 save_xs $ph
+
+Generate XS code for all 3 Pearson classes
+
+=cut
+
+sub save_xs { die "save_xs NYI" }
 
 # local testing: pb -d lib/Perfect/Hash/Pearson.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson")'

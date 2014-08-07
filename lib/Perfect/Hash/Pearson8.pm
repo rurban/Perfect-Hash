@@ -22,7 +22,9 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-=head1 new $dict, @options
+=head1 METHODS
+
+=head2 new $dict, @options
 
 Computes a brute-force 8-bit Pearson hash table using the given
 dictionary, given as hashref or arrayref, with fast lookup.  This
@@ -85,7 +87,7 @@ sub new {
   }
 }
 
-=head1 perfecthash $obj, $key
+=head2 perfecthash $obj, $key
 
 Look up a $key in the pearson hash table
 and return the associated index into the initially 
@@ -110,7 +112,7 @@ sub perfecthash {
   }
 }
 
-=head1 false_positives
+=head2 false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -125,7 +127,7 @@ sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
-=item save_c fileprefix, options
+=head2 save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
@@ -156,10 +158,6 @@ static unsigned char $base\[] = {
 ";
   close $FH;
 }
-
-=back
-
-=cut
 
 # local testing: pb -d lib/Perfect/Hash/Pearson8.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson8")'

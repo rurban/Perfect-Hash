@@ -239,7 +239,8 @@ C<libicu>.
 
 # Not yet:      Bob Gperf CMPH::BMZ8 CMPH::BRZ
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
-                CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH);
+                CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD
+                CMPH::CHD_PH);
 # Still failing:
 our %algo_todo = map {$_=>1}
              qw(-urban -pearson -pearsonnp -pearson8

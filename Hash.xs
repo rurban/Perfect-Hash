@@ -6,13 +6,12 @@
 
 #include "zlib.h"
 
-#if 0
-# ifdef USE_PPPORT_H
-#  define NEED_sv_2pvbyte
-#  define NEED_sv_2pv_nolen
-#  define NEED_sv_pvn_force_flags
+#if PERL_VERSION < 10
+#  define USE_PPPORT_H
+#endif
+
+#ifdef USE_PPPORT_H
 #  include "ppport.h"
-# endif
 #endif
 
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
@@ -98,7 +97,8 @@ CODE:
     if (AvFILL(ref) > 2) {
       SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
       IV iv = SvIVX(v);
-      RETVAL = (SvCUR(key) == SvCUR(keys[iv]) && memEQ(SvPVX(keys[iv]), SvPVX(key), SvCUR(key)))
+      RETVAL = ( SvCUR(key) == SvCUR(keys[iv])
+              && memEQ(SvPVX(keys[iv]), SvPVX(key), SvCUR(key)))
         ? SvREFCNT_inc_NN(v) : &PL_sv_undef;
     } else {
       RETVAL = SvREFCNT_inc_NN(v);

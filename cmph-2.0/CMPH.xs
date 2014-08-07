@@ -6,11 +6,12 @@
 
 #include "cmph.h"
 
+#if PERL_VERSION < 10
+#  define USE_PPPORT_H
+#endif
+
 #ifdef USE_PPPORT_H
-#  define NEED_sv_2pvbyte
-#  define NEED_sv_2pv_nolen
-#  define NEED_sv_pvn_force_flags
-#  include "ppport.h"
+#  include "../ppport.h"
 #endif
 
 MODULE = Perfect::Hash::CMPH	PACKAGE = Perfect::Hash::CMPH
@@ -59,7 +60,7 @@ _new(class, dict, ...)
     for (i=2; i<items; i++) { /* CHECKME */
       av_push(av, ST(i));
     }
-    RETVAL = sv_bless(newRV((SV*)av), gv_stashpv(classname, GV_ADDWARN));
+    RETVAL = sv_bless(newRV_inc((SV*)av), gv_stashpv(classname, GV_ADDWARN));
   }
 OUTPUT:
     RETVAL

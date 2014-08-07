@@ -6,7 +6,7 @@ use strict;
 our @ISA = qw(Perfect::Hash);
 
 use XSLoader;
-XSLoader::load();
+XSLoader::load('Perfect::Hash::Bob');
 
 =head1 DESCRIPTION
 
@@ -33,9 +33,9 @@ option C<-no-false-positives>.
 
 =cut
 
-sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
-}
+#sub false_positives {
+#  return !exists $_[0]->[2]->{'-no-false-positives'};
+#}
 
 =head1 LICENSE
 

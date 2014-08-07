@@ -54,8 +54,6 @@ sub save_h_header {
   my $fileprefix = shift || "phash";
   use File::Basename 'basename';
   my $base = basename $fileprefix;
-  #my @options = @_;
-  my @H = @{$ph->[0]};
   open FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
   print FH c_funcdecl($ph, $base).";\n";
   close FH;

@@ -121,6 +121,7 @@ CODE:
     char *V = SvPVX(g)+size;
     UV h = crc32(0, SvPVX(key), SvCUR(key)) % size;
     IV d = vec(G, h, bits);
+    IV v;
     if (bits == 32) {
       if (d >= INT32_MAX)
         d = (long)(d - UINT32_MAX);
@@ -133,7 +134,7 @@ CODE:
       if (d >= 1<<(bits-1))
         d = (d - (1<<bits));
     }
-    IV v = d < 0
+    v = d < 0
       ? vec(V, -d-1, bits)
       : d == 0 ? vec(V, h, bits)
                : vec(V, (UV)crc32(d, SvPVX(key), SvCUR(key)) % size, bits);

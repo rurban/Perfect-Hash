@@ -58,13 +58,16 @@ phash [method] [options...] keyfile
 
 Methods:
 --hanovpp
+--hanov
 --urban
 --pearsonnp
+...
 
 Options:
 --no-false-positives
 --nul
 --for-c
+--prefix=name
 
 Planned:
 --minimal
@@ -74,6 +77,7 @@ Planned:
 --for-xs
 --hash=name
 --pic
+--inline
 --null-strings
 --7bit
 --ignore-case
@@ -101,11 +105,19 @@ GetOptions
    'pearson',
    'pearson8',
    'pearsonnp',
+   # and many more ... get them from %algo_methods?
    'false-positives!',
    'nul',
    '7bit',
    'prefix=s',
    'for-c!',
+   'for-xs',
+   # get them dynamically?
+   'for-java',
+   'for-ruby',
+   'for-python',
+   'for-php',
+   'for-pecl',
    'ignore-case',
    'unicode-ignore-case',
    'optimal-speed',
@@ -117,19 +129,18 @@ my $keyfile = shift or _usage_and_die();
 my @options = map { ("-".$_, $options->{$_} == 1 ? () : $options->{$_}) } keys %$options;
 
 my $ph = new Perfect::Hash $keyfile, @options;
-# TODO: check for other output formatters and load it.
-if ($options->{'for-xs'}) {
-  $ph->save_xs($options->{prefix});
+my @fmt = grep /^-for/, @options;
+if (@fmt) {
+  for (@fmt) {
+    s/^-for-//;
+    my $class = "Perfect::Hash::" . uc($_);
+    eval "require $class;";
+    my $save = "save_".$_;
+    $ph->$save($options->{prefix});
+  }
 } else {
   $ph->save_c($options->{prefix});
 }
-
-!NO!SUBS!
-
-close OUT or die "Can't close $file: $!";
-chmod 0755, $file or die "Can't reset permissions for $file: $!\n";
-exec("$Config{'eunicefix'} $file") if $Config{'eunicefix'} ne ':';
-chdir $origdir;
 
 # Local Variables:
 #   mode: cperl
@@ -137,3 +148,9 @@ chdir $origdir;
 #   fill-column: 80
 # End:
 # vim: expandtab shiftwidth=2:
+!NO!SUBS!
+
+close OUT or die "Can't close $file: $!";
+chmod 0755, $file or die "Can't reset permissions for $file: $!\n";
+exec("$Config{'eunicefix'} $file") if $Config{'eunicefix'} ne ':';
+chdir $origdir;

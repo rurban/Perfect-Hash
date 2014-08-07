@@ -5,12 +5,13 @@ our @ISA = qw(Perfect::Hash::C Perfect::Hash);
 
 =head1 NAME
 
-Perfect::Hash::XS - generate perl XS code for perfect hashes
+Perfect::Hash::XS - Perfect Hash output formatter for XS - compiled perl extensions
 
 =head1 SYNOPSIS
 
-    use Perfect::Hash;
+    phash keyfile --for-xs --prefix=ph
 
+    use Perfect::Hash;
     $hash->{chr($_)} = int rand(2) for 48..90;
     my $ph = new Perfect:Hash $hash;
     $ph->save_xs("ph.inc");
@@ -34,5 +35,5 @@ Generated XS code, with the perl values saved as perl types.
 =cut
 
 sub save_xs {
-  die 'nyi';
+  die 'save_xs nyi';
 }

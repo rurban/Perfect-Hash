@@ -1,8 +1,10 @@
 # NAME
 
-Perfect::Hash - generate perfect hashes
+Perfect::Hash - generate perfect hashes, library backend for phash
 
 # SYNOPSIS
+
+    phash keyfile --prefix=phash ...
 
     use Perfect::Hash;
     my @dict = split/\n/,`cat /usr/share.dict/words`;
@@ -252,23 +254,24 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
 ## Output classes
 
+Output classes are loaded dynamically from a `-for-class` option,
+the option must be lowercase, the classsname must be uppercase.
+
 [Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C) `-for-c` (C library)
 
 [Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS) `-for-xs` (compiled perl extension)
 
 Planned:
 
-[Perfect::Hash::Python](https://metacpan.org/pod/Perfect::Hash::Python) `-for-py` (compiled python extension)
+[Perfect::Hash::PYTHON](https://metacpan.org/pod/Perfect::Hash::PYTHON) `-for-python` (compiled python extension)
 
-[Perfect::Hash::Ruby](https://metacpan.org/pod/Perfect::Hash::Ruby) `-for-rb` (compiled ruby extension)
+[Perfect::Hash::RUBY](https://metacpan.org/pod/Perfect::Hash::RUBY) `-for-ruby` (compiled ruby extension)
 
-[Perfect::Hash::Java](https://metacpan.org/pod/Perfect::Hash::Java) `-for-java`
+[Perfect::Hash::JAVA](https://metacpan.org/pod/Perfect::Hash::JAVA) `-for-java`
 
 [Perfect::Hash::PHP](https://metacpan.org/pod/Perfect::Hash::PHP) `-for-php` (pure php)
 
-[Perfect::Hash::Pecl](https://metacpan.org/pod/Perfect::Hash::Pecl) `-for-pecl` (compiled php extension)
-
-
+[Perfect::Hash::PECL](https://metacpan.org/pod/Perfect::Hash::PECL) `-for-pecl` (compiled php extension)
 
 For Lua or Lisp this is probably not needed as they either roll their own,
 or FFI into the generated C library.

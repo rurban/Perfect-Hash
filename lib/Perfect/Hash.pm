@@ -12,9 +12,11 @@ our @EXPORT = qw(_dict_init gettimeofday tv_interval);
 
 =head1 NAME
 
-Perfect::Hash - generate perfect hashes
+Perfect::Hash - generate perfect hashes, library backend for phash
 
 =head1 SYNOPSIS
+
+    phash keyfile --prefix=phash ...
 
     use Perfect::Hash;
     my @dict = split/\n/,`cat /usr/share.dict/words`;
@@ -367,22 +369,24 @@ L<Perfect::Hash::CMPH::CHD_PH>,
 
 =head2 Output classes
 
+Output classes are loaded dynamically from a C<-for-class> option,
+the option must be lowercase, the classsname must be uppercase.
+
 L<Perfect::Hash::C> C<-for-c> (C library)
 
 L<Perfect::Hash::XS> C<-for-xs> (compiled perl extension)
 
 Planned:
 
-L<Perfect::Hash::Python> C<-for-py> (compiled python extension)
+L<Perfect::Hash::PYTHON> C<-for-python> (compiled python extension)
 
-L<Perfect::Hash::Ruby> C<-for-rb> (compiled ruby extension)
+L<Perfect::Hash::RUBY> C<-for-ruby> (compiled ruby extension)
 
-L<Perfect::Hash::Java> C<-for-java>
+L<Perfect::Hash::JAVA> C<-for-java>
 
 L<Perfect::Hash::PHP> C<-for-php> (pure php)
 
-L<Perfect::Hash::Pecl> C<-for-pecl> (compiled php extension)
-
+L<Perfect::Hash::PECL> C<-for-pecl> (compiled php extension)
 
 For Lua or Lisp this is probably not needed as they either roll their own,
 or FFI into the generated C library.

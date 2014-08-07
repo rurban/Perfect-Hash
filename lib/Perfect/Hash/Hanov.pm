@@ -8,7 +8,7 @@ use Perfect::Hash::HanovPP;
 use Perfect::Hash::Urban;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash Perfect::Hash::HanovPP Perfect::Hash::C);
+our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash::C);
 our $VERSION = '0.01';
 
 =head1 DESCRIPTION

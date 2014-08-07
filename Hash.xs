@@ -62,11 +62,12 @@ IV vec(char *G, IV index, IV bits) {
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Hanov
 
 UV
-hash(key, seed=0)
+hash(obj, key, seed=0)
+  SV* obj
   SV* key
   UV  seed;
 CODE:
-    if (items < 2) {
+    if (items < 3) {
       if (SvPOK(key))
         RETVAL = crc32(0, SvPVX(key), SvCUR(key));
       else
@@ -159,7 +160,7 @@ OUTPUT:
     RETVAL
 
 UV
-hash(key, seed=0)
+_old_hash(key, seed=0)
   SV* key
   UV  seed;
 CODE:

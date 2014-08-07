@@ -85,14 +85,15 @@ my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 for my $m (@methods) {
   next if $m eq '-pearson8';
-  for my $opt (#"-no-false-positives -nul -7bit",
+  for my $opt (@opts ? join(" ",@opts) : (
+               #"-no-false-positives -nul -7bit",
                "-no-false-positives -nul",
                #"-no-false-positives -7bit",
                "-no-false-positives",
                #"-nul -7bit",
                "-nul",
                #"-7bit",
-               "")
+               ""))
   {
     my $t0 = [gettimeofday];
     my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
@@ -107,7 +108,7 @@ for my $m (@methods) {
     $ph->save_c("phash");
     #ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
     my $cmd = cmd($m);
-    #diag($cmd);
+    #print STDERR $cmd;
     $t0 = [gettimeofday];
     my $retval = system($cmd." 2>/dev/null");
     print "$m compiled in ",tv_interval($t0),"\n";
@@ -123,4 +124,4 @@ for my $m (@methods) {
   }
 }
 
-unlink("phash","phash.c","phash.h","main.c");
+#unlink("phash","phash.c","phash.h","main.c");

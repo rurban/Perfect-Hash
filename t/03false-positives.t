@@ -6,14 +6,8 @@ my @methods = sort keys %Perfect::Hash::algo_methods;
 plan tests => 2*scalar(@methods);
 
 my $dict = "examples/words20";
-open my $d, $dict or die; {
-  local $/;
-  @dict = split /\n/, <$d>;
-}
-close $d;
-
 for my $m (map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash \@dict, $m, '-no-false-positives';
+  my $ph = new Perfect::Hash $dict, $m, '-no-false-positives';
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1, "SKIP empty phash $m");
@@ -28,7 +22,7 @@ for my $m (map {"-$_"} @methods) {
     ok(!defined $v, "method $m with -no-false-positives '$w' => undef");
   }
 
-  my $ph1 = new Perfect::Hash \@dict, $m;
+  my $ph1 = new Perfect::Hash $dict, $m;
   $v = $ph1->perfecthash($w);
   if ($ph1->false_positives) {
     ok($v >= 0, "method $m with false_positives '$w' => $v");

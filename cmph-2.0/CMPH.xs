@@ -21,11 +21,12 @@ _new(class, dict, ...)
     SV*  dict
   CODE:
   {
+    int i;
+    AV *av;
     FILE * keys_fd = NULL;
     cmph_io_adapter_t *key_source;
     cmph_config_t *mph;
-    double c;
-	cmph_t *mphf;
+    cmph_t *mphf;
     CMPH_ALGO algo = CMPH_CHM;
     const char *classname = SvPVX(class);
 
@@ -51,7 +52,12 @@ _new(class, dict, ...)
       cmph_config_set_algo(mph, algo);
     mphf = cmph_new(mph);
 
-    RETVAL = sv_bless(newRV(newSViv(PTR2IV(mphf))), gv_stashpv(classname, GV_ADDWARN));
+    av = newAV();
+    av_push(av, newSViv(PTR2IV(mphf)));
+    for (i=2; i<items; i++) { /* CHECKME */
+      av_push(av, ST(i));
+    }
+    RETVAL = sv_bless(newRV((SV*)av), gv_stashpv(classname, GV_ADDWARN));
   }
 OUTPUT:
     RETVAL
@@ -61,8 +67,8 @@ perfecthash(ph, key)
     SV*  ph
     SV*  key
 CODE:
-    SV *ref = SvRV(ph);
-    cmph_t *mphf = (cmph_t *)SvIVX(ref);
+    AV *ref = (AV*)SvRV(ph);
+    cmph_t *mphf = (cmph_t *)SvIVX(AvARRAY(ref)[0]);
     RETVAL = cmph_search(mphf, SvPVX(key), SvCUR(key));
 OUTPUT:
     RETVAL

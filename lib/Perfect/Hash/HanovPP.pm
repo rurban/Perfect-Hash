@@ -61,7 +61,7 @@ sub new {
   my @V; $#V = $last;
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash($_, 0) % $size ]}, $_ for @$keys;
+  push @{$buckets[ $class->hash($_, 0) % $size ]}, $_ for @$keys;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
@@ -79,7 +79,7 @@ sub new {
     # Repeatedly try different values of $d (the seed) until we find a hash function
     # that places all items in the bucket into free slots.
     while ($item < scalar(@bucket)) {
-      my $slot = hash($bucket[$item], $d) % $size;
+      my $slot = $class->hash($bucket[$item], $d) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
@@ -90,7 +90,7 @@ sub new {
         $item++;
       }
     }
-    $G[hash($bucket[0], 0) % $size] = $d;
+    $G[$class->hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
     print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
@@ -116,7 +116,7 @@ sub new {
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.
-    $G[hash($bucket[0], 0) % $size] = - $slot-1;
+    $G[$class->hash($bucket[0], 0) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
   print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
@@ -149,15 +149,15 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my ($G, $V) = ($ph->[0], $ph->[1]);
   my $size = scalar(@$G);
-  my $h = hash($key, 0) % $size;
+  my $h = $ph->hash($key, 0) % $size;
   my $d = $G->[$h];
   my $v = $d < 0
         ? $V->[- $d-1]
         : $d == 0
           ? $V->[$h]
-          : $V->[hash($key, $d) % $size];
+          : $V->[$ph->hash($key, $d) % $size];
   if ($ph->[2]->{'-debug'}) {
-    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
+    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?$ph->hash($key,$d)%$size:$d,$v);
   }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
@@ -191,6 +191,7 @@ pure-perl FNV-1 hash function as in http://isthe.com/chongo/tech/comp/fnv/
 =cut
 
 sub hash {
+  my $ph = shift;
   my str $str = shift;
   my int $d = shift || 0x01000193;
   for my $c (split//, $str) {
@@ -205,7 +206,7 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 =cut
 
-# for HanovPP and Urban
+# for HanovPP, Hanov and Urban
 sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;

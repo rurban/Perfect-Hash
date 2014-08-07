@@ -7,7 +7,7 @@ use Perfect::Hash::HanovPP;
 use integer;
 use bytes;
 use Config;
-our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash);
+our @ISA = qw(Perfect::Hash::Hanov Perfect::Hash);
 our $VERSION = '0.01';
 
 use XSLoader;
@@ -77,7 +77,7 @@ sub new {
   #hash(0); # initialize crc
 
   # Step 1: Place all of the keys into buckets
-  push @{$buckets[ hash($_, 0) % $size ]}, $_ for @$keys;
+  push @{$buckets[ $class->hash($_, 0) % $size ]}, $_ for @$keys;
 
   # Step 2: Sort the buckets and process the ones with the most items first.
   my @sorted = sort { scalar(@{$buckets->[$b]}) <=> scalar(@{$buckets->[$a]}) } (0..$last);
@@ -96,7 +96,7 @@ sub new {
     # that places all items in the bucket into free slots.
     # Note: The resulting G indices ($d) can be MAX_LONG
     while ($item < scalar(@bucket)) {
-      my $slot = hash( $bucket[$item], $d ) % $size;
+      my $slot = $class->hash( $bucket[$item], $d ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
         $d++; $item = 0; %slots = (); # nope, try next seed
@@ -107,7 +107,7 @@ sub new {
         $item++;
       }
     }
-    $G[hash($bucket[0], 0) % $size] = $d;
+    $G[$class->hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
     print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
     print "buckets[$i]:",scalar(@bucket)," d=$d @bucket\n" if $options{-debug};
@@ -133,7 +133,7 @@ sub new {
     my $slot = pop @freelist;
     # We subtract one to ensure it's negative even if the zeroeth slot was
     # used.
-    $G[hash($bucket[0], 0) % $size] = - $slot-1;
+    $G[$class->hash($bucket[0], 0) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
 
@@ -203,16 +203,16 @@ sub pp_perfecthash {
   my ($G, $bits) = ($ph->[0], $ph->[1]);
   my $size = 4 * length($G) / $bits;
   my $voff = $size;
-  my $h = hash($key, 0) % $size;
+  my $h = $ph->hash($key, 0) % $size;
   my $d = nvecget($G, $h, $bits);
   # fix negative sign of d
   $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
   my $v = $d < 0
     ? nvecget($G, $voff + (- $d-1), $bits)
     : $d == 0 ? nvecget($G, $voff + $h, $bits)
-              : nvecget($G, $voff + hash($key, $d) % $size, $bits);
+              : nvecget($G, $voff + $ph->hash($key, $d) % $size, $bits);
   if ($ph->[2]->{'-debug'}) {
-    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?hash($key,$d)%$size:$d,$v);
+    printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?$ph->hash($key,$d)%$size:$d,$v);
   }
   # -no-false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
@@ -264,8 +264,8 @@ sub c_hash_impl {
 #include \"zlib.h\"
 
 /* libz crc32 */
-inline
-unsigned $base\_hash_len (unsigned d, const char *s, const int len) {
+static inline
+unsigned long $base\_hash_len (unsigned d, const char *s, const int len) {
     return crc32(d, s, len);
 }
 "
@@ -275,8 +275,8 @@ unsigned $base\_hash_len (unsigned d, const char *s, const int len) {
 #include \"zlib.h\"
 
 /* libz crc32 */
-inline
-unsigned $base\_hash (unsigned d, const char *s) {
+static inline
+unsigned long $base\_hash (unsigned d, const char *s) {
     return crc32(d, s, strlen(s));
 }
 ";
@@ -297,7 +297,7 @@ sub _test_tables {
     printf "%2d: ph=%2d pph=%2s  G[%2d]=%3d  V[%2d]=%3d  h(%2d,%d)=%2d %s\n",
       $_,$ph->perfecthash($k),$ph->pp_perfecthash($k),
       $_,$G->[$_],$_,$V->[$_],
-      $_,$d,hash($k,$d)%$size,
+      $_,$d,$ph->hash($k,$d)%$size,
       $k;
   }
 }

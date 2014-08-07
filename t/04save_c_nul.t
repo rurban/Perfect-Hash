@@ -6,8 +6,20 @@ use Config;
 use ExtUtils::Embed qw(ccflags ldopts);
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
+my @opts = ('-nul');
 if (@ARGV and grep /^-/, @ARGV) {
-  @methods = grep { $_ = $1 if /^-(.*)/ } @ARGV;
+  my @m = ();
+  for (@ARGV) {
+    my ($m) = /^-(.*)/;
+    if (exists $Perfect::Hash::algo_methods{$m}) {
+      push @m, $_;
+    } else {
+      push @opts, $_;
+    }
+  }
+  @methods = @m if @m;
+} else {
+  @methods = map {"-$_"} @methods;
 }
 
 plan tests => 4*scalar(@methods);
@@ -21,10 +33,13 @@ close $d;
 
 sub cmd {
   my $m = shift;
+  my $opt = $Config{optimize};
+  $opt =~ s/-O2/-O3/;
   # TODO: Win32 /Of
-  my $cmd = $Config{cc}." -I. ".ccflags." -ophash main.c phash.c ".ldopts;
+  my $cmd = $Config{cc}." -I. $opt ".ccflags
+           ." -ophash main.c phash.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
-  $cmd .= " -lz" if $m eq '-urban';
+  $cmd .= " -lz" if $m eq '-urban' or $m eq '-hanov';
   return $cmd;
 }
 
@@ -53,11 +68,17 @@ int main () {
 }
 
 my $i = 0;
-for my $m (map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash \@dict, $m, '-nul';
+for my $m (@methods) {
+  my $ph = new Perfect::Hash \@dict, $m, @opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..3;
+    $i++;
+    next;
+  }
+  if ($m =~ /^-cmph/) {
+    ok(1, "SKIP nyi save_c for $m");
+    ok(1) for 1..4;
     $i++;
     next;
   }

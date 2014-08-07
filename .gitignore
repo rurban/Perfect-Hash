@@ -6,6 +6,9 @@
 /Perfect-Hash-*.tar.gz
 /cmph-*.tar.gz
 cmph-2.0/CMPH.c
+cmph-2.0/Makefile.orig
+cmph-2.0/TAGS
+cmph-2.0/autom4te.cache/
 script/phash
 META.json
 META.yml
@@ -25,6 +28,7 @@ pm_to_blib
 /cover_db
 /perf.data
 /log.test-*
+/log.bench-*
 cmph-2.0/bin/
 cmph-2.0/blib/
 cmph-2.0/cmph.pc

@@ -170,11 +170,11 @@ The current state of the art for bigger dictionaries.
 
 =item -cmph-fch (not yet)
 
-=item -for-c
+=item -for-c (yet unused)
 
 Optimize for C libraries
 
-=item -for-xs
+=item -for-xs (yet unused)
 
 Optimize for shared Perl XS code. Stores the values as perl types.
 
@@ -184,10 +184,10 @@ Use the specified hash function instead of the default.
 Only useful for hardware assisted C<crc32> and C<aes> system calls,
 provided by compiler intrinsics (sse4.2) or libz.
 See -hash=help for a list of all supported hash function names:
-C<crc32>, C<aes>, C<crc32-libz>
+C<crc32>, C<aes>, C<crc32-zlib>
 
 The hardware assisted C<crc32> and C<aes> functions add a run-time
-probe with slow software fallback code.  C<crc32-libz> does all this
+probe with slow software fallback code.  C<crc32-zlib> does all this
 also, and is especially optimized for long keys to hash them in
 parallel.
 
@@ -201,28 +201,28 @@ C<--pic>
 =item -nul
 
 Allow C<NUL> bytes in keys, i.e. store the length for keys and compare
-binary via C<strncmp>.
+binary via C<memcmp>, not C<strcmp>.
 
-=item -null-strings
+=item -null-strings (not yet)
 
 Use C<NULL> strings instead of empty strings for empty keyword table
-entries. This reduces the startup time of programs using a shared
-library containing the generated code (but not as much as the
-declaration C<-pic> option), at the expense of one more
+entries with C<-no-false-positives>. This reduces the startup time of
+programs using a shared library containing the generated code (but not
+as much as the declaration C<-pic> option), at the expense of one more
 test-and-branch instruction at run time.
 
-=item -7bit
+=item -7bit (not yet)
 
 Guarantee that all keys consist only of 7-bit ASCII characters, bytes
 in the range 0..127.
 
-=item -ignore-case
+=item -ignore-case (not yet)
 
 Consider upper and lower case ASCII characters as equivalent. The
 string comparison will use a case insignificant character
 comparison. Note that locale dependent case mappings are ignored.
 
-=item -unicode-ignore-case
+=item -unicode-ignore-case (not yet)
 
 Consider upper and lower case unicode characters as equivalent. The
 string comparison will use a case insignificant character
@@ -348,22 +348,66 @@ F<script/phash> for the frontend.
 =head2 Algorithms
 
 L<Perfect::Hash::HanovPP>,
+L<Perfect::Hash::Hanov>,
+L<Perfect::Hash::Urban>,
 L<Perfect::Hash::Pearson>,
 L<Perfect::Hash::Pearson8>,
 L<Perfect::Hash::PearsonNP>,
-L<Perfect::Hash::Urban>,
 L<Perfect::Hash::Bob>,
 L<Perfect::Hash::Gperf>,
-L<Perfect::Hash::CMPH::CHD>,
-L<Perfect::Hash::CMPH::BDZ>,
-L<Perfect::Hash::CMPH::BRZ>,
 L<Perfect::Hash::CMPH::CHM>,
+L<Perfect::Hash::CMPH::BMZ>,
+L<Perfect::Hash::CMPH::BMZ8>,
+L<Perfect::Hash::CMPH::BRZ>,
 L<Perfect::Hash::CMPH::FCH>
+L<Perfect::Hash::CMPH::BDZ>,
+L<Perfect::Hash::CMPH::BDZ_PH>,
+L<Perfect::Hash::CMPH::CHD>,
+L<Perfect::Hash::CMPH::CHD_PH>,
 
 =head2 Output classes
 
-L<Perfect::Hash::C>,
-L<Perfect::Hash::XS>
+L<Perfect::Hash::C> C<-for-c> (C library)
+
+L<Perfect::Hash::XS> C<-for-xs> (compiled perl extension)
+
+Planned:
+
+L<Perfect::Hash::Python> C<-for-py> (compiled python extension)
+
+L<Perfect::Hash::Ruby> C<-for-rb> (compiled ruby extension)
+
+L<Perfect::Hash::Java> C<-for-java>
+
+L<Perfect::Hash::PHP> C<-for-php> (pure php)
+
+L<Perfect::Hash::Pecl> C<-for-pecl> (compiled php extension)
+
+
+For Lua or Lisp this is probably not needed as they either roll their own,
+or FFI into the generated C library.
+For Go, Rust, Scala, Clojure, etc just roll you own library, based on an
+existing one.
+
+=head1 TEST REPORTS
+
+CPAN Testers: L<http://cpantesters.org/distro/P/Perfect-Hash>
+
+Travis: L<https://travis-ci.org/rurban/Perfect-Hash.png|https://travis-ci.org/rurban/Perfect-Hash/>
+
+Coveralls: L<https://coveralls.io/repos/rurban/Perfect-Hash/badge.png|https://coveralls.io/r/rurban/Perfect-Hash?branch=master>
+
+=head1 AUTHOR
+
+Reini Urban C<rurban@cpanel.net> 2014
+
+=head1 LICENSE
+
+Copyright 2014 cPanel Inc
+All rights reserved.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
 
 =cut
 
@@ -411,3 +455,10 @@ sub _test {
 }
 
 1;
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 78
+# End:
+# vim: expandtab shiftwidth=4:

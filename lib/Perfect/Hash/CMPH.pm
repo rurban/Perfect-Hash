@@ -13,9 +13,13 @@ XSLoader::load();
 XS interface to the cmph library, the current state of the art library
 for perfect hashes and minimal perfect hashes.
 
+L<http://cmph.sourceforge.net>
+
 =cut
 
 # filename only so far
+# TODO support arrayref and hashref converted to arrayrefs, as byte-packed vector
+# for the cmph io_vector or io_byte_vector adapter.
 sub new {
   return _new(@_);
 }

@@ -62,27 +62,27 @@ WriteMakefile
 
 package MY;
 
+# ensure README.md is uptodate at least when doing a dist
 sub dist {
   local $_ = shift->SUPER::dist(@_);
   s/DIST_DEFAULT = /DIST_DEFAULT = README.md /;
   return $_;
 }
 
-sub depend {
-  "
-README.md : \$(VERSION_FROM)
-	pod2markdown \$(VERSION_FROM) > \$@
+sub depend { '
+README.md : $(VERSION_FROM)
+	pod2markdown $(VERSION_FROM) | \
+	  $(PERL) -pe\'s/png\]\(https:/png\)\](https:/; s/(Travis|Coveralls): \[/\[!\[\1]\(/;\' > $@
 
 release : dist
-	git commit -a -m\"release \$(VERSION)\"
-	git tag \$(VERSION)
-	cpan-upload \$(DISTVNAME).tar\$(SUFFIX)
+	git commit -a -m"release $(VERSION)"
+	git tag $(VERSION)
+	cpan-upload $(DISTVNAME).tar$(SUFFIX)
 	git push
 	git push --tags
 test_cover :: pure_all
-	\$(RM_RF) cover_db
-	\$(PERLRUNINST) -S cover -test
+	$(RM_RF) cover_db
+	$(PERLRUNINST) -S cover -test
 test_coveralls :: pure_all
-	\$(PERLRUNINST) -S cover -test -report coveralls
-"
-}
+	test -f .coveralls.yml && $(PERLRUNINST) -S cover -test -report coveralls
+'; }

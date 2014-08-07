@@ -34,6 +34,8 @@ _new(class, dict, ...)
       keys_fd = fopen(SvPVX(dict), "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     } else {
+      /* XXX support arrayrefs at least, probably created via nvecset
+         and use the io_vector or io_byte_vector adapter */
       keys_fd = fopen("examples/words1000", "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     }

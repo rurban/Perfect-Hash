@@ -150,11 +150,11 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
     - \-cmph-brz (not yet)
     - \-cmph-chm (not yet)
     - \-cmph-fch (not yet)
-    - \-for-c
+    - \-for-c (yet unused)
 
         Optimize for C libraries
 
-    - \-for-xs
+    - \-for-xs (yet unused)
 
         Optimize for shared Perl XS code. Stores the values as perl types.
 
@@ -164,10 +164,10 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         Only useful for hardware assisted `crc32` and `aes` system calls,
         provided by compiler intrinsics (sse4.2) or libz.
         See -hash=help for a list of all supported hash function names:
-        `crc32`, `aes`, `crc32-libz`
+        `crc32`, `aes`, `crc32-zlib`
 
         The hardware assisted `crc32` and `aes` functions add a run-time
-        probe with slow software fallback code.  `crc32-libz` does all this
+        probe with slow software fallback code.  `crc32-zlib` does all this
         also, and is especially optimized for long keys to hash them in
         parallel.
 
@@ -181,28 +181,28 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
     - \-nul
 
         Allow `NUL` bytes in keys, i.e. store the length for keys and compare
-        binary via `strncmp`.
+        binary via `memcmp`, not `strcmp`.
 
-    - \-null-strings
+    - \-null-strings (not yet)
 
         Use `NULL` strings instead of empty strings for empty keyword table
-        entries. This reduces the startup time of programs using a shared
-        library containing the generated code (but not as much as the
-        declaration `-pic` option), at the expense of one more
+        entries with `-no-false-positives`. This reduces the startup time of
+        programs using a shared library containing the generated code (but not
+        as much as the declaration `-pic` option), at the expense of one more
         test-and-branch instruction at run time.
 
-    - \-7bit
+    - \-7bit (not yet)
 
         Guarantee that all keys consist only of 7-bit ASCII characters, bytes
         in the range 0..127.
 
-    - \-ignore-case
+    - \-ignore-case (not yet)
 
         Consider upper and lower case ASCII characters as equivalent. The
         string comparison will use a case insignificant character
         comparison. Note that locale dependent case mappings are ignored.
 
-    - \-unicode-ignore-case
+    - \-unicode-ignore-case (not yet)
 
         Consider upper and lower case unicode characters as equivalent. The
         string comparison will use a case insignificant character
@@ -233,19 +233,64 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 ## Algorithms
 
 [Perfect::Hash::HanovPP](https://metacpan.org/pod/Perfect::Hash::HanovPP),
+[Perfect::Hash::Hanov](https://metacpan.org/pod/Perfect::Hash::Hanov),
+[Perfect::Hash::Urban](https://metacpan.org/pod/Perfect::Hash::Urban),
 [Perfect::Hash::Pearson](https://metacpan.org/pod/Perfect::Hash::Pearson),
 [Perfect::Hash::Pearson8](https://metacpan.org/pod/Perfect::Hash::Pearson8),
 [Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
-[Perfect::Hash::Urban](https://metacpan.org/pod/Perfect::Hash::Urban),
 [Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob),
 [Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf),
-[Perfect::Hash::CMPH::CHD](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD),
-[Perfect::Hash::CMPH::BDZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ),
-[Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ),
 [Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
+[Perfect::Hash::CMPH::BMZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ),
+[Perfect::Hash::CMPH::BMZ8](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ8),
+[Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ),
 [Perfect::Hash::CMPH::FCH](https://metacpan.org/pod/Perfect::Hash::CMPH::FCH)
+[Perfect::Hash::CMPH::BDZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ),
+[Perfect::Hash::CMPH::BDZ_PH](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ_PH),
+[Perfect::Hash::CMPH::CHD](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD),
+[Perfect::Hash::CMPH::CHD_PH](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD_PH),
 
 ## Output classes
 
-[Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C),
-[Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS)
+[Perfect::Hash::C](https://metacpan.org/pod/Perfect::Hash::C) `-for-c` (C library)
+
+[Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS) `-for-xs` (compiled perl extension)
+
+Planned:
+
+[Perfect::Hash::Python](https://metacpan.org/pod/Perfect::Hash::Python) `-for-py` (compiled python extension)
+
+[Perfect::Hash::Ruby](https://metacpan.org/pod/Perfect::Hash::Ruby) `-for-rb` (compiled ruby extension)
+
+[Perfect::Hash::Java](https://metacpan.org/pod/Perfect::Hash::Java) `-for-java`
+
+[Perfect::Hash::PHP](https://metacpan.org/pod/Perfect::Hash::PHP) `-for-php` (pure php)
+
+[Perfect::Hash::Pecl](https://metacpan.org/pod/Perfect::Hash::Pecl) `-for-pecl` (compiled php extension)
+
+
+
+For Lua or Lisp this is probably not needed as they either roll their own,
+or FFI into the generated C library.
+For Go, Rust, Scala, Clojure, etc just roll you own library, based on an
+existing one.
+
+# TEST REPORTS
+
+CPAN Testers: [http://cpantesters.org/distro/P/Perfect-Hash](http://cpantesters.org/distro/P/Perfect-Hash)
+
+[![Travis](https://travis-ci.org/rurban/Perfect-Hash.png)](https://travis-ci.org/rurban/Perfect-Hash/)
+
+[![Coveralls](https://coveralls.io/repos/rurban/Perfect-Hash/badge.png)](https://coveralls.io/r/rurban/Perfect-Hash?branch=master)
+
+# AUTHOR
+
+Reini Urban `rurban@cpanel.net` 2014
+
+# LICENSE
+
+Copyright 2014 cPanel Inc
+All rights reserved.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.

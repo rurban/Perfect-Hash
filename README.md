@@ -32,10 +32,11 @@ There exist various C and a primitive python library to generate code
 to access perfect hashes and minimal versions thereof, but nothing to
 use easily. `gperf` is not very well suited to create big maps and
 cannot deal with anagrams, but creates fast C code. `Pearson` hashes
-are simplier and even faster, but not guaranteed to be creatable for
-small or bigger hashes.  cmph `CHD` and the other cmph algorithms
-might be the best algorithms for big hashes, but lookup time is slower
-for smaller hashes.
+are simplier and fast for small machines, but not guaranteed to be
+creatable for small or bigger hashes.  cmph `CHD` and the other cmph
+algorithms might be the best algorithms for big hashes, but lookup
+time is slower for smaller hashes and you need to link to an external
+library.
 
 As input we need to provide a set of unique keys, either as arrayref
 or hashref.
@@ -51,10 +52,11 @@ though.
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH::\*, Bob, Pearson, Gperf.
 
-As output there exist several dumper classes, e.g. C, XS or
-you can create your own for any language e.g. Java, Ruby, ...
+As output there exist several output formater classes, e.g. C, XS or
+you can create your own for any language e.g. Java, Ruby, PHP, Python,
+PECL...
 
-The best algorithm for big hashes, CHD, is derived from
+The best algorithm used in Hanov and various others is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)

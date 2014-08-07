@@ -22,7 +22,11 @@ Perfect::Hash::XS - Perfect Hash output formatter for XS - compiled perl extensi
 
 =head1 DESCRIPTION
 
-Optimized for sharedlib and PIC.
+Optimized for sharedlib and PIC, and it can hold more and mixed value
+types, not just strings and integers. With the help of Data::Compile (planned) even
+any perl values, like code refs, magic, ...
+
+This is a replacement for cdb databases or write-once or only daily Storable containers.
 
 =head1 METHODS
 

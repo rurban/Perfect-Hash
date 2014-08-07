@@ -46,7 +46,7 @@ option C<-no-false-positives>.
 
 =cut
 
-# local testing: p -d -Ilib lib/Perfect/Hash/CMPH/CHD.pm examples/words20
+# local testing: p -d -Ilib lib/Perfect/Hash/CMPH/BDZ.pm examples/words20
 unless (caller) {
   require Perfect::Hash;
   &Perfect::Hash::_test(@ARGV)

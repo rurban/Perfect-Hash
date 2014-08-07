@@ -6,7 +6,7 @@ use strict;
 our @ISA = qw(Perfect::Hash);
 
 use XSLoader;
-XSLoader::load();
+XSLoader::load('Perfect::Hash::CMPH');
 
 =head1 DESCRIPTION
 

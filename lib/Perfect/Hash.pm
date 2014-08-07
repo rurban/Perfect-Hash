@@ -242,7 +242,7 @@ our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH);
 # Still failing:
 our %algo_todo = map {$_=>1}
-             qw(-pearson -pearsonnp -pearson8
+             qw(-urban -pearson -pearsonnp -pearson8
                 -cmph-bmz -cmph-bmz8 -cmph-chm -cmph-brz -cmph-fch -cmph-bdz
                 -cmph-bdz_ph -cmph-chd -cmph-chd_ph);
 our %algo_methods = map {

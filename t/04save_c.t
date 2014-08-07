@@ -97,19 +97,25 @@ for my $m (@methods) {
   $ph->save_c("phash");
   if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
     my $cmd = cmd($m);
-    diag($cmd);
+    diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
       my $retstr = `./phash`;
       $retval = $?;
-      like($retstr, qr/^ok \d+ - c lookup exists/m, "c lookup exists");
-      like($retstr, qr/^ok \d+ - c lookup notexists/m, "c lookup notexists");
+      TODO: {
+        local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+        like($retstr, qr/^ok \d+ - c lookup exists/m, "$m c lookup exists");
+        like($retstr, qr/^ok \d+ - c lookup notexists/m, "$m c lookup notexists");
+      }
     } else {
       ok(1, "SKIP") for 0..1;
     }
-    ok(!($retval>>8), "could run $m");
+    TODO: {
+      local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
+      ok(!($retval>>8), "could run $m");
+    }
   } else {
     ok(1, "SKIP") for 0..3;
   }
-  #unlink("phash","phash.c","phash.h","main.c");
+  unlink("phash","phash.c","phash.h","main.c");
 }

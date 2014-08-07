@@ -26,7 +26,8 @@ if (@ARGV and grep /^-/, @ARGV) {
 }
 plan tests => scalar(@methods);
 
-open my $d, $dict or die; {
+my $d;
+open $d, $dict or die; {
   local $/;
   @dict = split /\n/, <$d>;
 }

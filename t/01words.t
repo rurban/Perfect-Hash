@@ -22,7 +22,8 @@ plan tests => 2*scalar(@methods);
 
 # test words20 as hashref and arrayref
 my $dict = "examples/words20";
-open my $d, $dict or die; {
+my $d;
+open $d, $dict or die; {
   local $/;
   @dict = split /\n/, <$d>;
 }

@@ -53,10 +53,9 @@ sub save_h_header {
   my $base = basename $fileprefix;
   #my @options = @_;
   my @H = @{$ph->[0]};
-  my $FH;
-  open $FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
-  print $FH c_funcdecl($ph, $base).";\n";
-  close $FH;
+  open FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
+  print FH c_funcdecl($ph, $base).";\n";
+  close FH;
   return ($fileprefix, $base);
 }
 

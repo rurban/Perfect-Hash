@@ -107,6 +107,14 @@ sub _save_c_array {
   }
 }
 
+=item c_lib
+
+Returns a string with the required libs to link to.
+
+=cut
+
+sub c_lib { "" }
+
 =back
 
 =cut

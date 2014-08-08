@@ -32,15 +32,15 @@ open $d, $dict or die; {
 }
 close $d;
 
-sub cmd {
-  my $m = shift;
+sub compile_cmd {
+  my $ph = shift;
   my $opt = $Config{optimize};
   $opt =~ s/-O2/-O3/;
   # TODO: Win32 /Of
   my $cmd = $Config{cc}." -I. $opt ".ccflags
-           ." -ophash main.c phash.c ".ldopts;
+           ." -o phash main.c phash.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
-  $cmd .= " -lz" if $m eq '-urban' or $m eq '-hanov';
+  $cmd .= $ph->c_lib;
   return $cmd;
 }
 
@@ -100,7 +100,7 @@ for my $m (@methods) {
   $i++;
   $ph->save_c("phash");
   if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
-    my $cmd = cmd($m);
+    my $cmd = compile_cmd($ph);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {

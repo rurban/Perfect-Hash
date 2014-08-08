@@ -19,7 +19,9 @@ This version is stable and relatively fast even for bigger dictionaries.
 
 =head1 METHODS
 
-=head2 new $dict, @options
+=over
+
+=item new $dict, @options
 
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
@@ -30,7 +32,7 @@ It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
-=head2 perfecthash $obj, $key
+=item perfecthash $obj, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
@@ -41,7 +43,7 @@ otherwise it will return undef.
 Without -no-false-positives, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
-=head2 false_positives
+=item false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -51,23 +53,49 @@ The default is 1, unless you created the hash with the option
 C<-no-false-positives>, which increases the required space from
 2n to B<3n>.
 
-=head2 hash string, [salt]
+=item hash string, [salt]
 
 Use the hw-assisted crc32 from libz (aka zlib).
 
-=head2 save_c fileprefix, options
+=item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
-=head2 c_hash_impl $ph, $base
+=item c_hash_impl $ph, $base
 
 String for C code for the hash function, depending on C<-nul>.
 
 =cut
 
 sub c_hash_impl {
-  return Perfect::Hash::Urban::c_hash_impl(@_);
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    return "
+#include \"zlib.h\"
+/* libz crc32 */
+#define $base\_hash_len(d, s, len) crc32((d), (s), (len))
+"
+  } else {
+    return "
+#include <string.h>
+#include \"zlib.h\"
+/* libz crc32 */
+#define $base\_hash(d, s) crc32((d), (s), strlen(s))
+";
+  }
 }
+
+=item c_lib
+
+Hanov and Urban need -lz.
+
+TODO: honor given LIBS paths to Makefile.PL
+
+=back
+
+=cut
+
+sub c_lib { " -lz" }
 
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));

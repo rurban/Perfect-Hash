@@ -32,15 +32,15 @@ open $d, $dict or die; {
 }
 close $d;
 
-sub cmd {
-  my $m = shift;
+sub compile_cmd {
+  my $ph = shift;
   my $opt = $Config{optimize};
   $opt =~ s/-O2/-O3/;
   # TODO: Win32 /Of
   my $cmd = $Config{cc}." -I. $opt ".ccflags
-           ." -ophash main.c phash.c ".ldopts;
+           ." -o phash_nul main_nul.c phash_nul.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
-  $cmd .= " -lz" if $m eq '-urban' or $m eq '-hanov';
+  $cmd .= $ph->c_lib;
   return $cmd;
 }
 
@@ -49,14 +49,14 @@ sub wmain {
   $aol = 0 unless $aol;
   my $i1 = $i +1;
   # and then we need a main also
-  open my $FH, ">", "main.c";
+  open my $FH, ">", "main_nul.c";
   print $FH '
 #include <stdio.h>
-#include "phash.h"
+#include "phash_nul.h"
 
 int main () {
   int err = 0;
-  long h = phash_lookup("AOL", 3);
+  long h = phash_nul_lookup("AOL", 3);
   if (h == '.$aol.') {
     printf("ok %d - c lookup exists %d\n", '.$i.', h);
   } else {
@@ -89,13 +89,13 @@ for my $m (@methods) {
   }
   wmain((4*$i)+3, $ph->perfecthash('AOL'));
   $i++;
-  $ph->save_c("phash");
-  if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
-    my $cmd = cmd($m);
+  $ph->save_c("phash_nul");
+  if (ok(-f "phash_nul.c" && -f "phash_nul.h", "$m generated phash_nul.c/.h")) {
+    my $cmd = compile_cmd($ph);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = `./phash`;
+      my $retstr = `./phash_nul`;
       $retval = $?;
       TODO: {
         local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
@@ -111,5 +111,5 @@ for my $m (@methods) {
   } else {
     ok(1, "SKIP") for 0..2;
   }
-  unlink("phash","phash.c","phash.h","main.c");
+  unlink("phash_nul","phash_nul.c","phash_nul.h","main_nul.c");
 }

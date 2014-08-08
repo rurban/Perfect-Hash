@@ -17,7 +17,9 @@ L<http://cmph.sourceforge.net>
 
 =head1 METHODS
 
-=head2 new $filename, @options
+=over
+
+=item new $filename, @options
 
 filename only so far
 
@@ -29,15 +31,15 @@ sub new {
   return _new(@_);
 }
 
-=head2 perfecthash $ph
+=item perfecthash $ph
 
 XS method
 
-=head2 false_positives
+=item false_positives
 
 Returns 0, as cmph hashes always store the keys.
 
-=head2 save_c NYI
+=item save_c NYI
 
 =cut
 
@@ -46,6 +48,16 @@ sub false_positives {
 }
 
 sub save_c { warn "save_c NYI" }
+
+=item c_lib
+
+TODO: temp. and installed Alien libpath
+
+=cut
+
+sub c_lib { " -lcmph" }
+
+=back
 
 =head1 LICENSE
 

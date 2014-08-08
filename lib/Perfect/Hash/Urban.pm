@@ -281,32 +281,6 @@ String for C code for the hash function, depending on C<-nul>.
 
 =cut
 
-sub c_hash_impl {
-  my ($ph, $base) = @_;
-  if ($ph->option('-nul')) {
-    return "
-#include \"zlib.h\"
-
-/* libz crc32 */
-static inline
-unsigned long $base\_hash_len (unsigned d, const char *s, const int len) {
-    return crc32(d, s, len);
-}
-"
-  } else {
-    return "
-#include <string.h>
-#include \"zlib.h\"
-
-/* libz crc32 */
-static inline
-unsigned long $base\_hash (unsigned d, const char *s) {
-    return crc32(d, s, strlen(s));
-}
-";
-  }
-}
-
 =head2 save_xs NYI
 
 =cut

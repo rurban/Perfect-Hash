@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # pb examples/bench.pl -hanovpp -urban -pearsonnp
-
+use strict;
 use Perfect::Hash;
 use Config;
 use ExtUtils::Embed qw(ccflags ldopts);
@@ -34,12 +34,15 @@ open my $d, $dict or die; {
 close $d;
 my $size = scalar @dict;
 
-sub cmd {
-  my $m = shift;
+sub compile_cmd {
+  my $ph = shift;
+  my $opt = $Config{optimize};
+  $opt =~ s/-O2/-O3/;
   # TODO: Win32 /Of
-  my $cmd = $Config{cc}." -I. ".ccflags." -ophash main.c phash.c ".ldopts;
+  my $cmd = $Config{cc}." -I. $opt ".ccflags
+           ." -o phash main.c phash.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
-  $cmd .= " -lz" if $m eq '-urban';
+  $cmd .= $ph->c_lib;
   return $cmd;
 }
 
@@ -83,6 +86,7 @@ int main () {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
+printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
 for my $m (@methods) {
   next if $m eq '-pearson8';
   for my $opt (@opts ? join(" ",@opts) : (
@@ -95,9 +99,11 @@ for my $m (@methods) {
                #"-7bit",
                ""))
   {
-    my $t0 = [gettimeofday];
+    my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
+    $t0 = [gettimeofday];
     my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
-    print "$m generated in ",tv_interval($t0)," with $opt\n";
+    $t0 = tv_interval($t0);
+    #print "$m generated in $t0 with $opt\n";
     unless ($ph) {
       $i++;
       next;
@@ -107,20 +113,23 @@ for my $m (@methods) {
     $i++;
     $ph->save_c("phash");
     #ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
-    my $cmd = cmd($m);
+    my $cmd = compile_cmd($ph);
     #print STDERR $cmd;
-    $t0 = [gettimeofday];
+    $t1 = [gettimeofday];
     my $retval = system($cmd." 2>/dev/null");
-    print "$m compiled in ",tv_interval($t0),"\n";
+    $t1 = tv_interval($t1);
+    #print "$m compiled in $t1\n";
     if (!($retval>>8)) {
-      my $t1 = [gettimeofday];
+      $t2 = [gettimeofday];
       my $retstr = `./phash`;
-      print "$m lookups in ",tv_interval($t0)," with $opt\n";
+      $t2 = tv_interval($t2);
+      #print "$m lookups in ",tv_interval($t0)," with $opt\n";
       $retval = $?;
       if ($retval>>8) {
-        print $retval>>8, " errors\n";
+        print "\t", $retval>>8, " errors\n";
       }
     }
+    printf "%-12s %1.07f %1.07f %1.07g\t%s\n", substr($m,1), $t0, $t1, $t2, $opt;
   }
 }
 

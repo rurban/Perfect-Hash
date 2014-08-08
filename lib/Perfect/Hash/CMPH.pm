@@ -47,7 +47,7 @@ sub false_positives {
   return 0
 }
 
-sub save_c { warn "save_c NYI" }
+sub save_c { "save_c NYI" }
 
 =item c_lib
 

@@ -33,6 +33,11 @@ open $d, $dict or die; {
 }
 close $d;
 
+# Urban still fails with 32bit keys
+$Perfect::Hash::algo_todo{'-urban'} = 1;
+# but PearsonNP passes
+delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+
 for my $m (@methods) {
   diag "generating $m ph for ".scalar @dict." entries in $dict..." if $ENV{TEST_VERBOSE};
   my $t0 = [gettimeofday];

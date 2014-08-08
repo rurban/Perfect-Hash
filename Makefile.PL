@@ -31,6 +31,26 @@ if (! -e "bob/lookupa.c") {
   }
 }
 
+my @extras = ();
+my $EUMM_VER = $ExtUtils::MakeMaker::VERSION;
+push(@extras,
+     AUTHOR   => 'Reini Urban <rurban@cpan.org>')
+  if $EUMM_VER gt '5.4301';
+push(@extras,
+    LICENSE => 'perl_5',
+    SIGN => 1)
+  if $EUMM_VER gt '6.17';
+push(@extras,
+    'META_MERGE'  => {
+      resources =>
+      {
+       repository  => 'http://github.com/rurban/Perfect-Hash',
+       license     => 'http://dev.perl.org/licenses/',
+      },
+      release_status => 'unstable',
+     })
+  if $EUMM_VER gt '6.46';
+
 WriteMakefile
   (
    'NAME'	   => 'Perfect::Hash',
@@ -38,27 +58,53 @@ WriteMakefile
    'ABSTRACT_FROM' => 'lib/Perfect/Hash.pm',
    'PL_FILES'   => { 'script/phash.PL' => 'script/phash' },
    'EXE_FILES'  => [ 'script/phash' ],
-   'LIBS'       => "-lz",
+   # note that some old buggy EUMM will skip -lz here. 5.8.9 with 6.88 e.g.
+   # Warning (mostly harmless): No library found for -lz
+   # It is not harmless, see below
+   'LIBS'       => [ "-lz" ],
    'PREREQ_PM'	=> {
+     Time::HiRes => 0,
      #'coretypes' => 0,
    },
-   AUTHOR        => 'Reini Urban',
    clean => { FILES => "Hash.c.gcov Hash.xs.gcov Hash.gcda Hash.gcno "
                       ."cover_db perf.data script/phash" },
-
-   ($ExtUtils::MakeMaker::VERSION gt '6.46' ?
-    ('META_MERGE'  =>
-     {
-      resources =>
-      {
-       repository  => 'http://github.com/rurban/Perfect-Hash',
-       license     => 'http://dev.perl.org/licenses/',
-      },
-     }
-    ) : ()),
-    SIGN => 1
+   @extras
   );
 
+# Potentially cleanup a broken ExtUtils::Liblist 6.88, add -lz manually.
+# TODO: skip using the XS module if -lz is really not found.
+my ($IN, $OUT, $changed, $saw_lz);
+open $IN, "<", "Makefile";
+open $OUT, ">", "Makefile.tmp";
+while (<$IN>) {
+  $saw_lz++ if / -lz/;
+  unless (/^LDLOADLIBS/) {
+    print $OUT $_;
+    next;
+  }
+  if (/ -lz/) { # all ok
+    $saw_lz++;
+    print $OUT $_;
+    next;
+  }
+  chomp;
+  $_ .= " -lz\n";
+  print $OUT $_;
+  $changed++;
+}
+close $IN;
+close $OUT;
+if ($changed) {
+  warn "Warning: Patched -lz to LDLOADLIBS\n";
+  rename "Makefile.tmp", "Makefile";
+} elsif ($saw_lz) {
+  unlink "Makefile.tmp";
+} else {
+  # Missing const_loadlibs section
+  warn "Warning: Missing -lz, added -lz to OTHERLDFLAGS manually\n";
+  system(qq($^X -pi.tmp -e"s/OTHERLDFLAGS = /OTHERLDFLAGS = -lz/" Makefile));
+  unlink "Makefile.tmp";
+}
 
 package MY;
 

@@ -2,14 +2,20 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my @extras = ();
+my $EUMM_VER = $ExtUtils::MakeMaker::VERSION;
 push(@extras, CAPI => 'TRUE')
-    if (($PERL_VERSION >= 5.005) and ($OSNAME eq 'MSWin32')
-        and ($Config{archname} =~ /-object\b/i));
+  if (($PERL_VERSION >= 5.005) and ($OSNAME eq 'MSWin32')
+      and ($Config{archname} =~ /-object\b/i));
 
 push(@extras,
-    ABSTRACT => "XS interface to cmph",
-    AUTHOR   => 'Reini Urban')
-  if ($ExtUtils::MakeMaker::VERSION >= 5.4301);
+     ABSTRACT => "XS interface to cmph",
+     AUTHOR   => 'Reini Urban <rurban@cpan.org>')
+  if $EUMM_VER gt '5.4301';
+push(@extras,
+     META_MERGE => {
+       license => [ 'mozilla_1_1', 'lgpl_2_1' ]
+     })
+  if $EUMM_VER gt '6.46';
 
 #TODO: integrate into proper build and depend rules
 if (! -e "bin/cmph".$Config{exe_ext}) {

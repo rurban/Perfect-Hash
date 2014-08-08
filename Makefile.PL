@@ -63,7 +63,7 @@ WriteMakefile
    # It is not harmless, see below
    'LIBS'       => [ "-lz" ],
    'PREREQ_PM'	=> {
-     Time::HiRes => 0,
+     'Time::HiRes' => 0,
      #'coretypes' => 0,
    },
    clean => { FILES => "Hash.c.gcov Hash.xs.gcov Hash.gcda Hash.gcno "
@@ -102,7 +102,7 @@ if ($changed) {
 } else {
   # Missing const_loadlibs section
   warn "Warning: Missing -lz, added -lz to OTHERLDFLAGS manually\n";
-  system(qq($^X -pi.tmp -e"s/OTHERLDFLAGS = /OTHERLDFLAGS = -lz/" Makefile));
+  system(qq($^X -pi.tmp -e"s/OTHERLDFLAGS = /OTHERLDFLAGS = -lz /" Makefile));
   unlink "Makefile.tmp";
 }
 

@@ -18,7 +18,7 @@ XS interface to bob jenkins perfect hashes.
 
 NYI
 
-=head2 perfecthash $ph
+=head2 perfecthash key
 
 XS method
 

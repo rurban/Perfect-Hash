@@ -23,7 +23,7 @@ _new(class, dict, ...)
   CODE:
   {
     int i;
-    AV *av;
+    AV *result, *options;
     FILE * keys_fd = NULL;
     cmph_io_adapter_t *key_source;
     cmph_config_t *mph;
@@ -55,12 +55,14 @@ _new(class, dict, ...)
       cmph_config_set_algo(mph, algo);
     mphf = cmph_new(mph);
 
-    av = newAV();
-    av_push(av, newSViv(PTR2IV(mphf)));
+    result = newAV();
+    av_push(result, newSViv(PTR2IV(mphf)));
+    options = newAV();
     for (i=2; i<items; i++) { /* CHECKME */
-      av_push(av, ST(i));
+      av_push(options, ST(i));
     }
-    RETVAL = sv_bless(newRV_inc((SV*)av), gv_stashpv(classname, GV_ADDWARN));
+    av_push(result, newRV((SV*)options));
+    RETVAL = sv_bless(newRV_noinc((SV*)result), gv_stashpv(classname, GV_ADDWARN));
   }
 OUTPUT:
     RETVAL

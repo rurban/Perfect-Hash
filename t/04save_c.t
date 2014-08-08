@@ -77,6 +77,9 @@ int main () {
   close $FH;
 }
 
+# Pearson and PearsonNP do pass/fail randomly
+# delete $Perfect::Hash::algo_todo{'-pearson'};
+
 my $i = 0;
 for my $m (@methods) {
   my $ph = new Perfect::Hash \@dict, $m, @opts;

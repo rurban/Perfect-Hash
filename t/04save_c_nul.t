@@ -68,6 +68,10 @@ int main () {
   close $FH;
 }
 
+# Pearson and PearsonNP do pass consistently with -nul, but fail randomly without
+delete $Perfect::Hash::algo_todo{'-pearson'};
+delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+
 my $i = 0;
 for my $m (@methods) {
   my $ph = new Perfect::Hash \@dict, $m, @opts;

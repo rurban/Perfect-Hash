@@ -253,10 +253,12 @@ Generate C code for all 3 Pearson classes
 
 sub save_c {
   my $ph = shift;
+  my $C = $ph->[2];
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
+  print $FH "#include <string.h>\n" if @$C;
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
   print $FH "
@@ -270,7 +272,6 @@ sub save_c {
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
   print $FH "    /* collisions */";
-  my $C = $ph->[2];
   my $collisions;
   my $i = 0;
   for my $coll (@$C) {

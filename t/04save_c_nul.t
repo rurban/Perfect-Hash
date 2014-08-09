@@ -58,9 +58,9 @@ int main () {
   int err = 0;
   long h = phash_nul_lookup("AOL", 3);
   if (h == '.$aol.') {
-    printf("ok %d - c lookup exists %d\n", '.$i.', h);
+    printf("ok %d - c lookup exists %ld\n", '.$i.', h);
   } else {
-    printf("not ok %d - c lookup exists %d\n", '.$i.', h); err++;
+    printf("not ok %d - c lookup exists %ld\n", '.$i.', h); err++;
   }
   return err;
 }

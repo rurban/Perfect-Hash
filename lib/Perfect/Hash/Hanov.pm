@@ -71,16 +71,17 @@ sub c_hash_impl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     return "
+#include <string.h>
 #include \"zlib.h\"
 /* libz crc32 */
-#define $base\_hash_len(d, s, len) crc32((d), (s), (len))
+#define $base\_hash_len(d, s, len) crc32((d), (const unsigned char*)(s), (len))
 "
   } else {
     return "
 #include <string.h>
 #include \"zlib.h\"
 /* libz crc32 */
-#define $base\_hash(d, s) crc32((d), (s), strlen(s))
+#define $base\_hash(d, s) crc32((d), ((const unsigned char*)s), strlen(s))
 ";
   }
 }

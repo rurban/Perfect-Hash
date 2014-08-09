@@ -64,10 +64,10 @@ sub save_c_header {
   my ($ph, $fileprefix, $base) = @_;
   my $FH;
   open $FH, ">", $fileprefix.".c" or die "$fileprefix.c: @!";
-  # non-binary only so far:
-  print $FH "
-#include \"$base.h\"
-";
+  print $FH "#include \"$base.h\"\n";
+  if (!$ph->false_positives) { # check keys
+    print $FH "#include <string.h>\n";
+  }
   return $FH;
 }
 

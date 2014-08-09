@@ -3,11 +3,13 @@ package Perfect::Hash::Urban;
 use strict;
 #use warnings;
 use Perfect::Hash;
+use Perfect::Hash::Hanov;
 use Perfect::Hash::HanovPP;
 use integer;
 use bytes;
 use Config;
-our @ISA = qw(Perfect::Hash::Hanov Perfect::Hash);
+#use mro 'c3';
+our @ISA = qw(Perfect::Hash::Hanov Perfect::Hash::HanovPP Perfect::Hash::C);
 our $VERSION = '0.01';
 
 use XSLoader;

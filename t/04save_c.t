@@ -60,16 +60,16 @@ int main () {
   print $FH ', 3' if $nul;
   print $FH ');
   if (h == '.$aol.') {
-    printf("ok %d - c lookup exists %d\n", '.$i.', h);
+    printf("ok %d - c lookup exists %ld\n", '.$i.', h);
   } else {
-    printf("not ok %d - c lookup exists %d\n", '.$i.', h); err++;
+    printf("not ok %d - c lookup exists %ld\n", '.$i.', h); err++;
   }
   if ((h = phash_lookup("notexist"';
   print $FH ', 7' if $nul;
   print $FH ')) == -1) {
-    printf("ok %d - c lookup notexists %d\n", '.$i1.', h);
+    printf("ok %d - c lookup notexists %ld\n", '.$i1.', h);
   } else {
-    printf("not ok %d - c lookup notexists %d\n", '.$i1.', h); err++;
+    printf("not ok %d - c lookup notexists %ld\n", '.$i1.', h); err++;
   }
   return err;
 }

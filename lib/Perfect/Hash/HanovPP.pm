@@ -236,7 +236,7 @@ sub save_c {
     }
     # TODO: if @V contains only int indices
     for my $i (0..$size-1) {
-      $V[$i] = vec($G, $i+$size, $bits);
+      $V[$i] = Perfect::Hash::Urban::nvecget($G, $i+$size, $bits);
     }
     $G = \@G;
     $V = \@V;

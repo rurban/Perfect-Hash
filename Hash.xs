@@ -14,6 +14,8 @@
 #  include "ppport.h"
 #endif
 
+#define CRCSTR(sv) (const unsigned char *)(SvPVX(sv))
+
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
 static inline
 unsigned fnv_hash_len (unsigned d, const char *s, const int l) {
@@ -56,6 +58,8 @@ IV vec(char *G, IV index, IV bits) {
     return l;
   }
 #endif
+  die("Unsupported bits %"IVdf"\n", bits);
+  return 0;
 }
 
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Hanov
@@ -68,12 +72,12 @@ hash(obj, key, seed=0)
 CODE:
     if (items < 3) {
       if (SvPOK(key))
-        RETVAL = crc32(0, SvPVX(key), SvCUR(key));
+        RETVAL = crc32(0, CRCSTR(key), SvCUR(key));
       else
         RETVAL = crc32(0, NULL, 0);
     }
 	else
-	  RETVAL = crc32(seed, SvPVX(key), SvCUR(key));
+	  RETVAL = crc32(seed, CRCSTR(key), SvCUR(key));
 OUTPUT:
     RETVAL
 
@@ -87,13 +91,13 @@ CODE:
     SV **ga = AvARRAY(g);
     UV size = AvFILL(g) + 1;
     SV **va = AvARRAY((AV*)SvRV(AvARRAY(ref)[1]));
-    UV h  = crc32(0, SvPVX(key), SvCUR(key)) % size;
+    UV h  = crc32(0, CRCSTR(key), SvCUR(key)) % size;
     IV d  = SvIVX(ga[h]);
     SV *v = d < 0
       ? va[-d-1]
       : d == 0
         ? va[h]
-        : va[crc32(d, SvPVX(key), SvCUR(key)) % size];
+        : va[crc32(d, CRCSTR(key), SvCUR(key)) % size];
     if (AvFILL(ref) > 2) {
       SV **keys = AvARRAY((AV*)SvRV(AvARRAY(ref)[3]));
       IV iv = SvIVX(v);
@@ -119,7 +123,7 @@ CODE:
     IV bits = SvIVX(AvARRAY(ref)[1]);
     UV size = 4 * SvCUR(g) / bits; /* 40 = (20 * BITS / 4); 20 = 40 * 4 / BITS */
     char *V = SvPVX(g)+size;
-    UV h = crc32(0, SvPVX(key), SvCUR(key)) % size;
+    unsigned long h = crc32(0, CRCSTR(key), SvCUR(key)) % size;
     IV d = vec(G, h, bits);
     IV v;
     if (bits == 32) {
@@ -137,10 +141,11 @@ CODE:
     v = d < 0
       ? vec(V, -d-1, bits)
       : d == 0 ? vec(V, h, bits)
-               : vec(V, (UV)crc32(d, SvPVX(key), SvCUR(key)) % size, bits);
+               : vec(V, (UV)crc32(d, CRCSTR(key), SvCUR(key)) % size, bits);
 #ifdef DEBUGGING
     if (hv_exists((HV*)SvRV(AvARRAY(ref)[2]), "-debug", 6)) {
-      printf("\nxs: h0=%2d d=%3d v=%2d\t",h, d>0 ? crc32(d,SvPVX(key),SvCUR(key))%size : d, v);
+      printf("\nxs: h0=%2lu d=%3ld v=%2ld\t", h,
+             d>0 ? crc32(d,CRCSTR(key),SvCUR(key))%size : (long)d, (long)v);
     }
 #endif
     if (AvFILL(ref) > 2) {
@@ -167,12 +172,12 @@ _old_hash(key, seed=0)
 CODE:
     if (items < 2) {
       if (SvPOK(key))
-        RETVAL = crc32(0, SvPVX(key), SvCUR(key));
+        RETVAL = crc32(0, CRCSTR(key), SvCUR(key));
       else
         RETVAL = crc32(0, NULL, 0);
     }
 	else
-	  RETVAL = crc32(seed, SvPVX(key), SvCUR(key));
+	  RETVAL = crc32(seed, CRCSTR(key), SvCUR(key));
 OUTPUT:
     RETVAL
 

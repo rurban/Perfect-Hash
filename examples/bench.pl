@@ -87,19 +87,27 @@ int main () {
   close $FH;
 }
 
+# 0 1 => 0, 1, 0 1
+# 0 1 2 => 0, 1, 2, 0 1, 0 2, 1 2, 0 1 2
+# 0 1 2 3 => 0, 1, 2, 3, 0 1, 0 2, 1 2, ...
+# by Mark Jason Dominus, from List::PowerSet
+sub powerset {
+  return [[]] if @_ == 0;
+  my $first = shift;
+  my $pow = &powerset;
+  [ map { [$first, @$_ ], [ @$_] } @$pow ];
+}
+
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
-# TODO all combinations of qw(-no-false-positives -nul ...)
-for my $opt (@opts ? join(" ",@opts) : (
-               #"-no-false-positives -nul -7bit",
-               "-no-false-positives -nul",
-               #"-no-false-positives -7bit",
-               "-no-false-positives",
-               #"-nul -7bit",
-               "-nul",
-               #"-7bit",
-               "")) {
+# all combinations of save_c inflicting @opts
+unless (@opts) {
+  my $opts = powerset(qw(-no-false-positives -nul));
+  @opts = @$opts;
+}
+for my $opt (@opts) {
+  $opt = join(" ", @$opt);
   my @try_methods = @methods;
   if ($default and $opt =~ /-nul/) {
     push @try_methods, ('-pearson','-pearsonnp');
@@ -140,4 +148,4 @@ for my $opt (@opts ? join(" ",@opts) : (
   }
 }
 
-#unlink("phash","phash.c","phash.h","main.c");
+unlink("phash","phash.c","phash.h","main.c");

@@ -102,12 +102,9 @@ my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
 # all combinations of save_c inflicting @opts
-unless (@opts) {
-  my $opts = powerset(qw(-no-false-positives -nul));
-  @opts = @$opts;
-}
-for my $opt (@opts) {
-  $opt = join(" ", @$opt);
+@opts = qw(-no-false-positives -nul) unless @opts;
+for my $opt (@{&powerset(@opts)}) {
+  $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
   my @try_methods = @methods;
   if ($default and $opt =~ /-nul/) {
     push @try_methods, ('-pearson','-pearsonnp');
@@ -118,7 +115,6 @@ for my $opt (@opts) {
     $t0 = [gettimeofday];
     my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
     $t0 = tv_interval($t0);
-    #print "$m generated in $t0 with $opt\n";
     unless ($ph) {
       $i++;
       next;
@@ -127,18 +123,14 @@ for my $opt (@opts) {
     wmain(\@dict, $opt);
     $i++;
     $ph->save_c("phash");
-    #ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h");
     my $cmd = compile_cmd($ph);
-    #print STDERR $cmd;
     $t1 = [gettimeofday];
     my $retval = system($cmd." 2>/dev/null");
     $t1 = tv_interval($t1);
-    #print "$m compiled in $t1\n";
     if (!($retval>>8)) {
       $t2 = [gettimeofday];
       my $retstr = `./phash`;
       $t2 = tv_interval($t2);
-      #print "$m lookups in ",tv_interval($t0)," with $opt\n";
       $retval = $?;
       if ($retval>>8) {
         print "\t", $retval>>8, " errors\n";
@@ -148,4 +140,4 @@ for my $opt (@opts) {
   }
 }
 
-unlink("phash","phash.c","phash.h","main.c");
+unlink("phash","phash.c","phash.h","main.c") unless $default;

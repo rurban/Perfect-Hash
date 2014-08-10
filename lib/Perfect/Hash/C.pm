@@ -75,11 +75,9 @@ sub c_funcdecl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     "
-/*inline*/
 long $base\_lookup(const char* s, int l)";
   } else {
     "
-/*inline*/
 long $base\_lookup(const char* s)";
   }
 }
@@ -101,7 +99,12 @@ sub _save_c_array {
     $to = $last if $to > $last;
     print $FH " " x $ident;
     for ($from .. $to) {
-      printf $FH $fmt.",", $G->[$_];
+      my $g = $G->[$_];
+      # escape \" in %s strings. XXX should really use B::cstring here
+      if ($fmt eq '"%s"' and index($g,'"') >= 0) {
+        $g =~ s/"/\"/g;
+      }
+      printf $FH $fmt.",", $g;
     }
     print $FH "\n" if $ident;
   }

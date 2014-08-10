@@ -344,6 +344,14 @@ unsigned $base\_hash (unsigned d, const char *s) {
   }
 }
 
+=item c_lib
+
+empty
+
+=cut
+
+sub c_lib {""}
+
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));
   my $keys = $ph->[3];

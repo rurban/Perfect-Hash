@@ -66,7 +66,7 @@ sub save_c_header {
   open $FH, ">", $fileprefix.".c" or die "$fileprefix.c: @!";
   print $FH "#include \"$base.h\"\n";
   if (!$ph->false_positives) { # check keys
-    print $FH "#include <string.h>\n";
+    print $FH "#include <string.h>\n"; # for memcmp/strcmp
   }
   return $FH;
 }

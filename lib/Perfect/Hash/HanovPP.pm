@@ -291,7 +291,7 @@ sub save_c {
   if (!$ph->false_positives) { # check keys
     if ($ph->option('-nul')) {
       print $FH "
-    if (strncmp(K[v],s,l)) v = -1;
+    if (memcmp(K[v],s,l)) v = -1;
 ";
     } else {
       print $FH "

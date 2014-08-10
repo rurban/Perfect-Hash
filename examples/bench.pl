@@ -18,7 +18,7 @@ if (@ARGV and grep /^-/, @ARGV) {
       push @opts, $_;
     }
   }
-  @methods = @m if @m;
+  @methods = @m ? @m : grep { $_ = $Perfect::Hash::algo_todo{"-$_"} ? undef : "-$_" } @methods;
 } else {
   @methods = grep { $_ = $Perfect::Hash::algo_todo{"-$_"} ? undef : "-$_" } @methods;
   $default = 1;
@@ -132,11 +132,11 @@ for my $opt (@{&powerset(@opts)}) {
       my $retstr = `./phash`;
       $t2 = tv_interval($t2);
       $retval = $?;
-      if ($retval>>8) {
-        print "\t", $retval>>8, " errors\n";
-      }
     }
     printf "%-12s %.06f %.06f %.06g\t%s\n", substr($m,1), $t0, $t1, $t2, $opt;
+    if ($retval>>8) {
+      print "\t", $retval>>8, " errors\n";
+    }
   }
 }
 

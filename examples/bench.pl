@@ -7,6 +7,7 @@ use ExtUtils::Embed qw(ccflags ldopts);
 
 my @methods = sort keys %Perfect::Hash::algo_methods;
 my @opts = ();
+my $default;
 if (@ARGV and grep /^-/, @ARGV) {
   my @m = ();
   for (@ARGV) {
@@ -19,7 +20,8 @@ if (@ARGV and grep /^-/, @ARGV) {
   }
   @methods = @m if @m;
 } else {
-  @methods = map {"-$_"} @methods;
+  @methods = grep { $_ = $Perfect::Hash::algo_todo{"-$_"} ? undef : "-$_" } @methods;
+  $default = 1;
 }
 
 my ($dict, @dict);
@@ -59,6 +61,7 @@ sub wmain {
 static const char const* testkeys[] = {
   ';
   my $size = int(scalar(@$dict) / 5);
+  srand(42); # same random dict lookups for all
   for (0..$size) {
     my $i = int(rand($size));
     print $FH B::cstring($dict->[$i]),", ";
@@ -87,9 +90,8 @@ int main () {
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
-for my $m (@methods) {
-  next if $m eq '-pearson8';
-  for my $opt (@opts ? join(" ",@opts) : (
+# TODO all combinations of qw(-no-false-positives -nul ...)
+for my $opt (@opts ? join(" ",@opts) : (
                #"-no-false-positives -nul -7bit",
                "-no-false-positives -nul",
                #"-no-false-positives -7bit",
@@ -97,8 +99,13 @@ for my $m (@methods) {
                #"-nul -7bit",
                "-nul",
                #"-7bit",
-               ""))
-  {
+               "")) {
+  my @try_methods = @methods;
+  if ($default and $opt =~ /-nul/) {
+    push @try_methods, ('-pearson','-pearsonnp');
+  }
+  for my $m (@try_methods) {
+    next if $m eq '-pearson8';
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
     my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
@@ -129,7 +136,7 @@ for my $m (@methods) {
         print "\t", $retval>>8, " errors\n";
       }
     }
-    printf "%-12s %1.07f %1.07f %1.07g\t%s\n", substr($m,1), $t0, $t1, $t2, $opt;
+    printf "%-12s %.06f %.06f %.06g\t%s\n", substr($m,1), $t0, $t1, $t2, $opt;
   }
 }
 

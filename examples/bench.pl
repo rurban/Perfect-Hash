@@ -55,10 +55,14 @@ sub wmain {
   my $opt = $_[1];
   # we need a main
   open my $FH, ">", "main.c";
-  print $FH '#include <stdio.h>
+  if ($opt =~ /-nul/) {
+    print $FH '#include <string.h>';
+  }
+  print $FH '
+#include <stdio.h>
 #include "phash.h"
 
-static const char const* testkeys[] = {
+static const char *testkeys[] = {
   ';
   my $size = int(scalar(@$dict) / 5);
   srand(42); # same random dict lookups for all
@@ -122,9 +126,9 @@ for my $opt (@{&powerset(@opts)}) {
     # use size/5 random entries
     wmain(\@dict, $opt);
     $i++;
-    $ph->save_c("phash");
     my $cmd = compile_cmd($ph);
     $t1 = [gettimeofday];
+    $ph->save_c("phash");
     my $retval = system($cmd." 2>/dev/null");
     $t1 = tv_interval($t1);
     if (!($retval>>8)) {
@@ -140,4 +144,4 @@ for my $opt (@{&powerset(@opts)}) {
   }
 }
 
-unlink("phash","phash.c","phash.h","main.c") unless $default;
+unlink("phash","phash.c","phash.h","main.c") if $default;

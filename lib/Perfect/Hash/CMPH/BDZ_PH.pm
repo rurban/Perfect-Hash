@@ -18,27 +18,20 @@ See http://cmph.sourceforge.net/chd.html
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref or arrayref or filename.
 
-Honored options are: I<none>
+Honored options are: I<none yet>
 
-=head2 perfecthash $obj, $key
+Planned: I<-minimal>
 
-Look up a $key in the minimal perfect hash table
-and return the associated index into the initially 
-given $dict.
+=head2 perfecthash $ph, $key
 
-With -no-false-positives it checks if the index is correct,
-otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
-the given dictionary. If not, a wrong index will be returned.
+Look up a $key in the minimal perfect hash table and return the
+associated index into the initially given $dict.
+
+Checks if the index is correct, otherwise it will return undef.
 
 =head2 false_positives
 
-Returns 1 if the hash might return false positives,
-i.e. will return the index of an existing key when
-you searched for a non-existing key.
-
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+Returns undef, as cmph hashes always store the keys.
 
 =cut
 

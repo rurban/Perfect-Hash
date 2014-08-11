@@ -26,18 +26,11 @@ XS method
 
 =item false_positives
 
-Returns 1 if the hash might return false positives,
-i.e. will return the index of an existing key when
-you searched for a non-existing key.
+Returns 1 if the hash might return false positives, i.e. will return
+the index of an existing key when you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
-
-=cut
-
-#sub false_positives {
-#  return !exists $_[0]->[2]->{'-no-false-positives'};
-#}
+The default is undef, unless you created the hash with the option
+C<-false-positives>.
 
 =item save_c NYI
 

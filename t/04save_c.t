@@ -6,7 +6,7 @@ use Perfect::Hash;
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args("-no-false-positives");
+my ($default, $methods, $opts) = test_parse_args();
 
 plan tests => 5 * scalar(@$methods);
 

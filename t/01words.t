@@ -10,7 +10,7 @@ my ($default, $methods, $opts) = test_parse_args();
 plan tests => 3 * scalar(@$methods);
 
 # as hashref and arrayref and file, without utf8 chars
-# TODO: use a real gperf compat keyfile here
+# TODO: use a real gperf compat keyfile here and _dict_init it
 my $dict = "examples/words20";
 my $d;
 open $d, $dict or die; {
@@ -42,7 +42,7 @@ for my $m (@$methods) {
   }
 }
 
-my $line = 1;
+my $line = 0;
 my %dict = map { $_ => $line++ } @dict;
 for my $m (@$methods) {
   my $ph = new Perfect::Hash \%dict, $m, @$opts;
@@ -53,7 +53,7 @@ for my $m (@$methods) {
  TODO: {
    local $TODO = "$m pure-perl" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
-   for my $w (keys %dict) {
+   for my $w (sort keys %dict) {
      my $v = $ph->perfecthash($w);
      $ok = 0 if !defined($v) or $v ne $dict{$w};
      unless ($ok) {

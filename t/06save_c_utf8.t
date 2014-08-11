@@ -30,7 +30,7 @@ my $key = "\x{c3}\x{a9}clair";
 my $suffix = "_utf8";
 
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? $pearson8_dict : \@dict, $m, @$opts, "-no-false-positives");
+  my $ph = new Perfect::Hash($m eq '-pearson8' ? $pearson8_dict : \@dict, $m, @$opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;

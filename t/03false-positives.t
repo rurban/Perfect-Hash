@@ -7,10 +7,10 @@ plan tests => 2*scalar(@methods);
 
 my $dict = "examples/words20";
 for my $m (map {"-$_"} @methods) {
-  my $ph = new Perfect::Hash $dict, $m, '-no-false-positives';
+  my $ph = new Perfect::Hash $dict, $m;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP");
     next;
   }
   my $w = 'good';
@@ -19,13 +19,13 @@ for my $m (map {"-$_"} @methods) {
     local $TODO = "$m" if $m =~ /^-cmph/;
     if ($ph->false_positives) {
       # this really should not happen!
-      ok($v >= 0, "method $m with ignored -no-false-positives '$w' => $v");
+      ok($v >= 0, "method $m without false-positives '$w' => $v");
     } else {
-      ok(!defined $v, "method $m with -no-false-positives '$w' => undef");
+      ok(!defined $v, "method $m without false-positives '$w' => undef");
     }
   }
 
-  my $ph1 = new Perfect::Hash $dict, $m;
+  my $ph1 = new Perfect::Hash $dict, $m, '-false-positives';
   $v = $ph1->perfecthash($w);
   TODO: {
     local $TODO = "$m" if $m =~ /^-cmph/;

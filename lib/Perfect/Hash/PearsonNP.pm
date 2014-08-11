@@ -30,7 +30,7 @@ dictionary, given as hashref or arrayref, with fast lookup.
 
 Honored options are:
 
-I<-no-false-positives>
+I<-false-positives>
 
 I<-max-time seconds> stops generating a phash at seconds and uses a
 non-perfect, but still fast hash then. Default: 60s.
@@ -85,7 +85,7 @@ sub new {
     $C = collisions($H, $keys, $values);
   }
 
-  if (exists $options{'-no-false-positives'}) {
+  if (!exists $options{'-false-positives'}) {
     return bless [$size, $H, $C, \%options, $keys], $class;
   } else {
     return bless [$size, $H, $C, \%options], $class;
@@ -98,9 +98,11 @@ Look up a $key in the pearson hash table
 and return the associated index into the initially 
 given $dict.
 
-With -no-false-positives it checks if the index is correct,
+Note that the hash is probably not perfect.
+
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
@@ -120,8 +122,8 @@ sub perfecthash {
       }
     }
   }
-  # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  # -false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
   if ($ph->[4]) {
     return ($ph->[4]->[$v] eq $key) ? $v : undef;
   } else {
@@ -135,13 +137,13 @@ Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>.
 
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[3]->{'-no-false-positives'};
+  return exists $_[0]->[3]->{'-false-positives'};
 }
 
 # local testing: pb -d lib/Perfect/Hash/PearsonPP.pm examples/words20

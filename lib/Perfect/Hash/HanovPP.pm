@@ -32,7 +32,7 @@ Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud,
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
 
-Honored options are: I<-no-false-positives>
+Honored options are: I<-false-positives>
 
 It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
@@ -125,7 +125,7 @@ sub new {
   }
   print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
 
-  if (exists $options{'-no-false-positives'}) {
+  if (!exists $options{'-false-positives'}) {
     return bless [\@G, \@V, \%options, $keys], $class;
   } else {
     return bless [\@G, \@V, \%options], $class;
@@ -138,17 +138,17 @@ sub option {
 
 =item option $ph
 
-Access the option hash in $ph
+Access the option hash in $ph.
 
-=item perfecthash $obj, $key
+=item perfecthash $ph, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
 given $dict.
 
-With -no-false-positives it checks if the index is correct,
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
@@ -167,8 +167,8 @@ sub perfecthash {
   if ($ph->[2]->{'-debug'}) {
     printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?$ph->hash($key,$d)%$size:$d,$v);
   }
-  # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  # -false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
   if ($ph->[3]) {
     return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {
@@ -182,14 +182,14 @@ Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the option
-C<-no-false-positives>, which increases the required space from
-2n to B<3n>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>, which decreases the required space from
+B<3n> to B<2n>.
 
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
+  return exists $_[0]->[2]->{'-false-positives'};
 }
 
 =item hash string, [seed]
@@ -213,9 +213,10 @@ sub hash {
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
+for HanovPP, Hanov and Urban.
+
 =cut
 
-# for HanovPP, Hanov and Urban
 sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
@@ -250,13 +251,13 @@ sub save_c {
   $gtype = "int" if $size > 256;
   $gtype = "long" if $size > 65537;
 
+  # TODO: which types of V. XXX also allow strings
   my $vtype = "unsigned char";
   $vtype = "unsigned int" if @$V > 256;
   $vtype = "unsigned long" if @$V > 65537;
   my $svtype = $vtype;
   $svtype =~ s/unsigned //;
 
-  # XXX which types of G
   print $FH "
     unsigned h;
     $gtype d;
@@ -371,7 +372,10 @@ sub c_lib {""}
 =cut
 
 sub _test_tables {
-  my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));
+  my @dict = split /\n/, `cat "examples/words20"`;
+  $dict[19] = "éclair";
+  #$dict[19] = "\x{c3}\x{a9}clair";
+  my $ph = __PACKAGE__->new(\@dict, qw(-debug));
   my $keys = $ph->[3];
   # bless [\@G, \@V, \%options, $keys], $class;
   my $G = $ph->[0];

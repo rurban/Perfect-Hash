@@ -29,21 +29,21 @@ This version is stable and relatively fast even for bigger dictionaries.
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
 
-Honored options are: I<-no-false-positives>
+Honored options are: I<-false-positives>
 
 It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
 index of the value in @V.  @V contains the values of the dictionary.
 
-=item perfecthash $obj, $key
+=item perfecthash $ph, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
 given $dict.
 
-With -no-false-positives it checks if the index is correct,
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =item false_positives
@@ -52,9 +52,9 @@ Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the option
-C<-no-false-positives>, which increases the required space from
-2n to B<3n>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>, which decreases the required space from
+B<3n> to B<2n>.
 
 =item hash string, [salt]
 
@@ -101,7 +101,7 @@ TODO: honor given LIBS paths to Makefile.PL
 sub c_lib { " -lz" }
 
 sub _test_tables {
-  my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));
+  my $ph = __PACKAGE__->new("examples/words20",qw(-debug));
   my $keys = $ph->[3];
   # bless [\@G, \@V, \%options, $keys], $class;
   my $G = $ph->[0];

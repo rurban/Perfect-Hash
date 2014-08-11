@@ -32,7 +32,7 @@ generator might fail, returning undef.
 
 Honored options are:
 
-I<-no-false-positives>
+I<-false-positives>
 
 I<-max-time seconds> stops generating a phash at seconds and uses a
 non-perfect, but still fast hash then. Default: 60 seconds.
@@ -80,22 +80,22 @@ sub new {
   } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
   return if $max != 1;
 
-  if (exists $options{'-no-false-positives'}) {
+  if (!exists $options{'-false-positives'}) {
     return bless [$size, $H, \%options, $keys], $class;
   } else {
     return bless [$size, $H, \%options], $class;
   }
 }
 
-=head2 perfecthash $obj, $key
+=head2 perfecthash $ph, $key
 
 Look up a $key in the pearson hash table
 and return the associated index into the initially 
 given $dict.
 
-With -no-false-positives it checks if the index is correct,
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
@@ -103,8 +103,8 @@ the given dictionary. If not, a wrong index will be returned.
 sub perfecthash {
   my ($ph, $key ) = @_;
   my $v = hash($ph->[1], $key, $ph->[0]);
-  # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[1]->{-no-false-positives} check for now
+  # -false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
   if ($ph->[3]) {
     return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {
@@ -114,17 +114,16 @@ sub perfecthash {
 
 =head2 false_positives
 
-Returns 1 if the hash might return false positives,
-i.e. will return the index of an existing key when
-you searched for a non-existing key.
+Returns 1 if the hash might return false positives, i.e. will return
+the index of an existing key when you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>.
 
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
+  return exists $_[0]->[2]->{'-false-positives'};
 }
 
 =head2 save_c fileprefix, options
@@ -133,7 +132,7 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 =cut
 
-sub save_c {
+sub _old_save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);

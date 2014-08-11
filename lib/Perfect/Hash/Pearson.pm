@@ -35,7 +35,7 @@ dictionary, given as hashref or arrayref, with fast lookup.
 
 Honored options are:
 
-I<-no-false-positives>
+I<-false-positives> do not save keys, may only be used with existing keys.
 
 I<-max-time seconds> stops generating a phash at seconds and uses a
 non-perfect, but still fast hash then. Default: 60s.
@@ -47,7 +47,6 @@ pearson lookup table.
 
 sub new {
   my $class = shift or die;
-  # return Perfect::Hash::PearsonNP::new($class, @_);
   my $dict = shift; #hashref or arrayref or filename
   my $max_time = grep { $_ eq '-max-time' and shift } @_;
   $max_time = 60 unless $max_time;
@@ -59,7 +58,7 @@ sub new {
 
   # Step 1: Generate @H
   # round up to 2 complements, with ending 1111's
-  my $i = 8; # start with 256 to avoid % $hsize in hash
+  my $i = 8; # start with 255 to avoid % $hsize in hash
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
   print "size=$size hsize=$hsize\n" if $options{'-debug'};
@@ -71,7 +70,7 @@ sub new {
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   # expected max: birthday paradoxon
-  my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
+  my ($C, @best, $sum, $maxsum, $max, $maxdepth, $counter, $maxcount);
   $maxcount = $last; # when to stop the search. should be $last !
   # we should rather set a time-limit like 1 min.
   my $t0 = [gettimeofday];
@@ -81,8 +80,9 @@ sub new {
     ($sum, $max) = cost($H, $keys);
     $counter++;
     print "$counter sum=$sum, max=$max\n" if $options{'-debug'};
-    if (!defined($maxsum) or $sum < $maxsum or $max == 1) {
+    if (!defined($maxsum) or $sum < $maxsum or $max == 1 or ($sum == $maxsum and $max < $maxdepth)) {
       $maxsum = $sum;
+      $maxdepth = $max;
       @best = @$H;
     }
   } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time);
@@ -96,7 +96,7 @@ sub new {
     $C = collisions($H, $keys, $values);
   }
 
-  if (exists $options{'-no-false-positives'}) {
+  if (!exists $options{'-false-positives'}) {
     return bless [$size, $H, $C, \%options, $keys], $class;
   } else {
     return bless [$size, $H, $C, \%options], $class;
@@ -195,15 +195,14 @@ sub hash {
 
 =head2 perfecthash $obj, $key
 
-Look up a $key in the pearson hash table
-and return the associated index into the initially 
-given $dict.
+Look up a $key in the pearson hash table and return the associated
+index into the initially given $dict.
 
 Note that the hash is probably not perfect.
 
-With -no-false-positives it checks if the index is correct,
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
@@ -222,8 +221,8 @@ sub perfecthash {
       }
     }
   }
-  # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  # -false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
   if ($ph->[4]) {
     return ($ph->[4]->[$v] eq $key) ? $v : undef;
   } else {
@@ -233,17 +232,16 @@ sub perfecthash {
 
 =head2 false_positives
 
-Returns 1 if the hash might return false positives,
-i.e. will return the index of an existing key when
-you searched for a non-existing key.
+Returns 1 if the hash might return false positives, i.e. will return
+the index of an existing key when you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>.
 
 =cut
 
 sub false_positives {
-  return !exists $_[0]->[3]->{'-no-false-positives'};
+  return exists $_[0]->[3]->{'-false-positives'};
 }
 
 =head2 save_c fileprefix, options
@@ -415,6 +413,32 @@ Generate XS code for all 3 Pearson classes
 =cut
 
 sub save_xs { die "save_xs NYI" }
+
+
+sub _test_tables {
+  my $ph = __PACKAGE__->new("examples/words20", qw(-debug));
+  my $size = $ph->[0];
+  my $H = $ph->[1];
+  my $C = $ph->[2];
+  my $keys = $ph->[4];
+  for (0..$size-1) {
+    my $k = $keys->[$_];
+    my $v = hash($H, $k, $size);
+    if ($C and $C->[$v] and @{$C->[$v]} > 1) {
+      #print "check ".scalar @{$C->[$v]}." collisions for $k\n";
+      for (@{$C->[$v]}) {
+        if ($k eq $_->[0]) {
+          $v = $_->[1];
+          last;
+        }
+      }
+    }
+    printf "%2d: ph=%2d   h(%2d,%d)=%2d %s\n",
+      $_,$ph->perfecthash($k),
+      $_,$v,hash($H,$k,$size),
+      $k;
+  }
+}
 
 # local testing: pb -d lib/Perfect/Hash/Pearson.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson")'

@@ -27,7 +27,7 @@ WARNING: This version is still instable.
 Computes a minimal perfect hash table using the given dictionary,
 given as arrayref or filename.
 
-Honored options are: I<-no-false-positives>
+Honored options are: I<-false-positives>
 
 This version is algorithmically the same as HanovPP, but uses a faster
 hash function (crc32 from libz) as Hanov, and ~300x smaller compressed
@@ -73,7 +73,7 @@ sub new {
   $buckets[$_] = [] for 0 .. $last; # init with empty arrayrefs
   my $buckets = \@buckets;
   my @G; $#G = $size; @G = map {0} (0..$last);
-  # And for '-no-false-positives' ditto: @V as compressed index into @keys
+  # And for '-false-positives' ditto: @V as compressed index into @keys
   my @V; $#V = $last;
   #hash(0); # initialize crc
 
@@ -168,7 +168,7 @@ sub new {
   printf("\$G\[$bits]=\"%s\":%d\n", unpack("h*", $G), length($G))
     if $options{-debug};
 
-  if (exists $options{'-no-false-positives'}) {
+  if (!exists $options{'-false-positives'}) {
     if (exists $options{'-debug'}) {
       return bless [$G, $bits, \%options, $keys, \@G, \@V], $class;
     } else {
@@ -179,15 +179,15 @@ sub new {
   }
 }
 
-=head2 perfecthash $obj, $key
+=head2 perfecthash $ph, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
 given $dict.
 
-With -no-false-positives it checks if the index is correct,
+Without C<-false-positives> it checks if the index is correct,
 otherwise it will return undef.
-Without -no-false-positives, the key must have existed in
+With C<-false-positives>, the key must have existed in
 the given dictionary. If not, a wrong index will be returned.
 
 =cut
@@ -233,8 +233,8 @@ sub pp_perfecthash {
   if ($ph->[2]->{'-debug'}) {
     printf("ph: h0=%2d d=%3d v=%2d\t",$h,$d>0?$ph->hash($key,$d)%$size:$d,$v);
   }
-  # -no-false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the exists $ph->[2]->{-no-false-positives} check for now
+  # -false-positives. no other options yet which would add a 3rd entry here,
+  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
   if ($ph->[3]) {
     return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {
@@ -248,15 +248,16 @@ Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
 you searched for a non-existing key.
 
-The default is 1, unless you created the hash with the
-option C<-no-false-positives>.
+The default is undef, unless you created the hash with the option
+C<-false-positives>, which decreases the required space from
+B<3n> to B<2n>.
 
 =cut
 
 # use the HanovPP version now
-sub false_positives {
-  return !exists $_[0]->[2]->{'-no-false-positives'};
-}
+#sub false_positives {
+#  return exists $_[0]->[2]->{'-false-positives'};
+#}
 
 =head2 hash string, [salt]
 
@@ -287,7 +288,7 @@ String for C code for the hash function, depending on C<-nul>.
 sub save_xs { die "save_xs NYI" }
 
 sub _test_tables {
-  my $ph = Perfect::Hash::Urban->new("examples/words500",qw(-debug -no-false-positives));
+  my $ph = Perfect::Hash::Urban->new("examples/words500",qw(-debug));
   my $keys = $ph->[3];
   my $size = scalar @$keys;
   my $G = $ph->[4];

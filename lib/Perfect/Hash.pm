@@ -34,32 +34,29 @@ Perfect::Hash - generate perfect hashes, library backend for phash
 =head1 DESCRIPTION
 
 Perfect hashing is a technique for building a static hash table with no
-collisions. Which means guaranteed constant O(1) access time, and for
-minimal perfect hashes guaranteed minimal size. It is only possible to
-build one when we know all of the keys in advance. Minimal perfect
-hashing implies that the resulting table contains one entry for each
-key, and no empty slots.
+collisions. Which means guaranteed constant O(1) access time, and for minimal
+perfect hashes even guaranteed minimal size. It is only possible to build one
+when we know all of the keys in advance. Minimal perfect hashing implies that
+the resulting table contains one entry for each key, and no empty slots.
 
-There exist various C and a primitive python library to generate code
-to access perfect hashes and minimal versions thereof, but nothing to
-use easily. C<gperf> is not very well suited to create big maps and
-cannot deal with anagrams, but creates fast C code. C<Pearson> hashes
-are simplier and fast for small machines, but not guaranteed to be
-creatable for small or bigger hashes.  cmph C<CHD> and the other cmph
-algorithms might be the best algorithms for big hashes, but lookup
-time is slower for smaller hashes and you need to link to an external
-library.
+There exist various C and a primitive python library to generate code to
+access perfect hashes and minimal versions thereof, but nothing to use
+easily. C<gperf> is not very well suited to create big maps and cannot deal
+with anagrams, but creates fast C code. C<Pearson> hashes are simplier and
+fast for small machines, but not guaranteed to be creatable for small or
+bigger hashes.  cmph C<CHD> and the other cmph algorithms might be the best
+algorithms for big hashes, but lookup time is slower for smaller hashes and
+you need to link to an external library.
 
 As input we need to provide a set of unique keys, either as arrayref
-or hashref.
+or hashref or as keyfile.
 
-WARNING: When querying a perfect hash you need to be sure that the key
-really exists on some algorithms, as querying for non-existing keys
-might return false positives.  If you are not sure how the perfect
-hash deals with non-existing keys, you need to check the result
-manually as in the SYNOPSIS or use the option C<-no-false-positives>
-to store the values also. It's still faster than using a Bloom filter
-though.
+WARNING: When querying a perfect hash you need to be sure that the key really
+exists on some algorithms, as querying for non-existing keys might return
+false positives.  If you are not sure how the perfect hash deals with
+non-existing keys, you need to check the result manually as in the SYNOPSIS or
+do not use the option C<-false-positives> so that all keys are stored
+also. It's still faster than using a Bloom filter though.
 
 As generation algorithm there exist various hashing classes,
 e.g. Hanov, CMPH::*, Bob, Pearson, Gperf.
@@ -77,10 +74,10 @@ L<http://cmph.sourceforge.net/papers/esa09.pdf>
 
 =over
 
-=item new hashref|arrayref, algo, options...
+=item new hashref|arrayref|keyfile, algo, options...
 
-Evaluate the best algorithm given the dict size and output options and 
-generate the minimal perfect hash for the given keys. 
+Evaluate the best algorithm given the dict size and output options and
+generate the minimal perfect hash for the given keys.
 
 The values in the dict are not needed to generate the perfect hash function,
 but might be needed later. So you can use either an arrayref where the index
@@ -99,10 +96,11 @@ The following algorithms and options are planned:
 Selects the best available method for a minimal hash, given the
 dictionary size, the options, and if the compiled algos are available.
 
-=item -no-false-positives
+=item -false-positives
 
-Stores the values with the hash also, and checks the found key against
-the value to avoid false positives. Needs much more space.
+Do not store the keys of the hash. Needs much less space, but might only be used
+either if you know in advance that you'll never lookup not existing keys, or
+check the result manually by yourself to avoid false positives.
 
 =item -optimal-size (not yet)
 
@@ -210,7 +208,7 @@ binary via C<memcmp>, not C<strcmp>.
 =item -null-strings (not yet)
 
 Use C<NULL> strings instead of empty strings for empty keyword table
-entries with C<-no-false-positives>. This reduces the startup time of
+entries without C<-false-positives>. This reduces the startup time of
 programs using a shared library containing the generated code (but not
 as much as the declaration C<-pic> option), at the expense of one more
 test-and-branch instruction at run time.
@@ -321,8 +319,12 @@ sub perfecthash {
 
 =item false_positives
 
-Returns 1 if perfecthash might return false positives. I.e. You'll need to check
-the result manually again.
+Returns 1 if perfecthash might return false positives.  I.e. will return the
+index of an existing key when you searched for a non-existing key. Then you'll
+need to check the result manually again.
+
+The default is undef, unless you created the hash with the option
+C<-false-positives>.
 
 =item save_c fileprefix, options
 
@@ -423,9 +425,8 @@ modify it under the same terms as Perl itself.
 # usage: perl -Ilib lib/Perfect/Hash.pm
 sub _test {
   my (@dict, %dict);
-  my $dict = shift || "/usr/share/dict/words";
+  my $dict = shift || "examples/words20"; #"/usr/share/dict/words";
   my $method = shift || "";
-  #my $dict = "examples/words20";
   unless (-f $dict) {
     unshift @_, $dict;
     $dict = "/usr/share/dict/words";
@@ -449,7 +450,7 @@ sub _test {
   }
 
   for my $word (@_) {
-    #printf "hash(0,\"%s\") = %x\n", $word, hash(0, $word);
+    #printf "hash(0,\"%s\") = %x\n", $word, $ph->hash(0, $word);
     my $line = $ph->perfecthash( $word ) || 0;
     printf "perfecthash(\"%s\") = %d\t", $word, $line;
     printf "dict[$line] = %s\n", $dict[$line];

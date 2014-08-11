@@ -65,7 +65,7 @@ Methods:
 ...
 
 Options:
---no-false-positives
+--false-positives
 --nul
 --for-c
 --prefix=name

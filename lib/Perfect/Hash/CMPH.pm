@@ -37,14 +37,14 @@ XS method
 
 =item false_positives
 
-Returns 0, as cmph hashes always store the keys.
+Returns undef, as cmph hashes always store the keys.
 
 =item save_c NYI
 
 =cut
 
 sub false_positives {
-  return 0
+  return undef;
 }
 
 sub save_c { "save_c NYI" }

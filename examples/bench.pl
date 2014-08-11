@@ -2,26 +2,15 @@
 # pb examples/bench.pl -hanovpp -urban -pearsonnp
 use strict;
 use Perfect::Hash;
-use Config;
-use ExtUtils::Embed qw(ccflags ldopts);
 
-my @methods = sort keys %Perfect::Hash::algo_methods;
-my @opts = ();
-my $default;
-if (@ARGV and grep /^-/, @ARGV) {
-  my @m = ();
-  for (@ARGV) {
-    my ($m) = /^-(.*)/;
-    if (exists $Perfect::Hash::algo_methods{$m}) {
-      push @m, $_;
-    } else {
-      push @opts, $_;
-    }
-  }
-  @methods = @m ? @m : grep { $_ = $Perfect::Hash::algo_todo{"-$_"} ? undef : "-$_" } @methods;
-} else {
-  @methods = grep { $_ = $Perfect::Hash::algo_todo{"-$_"} ? undef : "-$_" } @methods;
-  $default = 1;
+use lib 't';
+require "test.pl";
+
+my ($default, $methods, $opts) = test_parse_args();
+
+if ($default) {
+  my @methods = grep { $_ = $Perfect::Hash::algo_todo{$_} ? undef : $_ } @$methods;
+  $methods = \@methods;
 }
 
 my ($dict, @dict);
@@ -35,18 +24,6 @@ open my $d, $dict or die; {
 }
 close $d;
 my $size = scalar @dict;
-
-sub compile_cmd {
-  my $ph = shift;
-  my $opt = $Config{optimize};
-  $opt =~ s/-O2/-O3/;
-  # TODO: Win32 /Of
-  my $cmd = $Config{cc}." -I. $opt ".ccflags
-           ." -o phash main.c phash.c ".ldopts;
-  chomp $cmd; # oh yes! ldopts contains an ending \n
-  $cmd .= $ph->c_lib;
-  return $cmd;
-}
 
 use B;
 
@@ -99,17 +76,17 @@ sub powerset {
   return [[]] if @_ == 0;
   my $first = shift;
   my $pow = &powerset;
-  [ map { [$first, @$_ ], [ @$_] } @$pow ];
+  return [ map { [$first, @$_ ], [ @$_] } @$pow ];
 }
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
 printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
 # all combinations of save_c inflicting @opts
-@opts = qw(-no-false-positives -nul) unless @opts;
-for my $opt (@{&powerset(@opts)}) {
+$opts = [qw(-false-positives -nul)] unless @$opts;
+for my $opt (@{&powerset(@$opts)}) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
-  my @try_methods = @methods;
+  my @try_methods = @$methods;
   if ($default and $opt =~ /-nul/) {
     push @try_methods, ('-pearson','-pearsonnp');
   }

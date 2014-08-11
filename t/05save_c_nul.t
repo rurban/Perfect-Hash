@@ -21,7 +21,7 @@ my $suffix = "_nul";
 
 for my $m (@$methods) {
   my $ph = new Perfect::Hash($m eq '-pearson8' ? "examples/words20" : $dict, $m,
-                             @$opts, "-nul", "-no-false-positives");
+                             @$opts, "-nul");
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;

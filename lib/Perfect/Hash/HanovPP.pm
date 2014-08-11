@@ -1,6 +1,6 @@
 package Perfect::Hash::HanovPP;
 #use coretypes;
-BEGIN {$int::x = $num::x = $str::x}
+BEGIN {$int::x = $num::x = $str::x} # for B::CC type optimizations
 use strict;
 #use warnings;
 use Perfect::Hash;
@@ -15,13 +15,13 @@ Perl variant of the python "Easy Perfect Minimal Hashing" epmh.py
 By Steve Hanov. Released to the public domain.
 http://stevehanov.ca/blog/index.php?id=119
 
-Very simple and inefficient, needing O(2n) space.
+This version is stable and relatively fast even for bigger dictionaries.
+Very simple and size-inefficient, needing O(2n) space,
+but creates pretty fast hashes, independent of any external library.
 
 Based on:
 Edward A. Fox, Lenwood S. Heath, Qi Fan Chen and Amjad M. Daoud, 
 "Practical minimal perfect hash functions for large databases", CACM, 35(1):105-121
-
-This version is stable and relatively fast even for bigger dictionaries.
 
 =head1 METHODS
 
@@ -203,8 +203,7 @@ sub hash {
   my $ph = shift;
   my str $str = shift;
   my int $d = shift || 0x01000193;
-  # XXX is this using utf8, not bytes?
-  for my $c (split //, $str) {
+  for my $c (split "", $str) {
     $d = ( ($d * 0x01000193) ^ ord($c) ) & 0xffffffff;
   }
   return $d

@@ -2,22 +2,26 @@
 use Test::More;
 use Perfect::Hash;
 
-#use Config;
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args("-no-false-positives");
+my ($default, $methods, $opts) = test_parse_args();
 
 plan tests => 5 * scalar(@$methods);
 
 my $dict = "examples/words500";
 
-# Pearson and PearsonNP do pass/fail randomly
-# delete $Perfect::Hash::algo_todo{'-pearson'};
+# Pearson and PearsonNP do pass consistently with -nul, but fail randomly without
+delete $Perfect::Hash::algo_todo{'-pearson'};
+delete $Perfect::Hash::algo_todo{'-pearsonnp'};
 
 my $i = 0;
+my $key = "AOL";
+my $suffix = "_nul";
+
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? "examples/words20" : $dict, $m, @$opts);
+  my $ph = new Perfect::Hash($m eq '-pearson8' ? "examples/words20" : $dict, $m,
+                             @$opts, "-nul", "-no-false-positives");
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;
@@ -30,16 +34,15 @@ for my $m (@$methods) {
     $i++;
     next;
   }
-  my ($nul) = grep {$_ eq '-nul'} @$opts;
-  test_wmain(1, 'AOL', $ph->perfecthash('AOL'), $nul);
+  test_wmain(1, $key, $ph->perfecthash($key), $suffix, 1);
   $i++;
-  $ph->save_c("phash");
-  if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
-    my $cmd = compile_cmd($ph);
+  $ph->save_c("phash$suffix");
+  if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {
+    my $cmd = compile_cmd($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = `./phash`;
+      my $retstr = `./phash$suffix`;
       $retval = $?;
       TODO: {
         local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
@@ -47,14 +50,14 @@ for my $m (@$methods) {
         like($retstr, qr/^ok - c lookup notexists/m, "$m c lookup notexists");
       }
     } else {
-      ok(1, "SKIP") for 0..1;
+      ok(1, "SKIP") for 1..2;
     }
     TODO: {
       local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
       ok(!($retval>>8), "could run $m");
     }
   } else {
-    ok(1, "SKIP") for 0..3;
+    ok(1, "SKIP") for 1..3;
   }
-  unlink("phash","phash.c","phash.h","main.c") if $default;
+  unlink("phash$suffix","phash$suffix.c","phash$suffix.h","main$suffix.c") if $default;
 }

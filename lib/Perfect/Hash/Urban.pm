@@ -12,12 +12,9 @@ use Config;
 our @ISA = qw(Perfect::Hash::Hanov Perfect::Hash::HanovPP Perfect::Hash::C);
 our $VERSION = '0.01';
 
-use XSLoader;
-XSLoader::load('Perfect::Hash', $VERSION);
-
 =head1 DESCRIPTION
 
-Improved version of HanovPP, using compressed temp. arrays
+Improved version of Hanov and HanovPP, using compressed temp. arrays
 and optimized XS methods, ~2x faster than HanovPP.
 Can only store index values, not strings.
 
@@ -33,7 +30,7 @@ given as arrayref or filename.
 Honored options are: I<-no-false-positives>
 
 This version is algorithmically the same as HanovPP, but uses a faster
-hash function (crc32 from libz) and ~300x smaller compressed
+hash function (crc32 from libz) as Hanov, and ~300x smaller compressed
 bitvectors for the intermediate table and the integer-only values
 table, so it is limited to arrayrefs and filenames only. hashrefs with
 strings as values cannot be represented for now.

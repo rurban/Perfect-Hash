@@ -2,26 +2,16 @@
 use Test::More;
 use Perfect::Hash;
 
-my @methods = sort keys %Perfect::Hash::algo_methods;
-my @opts = ();
-if (@ARGV and grep /^-/, @ARGV) {
-  my @m = ();
-  for (@ARGV) {
-    my ($m) = /^-(.*)/;
-    if (exists $Perfect::Hash::algo_methods{$m}) {
-      push @m, $_;
-    } else {
-      push @opts, $_;
-    }
-  }
-  @methods = @m if @m;
-} else {
-  @methods = map {"-$_"} @methods;
-}
-plan tests => 3 * scalar(@methods);
+use lib 't';
+require "test.pl";
 
-# as hashref and arrayref and file, with utf8 chars
-my $dict = "examples/words500";
+my ($default, $methods, $opts) = test_parse_args();
+
+plan tests => 3 * scalar(@$methods);
+
+# as hashref and arrayref and file, without utf8 chars
+# TODO: use a real gperf compat keyfile here
+my $dict = "examples/words20";
 my $d;
 open $d, $dict or die; {
   local $/;
@@ -29,21 +19,21 @@ open $d, $dict or die; {
 }
 close $d;
 
-for my $m (@methods) {
-  my $ph = new Perfect::Hash \@dict, $m, @opts;
+for my $m (@$methods) {
+  my $ph = new Perfect::Hash \@dict, $m, @$opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     next;
   }
  TODO: {
-   local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+   local $TODO = "$m pure-perl" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
    my $i = 0;
    for my $w (@dict) {
      my $v = $ph->perfecthash($w);
-     $ok = 0 if $v ne $i;
+     $ok = 0 if !defined($v) or $v ne $i;
      unless ($ok) {
-       is($v, $i, "method $m with arrayref for '$w' => $v");
+       is(defined($v)?$v:"", $i, "method $m with arrayref for '$w' => ".(defined($v)?$v:""));
        last;
      }
      $i++;
@@ -54,20 +44,20 @@ for my $m (@methods) {
 
 my $line = 1;
 my %dict = map { $_ => $line++ } @dict;
-for my $m (@methods) {
-  my $ph = new Perfect::Hash \%dict, $m, @opts;
+for my $m (@$methods) {
+  my $ph = new Perfect::Hash \%dict, $m, @$opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     next;
   }
  TODO: {
-   local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+   local $TODO = "$m pure-perl" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
    for my $w (keys %dict) {
      my $v = $ph->perfecthash($w);
-     $ok = 0 if $v ne $dict{$w};
+     $ok = 0 if !defined($v) or $v ne $dict{$w};
      unless ($ok) {
-       is($v, $dict{$w}, "method $m with hashref for '$w' => $v");
+       is(defined($v)?$v:"", $dict{$w}, "method $m with hashref for '$w' => ".(defined($v)?$v:""));
        last;
      }
    }
@@ -75,23 +65,25 @@ for my $m (@methods) {
   }
 }
 
-for my $m (@methods) {
-  my $ph = new Perfect::Hash $dict, $m, @opts;
+for my $m (@$methods) {
+  my $ph = new Perfect::Hash $dict, $m, @$opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     next;
   }
  TODO: {
-   local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+   local $TODO = "$m pure-perl" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
-   for my $w (keys %dict) {
+   my $i = 0;
+   for my $w (@dict) {
      my $v = $ph->perfecthash($w);
-     $ok = 0 if $v ne $dict{$w};
+     $ok = 0 if !defined($v) or $v ne $i;
      unless ($ok) {
-       is($v, $dict{$w}, "method $m with hashref for '$w' => $v");
+       is(defined($v)?$v:"", $i, "method $m with keyfile for '$w' => ".(defined($v)?$v:""));
        last;
      }
+     $i++;
    }
-   $ok ? ok($ok, "method $m with hashref") : 0;
+   $ok ? ok($ok, "method $m with keyfile") : 0;
   }
 }

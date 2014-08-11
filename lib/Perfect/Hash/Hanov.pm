@@ -1,15 +1,18 @@
 package Perfect::Hash::Hanov;
 #use coretypes;
-BEGIN {$int::x = $num::x = $str::x}
+BEGIN {$int::x = $num::x = $str::x} # for B::CC type optimizations
 use strict;
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::HanovPP;
-use Perfect::Hash::Urban;
+#use Perfect::Hash::Urban;
 use integer;
 use bytes;
 our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash::C);
 our $VERSION = '0.01';
+
+use XSLoader;
+XSLoader::load('Perfect::Hash', $VERSION);
 
 =head1 DESCRIPTION
 
@@ -71,7 +74,6 @@ sub c_hash_impl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     return "
-#include <string.h>
 #include \"zlib.h\"
 /* libz crc32 */
 #define $base\_hash_len(d, s, len) crc32((d), (const unsigned char*)(s), (len))

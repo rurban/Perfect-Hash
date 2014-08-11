@@ -40,7 +40,8 @@ t/01words.t
 t/02sysdict.t
 t/03false-positives.t
 t/04save_c.t
-t/04save_c_nul.t
+t/05save_c_nul.t
+t/06save_c_utf8.t
 t/z_kwalitee.t
 t/z_meta.t
 t/z_pod-coverage.t

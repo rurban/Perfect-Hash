@@ -13,11 +13,11 @@ our @EXPORT = qw(hash shuffle cost collisions);
 
 =head1 DESCRIPTION
 
-A Pearson hash is generally not perfect, but generates one of the
-fastest lookups.  This version generates arbitrary sized pearson
+A Pearson hash is generally not perfect, but generates fast lookups on
+small 8bit machines.  This version generates arbitrary sized pearson
 lookup tables and thus should be able to find a perfect hash, but
 success is very unlikely. The generated lookup might be however still
-faster than most other hash tables for <100.000 keys.
+pretty fast for <100.000 keys.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -59,11 +59,10 @@ sub new {
 
   # Step 1: Generate @H
   # round up to 2 complements, with ending 1111's
-  my $i = 1;
+  my $i = 8; # start with 256 to avoid % $hsize in hash
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
   print "size=$size hsize=$hsize\n" if $options{'-debug'};
-  # TODO: bitvector string with vec
   my @H; $#H = $hsize;
   $i = 0;
   $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
@@ -182,8 +181,14 @@ sub hash {
   my ($H, $key, $size ) = @_;
   my $d = 0;
   my $hsize = scalar @$H;
-  for (split //, $key) { # under use bytes
-    $d = $H->[($d ^ ord($_)) % $hsize];
+  if ($hsize == 256) {
+    for my $c (split "", $key) {
+      $d = $H->[$d ^ ord($c)];
+    }
+  } else {
+    for my $c (split "", $key) {
+      $d = $H->[($d ^ ord($c)) % $hsize];
+    }
   }
   return $d % $size;
 }

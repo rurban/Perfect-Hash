@@ -290,7 +290,7 @@ String for C code for the hash function, depending on C<-nul>.
 sub save_xs { die "save_xs NYI" }
 
 sub _test_tables {
-  my $ph = Perfect::Hash::Urban->new("examples/words1000",qw(-debug -no-false-positives));
+  my $ph = Perfect::Hash::Urban->new("examples/words500",qw(-debug -no-false-positives));
   my $keys = $ph->[3];
   my $size = scalar @$keys;
   my $G = $ph->[4];

@@ -37,7 +37,7 @@ _new(class, dict, ...)
     } else {
       /* XXX support arrayrefs at least, probably created via nvecset
          and use the io_vector or io_byte_vector adapter */
-      keys_fd = fopen("examples/words1000", "r");
+      keys_fd = fopen("examples/words500", "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     }
     /* const char *cmph_names[] = {"bmz", "bmz8", "chm", "brz", "fch", "bdz", "bdz_ph", "chd_ph", "chd", NULL };*/

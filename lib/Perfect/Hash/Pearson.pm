@@ -261,14 +261,16 @@ sub save_c {
   print $FH "#include <string.h>\n" if @$C;
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
-  print $FH "
-    long h = 0;
-    const char *key = s;
-    static unsigned char $base\[] = {
-";
   my $size = $ph->[0];
   my $H = $ph->[1];
   my $hsize = scalar @$H;
+  my $htype = "char";
+  $htype = "int" if $hsize > 256;
+  $htype = "long" if $hsize > 65537;
+  print $FH "
+    long h = 0;
+    const char *key = s;
+    static unsigned $htype $base\[] = {\n";
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
   print $FH "    /* collisions */";
@@ -373,17 +375,17 @@ sub save_c {
       const char **ck = (const char **)Ck[h];
       int i = 0;
       for (; i < Cs[h]; i++) {
-        if (0 == strcmp(ck[i],key)) return Cv[h][i];
+        if (!strcmp(ck[i], key)) return Cv[h][i];
       }
     }";
   }
   if (!$ph->false_positives) { # check keys
     if ($ph->option('-nul')) {
       print $FH "
-    if (strncmp(K[h],key,l)) h = -1;";
+    if (memcmp(K[h], key, l)) h = -1;";
     } else {
       print $FH "
-    if (strcmp(K[h],key)) h = -1;";
+    if (strcmp(K[h], key)) h = -1;";
     }
   }
   print $FH "

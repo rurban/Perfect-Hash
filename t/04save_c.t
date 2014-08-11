@@ -22,15 +22,9 @@ if (@ARGV and grep /^-/, @ARGV) {
   @methods = map {"-$_"} @methods;
 }
 
-plan tests => 5*scalar(@methods);
+plan tests => 5 * scalar(@methods);
 
-my $dict = "examples/words20";
-my $d;
-open $d, $dict or die; {
-  local $/;
-  @dict = split /\n/, <$d>;
-}
-close $d;
+my $dict = "examples/words500";
 
 sub compile_cmd {
   my $ph = shift;
@@ -82,7 +76,7 @@ int main () {
 
 my $i = 0;
 for my $m (@methods) {
-  my $ph = new Perfect::Hash \@dict, $m, @opts;
+  my $ph = new Perfect::Hash($m eq '-pearson8' ? "examples/words20" : $dict, $m, @opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;

@@ -5,7 +5,7 @@ cmph-2.0.tar.gz
 cmph-2.0/Makefile.PL
 cmph-2.0/CMPH.xs
 examples/epmh.py
-examples/words1000
+examples/words500
 examples/words20
 examples/bench.pl
 lib/Perfect/Hash.pm

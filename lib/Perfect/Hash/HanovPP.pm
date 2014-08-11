@@ -246,19 +246,29 @@ sub save_c {
   } else {
     $size = scalar(@$G);
   }
+  my $gtype = "signed char";
+  $gtype = "int" if $size > 256;
+  $gtype = "long" if $size > 65537;
+
+  my $vtype = "unsigned char";
+  $vtype = "unsigned int" if @$V > 256;
+  $vtype = "unsigned long" if @$V > 65537;
+  my $svtype = $vtype;
+  $svtype =~ s/unsigned //;
+
+  # XXX which types of G
   print $FH "
-    int d;
     unsigned h;
-    unsigned long v;
+    $gtype d;
+    $svtype v;
     /* hash indices, direct < 0, indirect > 0 */
-    static const signed int G[] = {
+    static const $gtype G[] = {
 ";
   _save_c_array(8, $FH, $G, "%3d");
   print $FH "    };";
-  # XXX which types of values?
   print $FH "
     /* values */
-    static const signed long V[] = {
+    static const $vtype V[] = {
 ";
   _save_c_array(8, $FH, $V, "%3d");
   print $FH "    };";

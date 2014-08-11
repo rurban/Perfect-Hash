@@ -25,7 +25,7 @@ if (@ARGV and grep /^-/, @ARGV) {
 }
 
 my ($dict, @dict);
-for (qw(/usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
+for (qw(examples/words /usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
   if (-e $_) { $dict = $_; last }
 }
 

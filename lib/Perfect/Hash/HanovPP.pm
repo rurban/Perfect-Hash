@@ -25,7 +25,9 @@ This version is stable and relatively fast even for bigger dictionaries.
 
 =head1 METHODS
 
-=head2 new $dict, @options
+=over
+
+=item new $dict, @options
 
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
@@ -134,11 +136,11 @@ sub option {
   return $_[0]->[2]->{$_[1]};
 }
 
-=head2 option $ph
+=item option $ph
 
 Access the option hash in $ph
 
-=head2 perfecthash $obj, $key
+=item perfecthash $obj, $key
 
 Look up a $key in the minimal perfect hash table
 and return the associated index into the initially 
@@ -174,7 +176,7 @@ sub perfecthash {
   }
 }
 
-=head2 false_positives
+=item false_positives
 
 Returns 1 if the hash might return false positives,
 i.e. will return the index of an existing key when
@@ -190,23 +192,25 @@ sub false_positives {
   return !exists $_[0]->[2]->{'-no-false-positives'};
 }
 
-=head2 hash string, [seed]
+=item hash string, [seed]
 
 pure-perl FNV-1 hash function as in http://isthe.com/chongo/tech/comp/fnv/
 
 =cut
 
 sub hash {
+  use bytes;
   my $ph = shift;
   my str $str = shift;
   my int $d = shift || 0x01000193;
-  for my $c (split//, $str) {
+  # XXX is this using utf8, not bytes?
+  for my $c (split //, $str) {
     $d = ( ($d * 0x01000193) ^ ord($c) ) & 0xffffffff;
   }
   return $d
 }
 
-=head2 save_c fileprefix, options
+=item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
@@ -252,6 +256,7 @@ sub save_c {
 ";
   _save_c_array(8, $FH, $G, "%3d");
   print $FH "    };";
+  # XXX which types of values?
   print $FH "
     /* values */
     static const signed long V[] = {
@@ -306,7 +311,7 @@ sub save_c {
   close $FH;
 }
 
-=head2 c_hash_impl $ph, $base
+=item c_hash_impl $ph, $base
 
 String for C code for the hash function, depending on C<-nul>.
 
@@ -351,6 +356,10 @@ empty
 =cut
 
 sub c_lib {""}
+
+=back
+
+=cut
 
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug -no-false-positives));

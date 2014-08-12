@@ -126,6 +126,8 @@ release : dist
 	cpan-upload $(DISTVNAME).tar$(SUFFIX)
 	git push
 	git push --tags
+testfast :: pure_all
+	$(FULLPERLRUN) -S prove -b -j4 -f
 test_cover :: pure_all
 	$(RM_RF) cover_db
 	$(PERLRUNINST) -S cover -test

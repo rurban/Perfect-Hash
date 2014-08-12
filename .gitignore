@@ -18,10 +18,13 @@ MYMETA.yml
 Makefile
 Makefile.old
 Hash.c
+Hash.i
 Hash.o
 Hash.obj
 Hash.c.gcov
 Hash.xs.gcov
+CMPH.c.gcov
+CMPH.xs.gcov
 Hash.gcda
 Hash.gcno
 pm_to_blib
@@ -30,6 +33,7 @@ pm_to_blib
 /perf.data
 /log.test-*
 /log.bench-*
+cmph-2.0/CMPH.gcda
 cmph-2.0/bin/
 cmph-2.0/blib/
 cmph-2.0/cmph.pc

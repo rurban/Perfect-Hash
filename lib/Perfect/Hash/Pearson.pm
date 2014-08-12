@@ -286,15 +286,15 @@ sub save_c {
     static unsigned $htype $base\[] = {\n";
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
-  print $FH "    /* collisions */";
-  my $collisions;
+  print $FH "    /* collisions: keys and values */";
+  my $collisions = 0;
   my $i = 0;
   for my $coll (@$C) {
-    if ($coll and @$coll) {
-      $collisions++;
-      print $FH "
+    if ($coll) {
+      if (scalar(@$coll) > 1) {
+        $collisions++;
+        print $FH "
     static const char *Ck_$i\[] = {";
-      if (@$coll > 1) {
         my @ci = map { $_->[0] } @$coll;
         _save_c_array(0, $FH, \@ci, "\"%s\"");
         print $FH " };";
@@ -303,6 +303,9 @@ sub save_c {
         my @cv = map { $_->[1] } @$coll;
         _save_c_array(0, $FH, \@cv, "%d");
         print $FH " };";
+      } elsif (scalar(@$coll) == 1) {
+        print $FH "
+    static const int   Cv_$i\[] = {",$coll->[0],"};";
       }
     }
     $i++;
@@ -310,9 +313,10 @@ sub save_c {
   if ($collisions) {
     $i = 0;
     print $FH "
+    /* collision keys */
     static const char *Ck[] = { ";
     for my $coll (@$C) {
-      if ($coll and @$coll) {
+      if ($coll and scalar(@$coll) > 1) {
         print $FH "
         (void*)&Ck_$i, ";
       } else {
@@ -323,23 +327,26 @@ sub save_c {
     print $FH "};";
     $i = 0;
     print $FH "
+    /* collision values and direct values */
     static const int *Cv[] = { ";
     for my $coll (@$C) {
-      if ($coll and @$coll) {
+      if ($coll and scalar(@$coll) > 0) {
         print $FH "
-        (void*)&Cv_$i, ";
+      (void*)&Cv_$i, ";
       } else {
         print $FH "0, ";
       }
       $i++;
     }
     print $FH "};";
+    # XXX Cs should not be needed, but is
     print $FH "
-    static const int Cs[] = { ";
+    /* size of collisions */
+    static const unsigned char Cs[] = { ";
     $i = 0;
     for my $coll (@$C) {
-      if ($coll and @$coll) {
-        print $FH scalar @$coll,", ";
+      if ($coll and scalar(@$coll)) {
+        print $FH scalar(@$coll),", ";
       } else {
         print $FH "0, ";
       }
@@ -386,12 +393,22 @@ sub save_c {
     h = h % $size;" if $hsize != $size;
   if ($collisions) {
       print $FH "
-    if (Ck[h]) {
+    if (Cs[h] > 1) {
       const char **ck = (const char **)Ck[h];
       int i = 0;
-      for (; i < Cs[h]; i++) {
-        if (!strcmp(ck[i], key)) return Cv[h][i];
+      for (; i < Cs[h]; i++) {";
+      if ($ph->option('-nul')) {
+        print $FH "
+        if (!memcmp(ck[i], key, l)) return Cv[h][i];";
+      } else {
+        print $FH "
+        if (!strcmp(ck[i], key)) return Cv[h][i];";
       }
+      print $FH "
+      }
+    }
+    else if (Cs[h] == 1) {
+      h = Cv[h][0];
     }";
   }
   if (!$ph->false_positives) { # check keys

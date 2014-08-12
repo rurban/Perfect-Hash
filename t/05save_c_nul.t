@@ -42,7 +42,7 @@ for my $m (@$methods) {
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = `./phash$suffix`;
+      my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
       $retval = $?;
       TODO: {
         local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};

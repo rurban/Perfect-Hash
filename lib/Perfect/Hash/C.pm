@@ -2,6 +2,7 @@ package Perfect::Hash::C;
 use strict;
 our $VERSION = '0.01';
 our @ISA = qw(Perfect::Hash Exporter);
+use B ();
 
 use Exporter 'import';
 our @EXPORT = qw(_save_c_array);
@@ -100,11 +101,11 @@ sub _save_c_array {
     print $FH " " x $ident;
     for ($from .. $to) {
       my $g = $G->[$_];
-      # escape \" in %s strings. XXX should really use B::cstring here
-      if ($fmt eq '"%s"' and index($g,'"') >= 0) {
-        $g =~ s/"/\"/g;
+      if ($fmt eq '"%s"') {
+        printf $FH "%s,", B::cstring($g);
+      } else {
+        printf $FH $fmt.",", $g;
       }
-      printf $FH $fmt.",", $g;
     }
     print $FH "\n" if $ident;
   }

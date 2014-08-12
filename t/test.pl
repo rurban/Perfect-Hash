@@ -3,6 +3,7 @@
 use strict;
 use Config;
 use ExtUtils::Embed qw(ccflags ldopts);
+use B ();
 
 # usage: my ($default, $methods, $opts) = parse_args(@default_opts);
 sub test_parse_args {
@@ -32,10 +33,12 @@ sub compile_cmd {
   my $suffix = shift || "";
   my $opt = $Config{optimize};
   $opt =~ s/-O[s2]/-O3/;
-  # TODO: Win32 /Of
   my $cmd = $Config{cc}." -I. $opt ".ccflags
            ." -o phash$suffix main$suffix.c phash$suffix.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
+  if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
+    $cmd =~ s/-o phash$suffix/-nologo -Fe phash$suffix.exe/;
+  }
   $cmd .= $ph->c_lib();
   return $cmd;
 }
@@ -45,8 +48,9 @@ sub test_wmain {
   use bytes;
   $value = 0 unless $value;
   $suffix = "" unless $suffix;
+  my $FH;
   # and then we need a main also
-  open my $FH, ">", "main$suffix.c";
+  open $FH, ">", "main$suffix.c";
   print $FH "
 #include <stdio.h>
 #include \"phash$suffix.h\"

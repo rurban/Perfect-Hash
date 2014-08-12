@@ -2,6 +2,7 @@
 # pb examples/bench.pl -hanovpp -urban -pearsonnp
 use strict;
 use Perfect::Hash;
+use B ();
 
 use lib 't';
 require "test.pl";
@@ -25,13 +26,12 @@ open my $d, $dict or die; {
 close $d;
 my $size = scalar @dict;
 
-use B;
-
 sub wmain {
   my $dict = $_[0];
   my $opt = $_[1];
+  my $FH;
   # we need a main
-  open my $FH, ">", "main.c";
+  open $FH, ">", "main.c";
   if ($opt =~ /-nul/) {
     print $FH '#include <string.h>';
   }
@@ -81,15 +81,15 @@ sub powerset {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
-printf "%-12s %7s %7s %7s\t%s\n", "Method", "generate", "compile", "*lookup*", "options";
+printf "%-12s %7s %7s %7s  %s\n", "Method", "generate", "compile", "*lookup*", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
   my @try_methods = @$methods;
-  if ($default and $opt =~ /-nul/) {
-    push @try_methods, ('-pearson','-pearsonnp');
-  }
+  #if ($default and $opt =~ /-nul/) {
+  #  push @try_methods, ('-pearson','-pearsonnp');
+  #}
   for my $m (@try_methods) {
     next if $m eq '-pearson8';
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
@@ -106,17 +106,17 @@ for my $opt (@{&powerset(@$opts)}) {
     my $cmd = compile_cmd($ph);
     $t1 = [gettimeofday];
     $ph->save_c("phash");
-    my $retval = system($cmd." 2>/dev/null");
+    my $retval = system($cmd.($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     $t1 = tv_interval($t1);
     if (!($retval>>8)) {
       $t2 = [gettimeofday];
-      my $retstr = `./phash`;
+      my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06g\t%s\n", substr($m,1), $t0, $t1, $t2, $opt;
+    printf "%-12s %.06f %.06f %.06g  %s\n", substr($m,1), $t0, $t1, $t2, $opt;
     if ($retval>>8) {
-      print "\t", $retval>>8, " errors\n";
+      print "\twith", $retval>>8, " errors.\n";
     }
   }
 }

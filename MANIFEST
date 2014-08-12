@@ -8,6 +8,7 @@ examples/epmh.py
 examples/words500
 examples/words20
 examples/bench.pl
+inc/Devel/CheckLib.pm
 lib/Perfect/Hash.pm
 lib/Perfect/Hash/Bob.pm
 lib/Perfect/Hash/C.pm

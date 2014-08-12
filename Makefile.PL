@@ -9,26 +9,66 @@ use Config;
 # TODO try c compiler and extract cmph and bob then
 #use ExtUtils::Embed;
 
+my ($libs, $incdir, $libdir);
+if (!$ENV{PERL_CORE}) {
+  $libs = "-lz";
+  # try -lz with Devel::CheckLib, and disable Hanov/Urban if failed
+  use lib 'inc';
+  require Devel::CheckLib;
+  Devel::CheckLib->import();
+  my $args = join(" ", @ARGV);
+  if ($args =~ /INCDIR[ =](\S+)/) {
+    $incdir = $1;
+  }
+  if ($args =~ /LIBDIR[ =](\S+)/) {
+    $libdir = $1;
+  }
+  if ($libdir or $incdir) {
+    eval qq/assert_lib( lib => 'z', header => 'zlib.h', libpath => $libdir, incpath => $incdir )/;
+  } else {
+    eval q/assert_lib( lib => 'z', header => 'zlib.h' )/;
+  }
+  if ($@) {
+    warn "Warning: no zlib found. Disabled Hanov and Urban extensions for crc32()\n";
+    $libs = "";
+  }
+}
+
 # Note: These 2 Makefiles will be overwritten later by recursive WriteMakefile
 # So generate all required binaries here
 if (! -e "cmph-2.0/configure") {
   print "Extracting cmph-2.0.tar.gz\n";
-  system("tar xfz cmph-2.0.tar.gz");
+  my $retval = system("tar xfz cmph-2.0.tar.gz");
+  # Win32 MSVC, no tar
+  if ($retval>>8 or (! -e "cmph-2.0/configure" and -e "cmph-2.0/Makefile.PL")) {
+    chdir "cmph-2.0";
+    rename "Makefile.PL", "Makefile_PL.disabled";
+    warn "disabled cmph extension\n";
+    chdir "..";
+  }
 }
 
 if (! -e "bob/lookupa.c") {
   print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";
   system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git bob");
-  if (-e "bob/lookupa.c" and !-e "bob/perfect".$Config{exe_ext}) {
-    chdir "bob";
-    my $cc = $Config{cc};
-    if ($cc ne "gcc") {
-      `$^X -pi.bak -e's/gcc/$cc/' Makefile`;
-    }
-    system($Config{'make'}, "-s");
-    rename "Makefile", "Makefile.orig";
-    chdir "..";
+}
+# Win32 MSVC, no git
+if (!-e "bob/lookupa.c" and -e "bob/Makefile.PL") {
+  rename "bob/Makefile.PL", "bob/Makefile_PL.disabled";
+}
+if (-e "bob/lookupa.c" and !-e "bob/perfect".$Config{exe_ext}) {
+  chdir "bob";
+  my $cc = $Config{cc};
+  if ($cc ne "gcc") {
+    `$^X -pi.bak -e's/gcc/$cc/' Makefile`;
   }
+  my $retval = system($Config{'make'}, "-s");
+  if ($retval>>8) {
+    rename "Makefile.PL", "Makefile_PL.disabled";
+    warn "disabled bob extension\n";
+  }
+  rename "Makefile", "Makefile.orig";
+  chdir "..";
 }
 
 my @extras = ();
@@ -51,17 +91,19 @@ push(@extras,
      })
   if $EUMM_VER gt '6.46';
 
+my $pathsep = $^O eq 'MSWin32' ? '\\' : "/";
 WriteMakefile
   (
    'NAME'	   => 'Perfect::Hash',
-   'VERSION_FROM'  => 'lib/Perfect/Hash.pm',
-   'ABSTRACT_FROM' => 'lib/Perfect/Hash.pm',
-   'PL_FILES'   => { 'script/phash.PL' => 'script/phash' },
-   'EXE_FILES'  => [ 'script/phash' ],
+   'VERSION_FROM'  => 'lib'.$pathsep.'Perfect'.$pathsep.'Hash.pm',
+   'ABSTRACT_FROM' => 'lib'.$pathsep.'Perfect'.$pathsep.'Hash.pm',
+   'PL_FILES'   => { 'script'.$pathsep.'phash.PL' => 'script'.$pathsep.'phash' },
+   'EXE_FILES'  => [ 'script'.$pathsep.'phash' ],
    # note that some old buggy EUMM will skip -lz here. 5.8.9 with 6.88 e.g.
    # Warning (mostly harmless): No library found for -lz
    # It is not harmless, see below
-   'LIBS'       => [ "-lz" ],
+   'LIBS'       => [ $libs ],
+   'DEFINE'     => $libs ? "-DHAVE_ZLIB" : "",
    'PREREQ_PM'	=> {
      'Time::HiRes' => 0,
      #'coretypes' => 0,
@@ -73,37 +115,39 @@ WriteMakefile
 
 # Potentially cleanup a broken ExtUtils::Liblist 6.88, add -lz manually.
 # TODO: skip using the XS module if -lz is really not found.
-my ($IN, $OUT, $changed, $saw_lz);
-open $IN, "<", "Makefile";
-open $OUT, ">", "Makefile.tmp";
-while (<$IN>) {
-  $saw_lz++ if / -lz/;
-  unless (/^LDLOADLIBS/) {
+if ($libs) {
+  my ($IN, $OUT, $changed, $saw_lz);
+  open $IN, "<", "Makefile";
+  open $OUT, ">", "Makefile.tmp";
+  while (<$IN>) {
+    $saw_lz++ if / -lz/;
+    unless (/^LDLOADLIBS/) {
+      print $OUT $_;
+      next;
+    }
+    if (/ -lz/) { # all ok
+      $saw_lz++;
+      print $OUT $_;
+      next;
+    }
+    chomp;
+    $_ .= " -lz\n";
     print $OUT $_;
-    next;
+    $changed++;
   }
-  if (/ -lz/) { # all ok
-    $saw_lz++;
-    print $OUT $_;
-    next;
+  close $IN;
+  close $OUT;
+  if ($changed) {
+    warn "Warning: Patched -lz to LDLOADLIBS\n";
+    rename "Makefile.tmp", "Makefile";
+  } elsif ($saw_lz) {
+    unlink "Makefile.tmp";
+  } else {
+    # Missing const_loadlibs section
+    warn "Warning: Missing -lz, added -lz to OTHERLDFLAGS manually\n";
+    system(qq($^X -pi.tmp -e"s/OTHERLDFLAGS = /OTHERLDFLAGS = -lz /" Makefile));
+    unlink "Makefile.tmp";
   }
-  chomp;
-  $_ .= " -lz\n";
-  print $OUT $_;
-  $changed++;
-}
-close $IN;
-close $OUT;
-if ($changed) {
-  warn "Warning: Patched -lz to LDLOADLIBS\n";
-  rename "Makefile.tmp", "Makefile";
-} elsif ($saw_lz) {
-  unlink "Makefile.tmp";
-} else {
-  # Missing const_loadlibs section
-  warn "Warning: Missing -lz, added -lz to OTHERLDFLAGS manually\n";
-  system(qq($^X -pi.tmp -e"s/OTHERLDFLAGS = /OTHERLDFLAGS = -lz /" Makefile));
-  unlink "Makefile.tmp";
 }
 
 package MY;

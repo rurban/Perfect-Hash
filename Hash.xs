@@ -4,7 +4,17 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "zlib.h"
+#ifdef HAVE_ZLIB
+#  include "zlib.h"
+#else
+#  define crc32(seed,str,len) fnv_hash_len((seed),(str),(len))
+#endif
+
+#ifdef _MSC_VER
+#define INLINE __inline
+#else
+#define INLINE inline
+#endif
 
 #if PERL_VERSION < 10
 #  define USE_PPPORT_H
@@ -17,7 +27,7 @@
 #define CRCSTR(sv) (const unsigned char *)(SvPVX(sv))
 
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-static inline
+static INLINE
 unsigned fnv_hash_len (unsigned d, const char *s, const int l) {
     int c = *s++;
     int i = 0;
@@ -34,7 +44,7 @@ unsigned fnv_hash_len (unsigned d, const char *s, const int l) {
    maybe check for indices optimization as stored now.
    use AV * V, not the 2nd half of SvPVX(G). */
 
-static inline
+static INLINE
 IV vec(char *G, IV index, IV bits) {
   if (bits == 8)
     return *(char*)(G + index) & 255;
@@ -127,12 +137,14 @@ CODE:
     IV d = vec(G, h, bits);
     IV v;
     if (bits == 32) {
-      if (d >= INT32_MAX)
-        d = (long)(d - UINT32_MAX);
+      if (d >= 2147483647)
+        d = (long)(d - 4294967295U);
     }
     else if (bits == 64) {
-      if (d >= INT64_MAX)
-        d = (IV)((long long)(d - UINT64_MAX));
+#ifdef HAVE_QUAD
+      if (d >= 9223372036854775807ULL)
+        d = (IV)((long long)(d - 18446744073709551615ULL));
+#endif
     }
     else {
       if (d >= 1<<(bits-1))

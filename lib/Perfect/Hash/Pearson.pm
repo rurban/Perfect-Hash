@@ -90,9 +90,9 @@ sub new {
   if ($max > 1) {
     @H = @best;
     $H = \@H;
-    ($sum, $max) = cost($H, $keys);
+    #($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
-    print "list of collisions: sum=$sum, maxdepth=$max\n" if $options{'-debug'};
+    print "list of collisions: sum=$maxsum, maxdepth=$maxdepth\n" if $options{'-debug'};
     $C = collisions($H, $keys, $values);
   }
 
@@ -169,7 +169,11 @@ sub collisions {
     push @{$C[$h]}, [$_, $values->[$i]];
     $i++;
   }
-  @C = map { scalar @$_ > 1 ? $_ : undef } @C;
+  @C = map { scalar @$_ > 1
+               ? $_
+               : scalar @$_ == 1
+                 ? [ $_->[0]->[1] ]
+                 : undef } @C;
   return \@C;
 }
 
@@ -211,19 +215,25 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my $H = $ph->[1];
   my $C = $ph->[2];
-  my $v = hash($H, $key, $ph->[0]);
-  if ($C and $C->[$v] and @{$C->[$v]} > 1) {
-    print "check ".scalar @{$C->[$v]}." collisions for $key\n" if $ph->[3]->{-debug};
-    for (@{$C->[$v]}) {
-      if ($key eq $_->[0]) {
-        $v = $_->[1];
-        last;
+  my $h = hash($H, $key, $ph->[0]);
+  my $v;
+  if (defined $C->[$h]) {
+    if (@{$C->[$h]} > 1) {
+      #print "check ".scalar @{$C->[$h]}." collisions for $key\n" if $ph->[3]->{-debug};
+      for (@{$C->[$h]}) {
+        if ($key eq $_->[0]) {
+          $v = $_->[1];
+          last;
+        }
       }
+    } else {
+      $v = $C->[$h]->[0];
     }
   }
   # -false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the !exists $ph->[2]->{-false-positives} check for now
-  if ($ph->[4]) {
+  # XXX only correct if values start with 0 (the $v'd key)
+  if (defined($v) and $ph->[4]) {
     return ($ph->[4]->[$v] eq $key) ? $v : undef;
   } else {
     return $v;
@@ -284,14 +294,16 @@ sub save_c {
       $collisions++;
       print $FH "
     static const char *Ck_$i\[] = {";
-      my @ci = map { $_->[0] } @$coll;
-      _save_c_array(0, $FH, \@ci, "\"%s\"");
-      print $FH " };";
-      print $FH "
+      if (@$coll > 1) {
+        my @ci = map { $_->[0] } @$coll;
+        _save_c_array(0, $FH, \@ci, "\"%s\"");
+        print $FH " };";
+        print $FH "
     static const int   Cv_$i\[] = {";
-      my @cv = map { $_->[1] } @$coll;
-      _save_c_array(0, $FH, \@cv, "%d");
-      print $FH " };";
+        my @cv = map { $_->[1] } @$coll;
+        _save_c_array(0, $FH, \@cv, "%d");
+        print $FH " };";
+      }
     }
     $i++;
   }
@@ -424,19 +436,24 @@ sub _test_tables {
   for (0..$size-1) {
     my $k = $keys->[$_];
     my $v = hash($H, $k, $size);
-    if ($C and $C->[$v] and @{$C->[$v]} > 1) {
-      #print "check ".scalar @{$C->[$v]}." collisions for $k\n";
-      for (@{$C->[$v]}) {
-        if ($k eq $_->[0]) {
-          $v = $_->[1];
-          last;
+    my $h = $v;
+    if ($C and defined $C->[$h]) {
+      #print "check ".scalar @{$C->[$h]}." collisions for $k\n";
+      if (@{$C->[$h]} > 1) {
+        for (@{$C->[$h]}) {
+          if ($k eq $_->[0]) {
+            $v = $_->[1];
+            last;
+          }
         }
+      } else {
+        $v = $C->[$h]->[0];
       }
     }
-    printf "%2d: ph=%2d   h(%2d,%d)=%2d %s\n",
-      $_,$ph->perfecthash($k),
-      $_,$v,hash($H,$k,$size),
-      $k;
+    printf "%2d: ph=%2s   h(%2d)=%2d => %2d  %s %s\n",
+      $_, $ph->perfecthash($k),
+      $_, $h, $v, $k,
+      ($C and $C->[$h] and @{$C->[$h]} > 1) ? "(".join(",",map{$_->[0]}@{$C->[$h]}).")" : $v
   }
 }
 

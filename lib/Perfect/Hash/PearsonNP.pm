@@ -113,13 +113,17 @@ sub perfecthash {
   my $C = $ph->[2];
   my $v = hash($H, $key, $ph->[0]);
   # check collisions. todo: binary search
-  if ($C and $C->[$v] and @{$C->[$v]} > 1) {
-    print "check ".scalar @{$C->[$v]}." collisions for $key\n" if $ph->[3]->{-debug};
-    for (@{$C->[$v]}) {
-      if ($key eq $_->[0]) {
-        $v = $_->[1];
-        last;
+  if ($C and $C->[$v]) {
+    if (@{$C->[$v]} > 1) {
+      print "check ".scalar @{$C->[$v]}." collisions for $key\n" if $ph->[3]->{-debug};
+      for (@{$C->[$v]}) {
+        if ($key eq $_->[0]) {
+          $v = $_->[1];
+          last;
+        }
       }
+    } else {
+      $v = $C->[$v]->[0];
     }
   }
   # -false-positives. no other options yet which would add a 3rd entry here,

@@ -169,6 +169,7 @@ sub perfecthash {
   }
   # -false-positives. no other options yet which would add a 3rd entry here,
   # so we can skip the !exists $ph->[2]->{-false-positives} check for now
+  # XXX only correct if values start with 0 (the $v'd key)
   if ($ph->[3]) {
     return ($ph->[3]->[$v] eq $key) ? $v : undef;
   } else {

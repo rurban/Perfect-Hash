@@ -23,14 +23,14 @@ _new(class, dict, ...)
   CODE:
   {
     int i;
+    UV size;
     AV *result;
     HV *options;
     FILE * keys_fd = NULL;
     cmph_io_adapter_t *key_source;
     cmph_config_t *mph;
     cmph_t *mphf;
-    FILE *dump_fd;
-    char *dump_fname;
+    unsigned char *packed;
     CMPH_ALGO algo = CMPH_CHM;
     const char *classname = SvPVX(class);
 
@@ -38,12 +38,16 @@ _new(class, dict, ...)
       keys_fd = fopen(SvPVX(dict), "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     } else {
+      if (SvTYPE(dict) == SVt_PVAV) {
+      } else if (SvTYPE(dict) == SVt_PVHV) {
+      }
       /* XXX support arrayrefs at least, probably created via nvecset
          and use the io_vector or io_byte_vector adapter */
+      warn("CMPH only accepts filenames yet\n");
       keys_fd = fopen("examples/words500", "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
+      XSRETURN_UNDEF;
     }
-    /* const char *cmph_names[] = {"bmz", "bmz8", "chm", "brz", "fch", "bdz", "bdz_ph", "chd_ph", "chd", NULL };*/
     if (!strcmp(classname, "Perfect::Hash::CMPH::CHM"))         algo = CMPH_CHM;
     else if (!strcmp(classname, "Perfect::Hash::CMPH::BMZ"))    algo = CMPH_BMZ;
     else if (!strcmp(classname, "Perfect::Hash::CMPH::BMZ8"))   algo = CMPH_BMZ8;
@@ -57,25 +61,21 @@ _new(class, dict, ...)
     if (algo != CMPH_CHM)
       cmph_config_set_algo(mph, algo);
     mphf = cmph_new(mph);
-
+    if (!mphf) {
+      fprintf(stderr, "Failed to create mphf for algorithm %s", classname);
+      XSRETURN_UNDEF;
+    }
     result = newAV();
-    av_push(result, newSViv(PTR2IV(mphf))); /* [0] */
-
-    dump_fname = "cmph_dump.tmp";
+    av_push(result, newSViv(PTR2IV(mphf)));                  /* mphf in [0] */
+    size = cmph_packed_size(mphf);
+    packed = (char *)malloc(size);
+    cmph_pack(mphf, packed);
+    av_push(result, newSVpvn(packed, size+1));                /* packed in [1] */
     options = newHV();
     for (i=2; i<items; i++) { /* CHECKME */
       hv_store_ent(options, ST(i), newSViv(1), 0);
-      if (strEQ(SvPVX(ST(i)), "dump")) {
-        dump_fname = SvPVX(ST(++i));
-      }
     }
-    av_push(result, newRV((SV*)options));  /* [1] */
-
-    dump_fd = fopen(dump_fname, "w");
-    cmph_dump(mphf, dump_fd);
-    fclose(dump_fd);
-
-    av_push(result, newSVpvn(dump_fname, strlen(dump_fname)));  /* [2] */
+    av_push(result, newRV((SV*)options));                 /* options at [2] */
     RETVAL = sv_bless(newRV_noinc((SV*)result), gv_stashpv(classname, GV_ADDWARN));
   }
 OUTPUT:
@@ -88,6 +88,7 @@ perfecthash(ph, key)
 CODE:
     AV *ref = (AV*)SvRV(ph);
     cmph_t *mphf = (cmph_t *)SvIVX(AvARRAY(ref)[0]);
+    if (!mphf) die ("Empty cmph");
     RETVAL = cmph_search(mphf, SvPVX(key), SvCUR(key));
 OUTPUT:
     RETVAL

@@ -1,39 +1,19 @@
 package Perfect::Hash::CMPH::CHD_PH;
 
-our $VERSION = '0.01';
 use strict;
+our $VERSION = '0.01';
 use Perfect::Hash::CMPH;
 #use warnings;
-our @ISA = qw(Perfect::Hash::CMPH Perfect::Hash);
+our @ISA = qw(Perfect::Hash::CMPH Perfect::Hash Perfect::Hash::C);
 
 =head1 DESCRIPTION
 
 XS interface to the cmph-2.0 CHD_PH algorithm.
 See http://cmph.sourceforge.net/chd.html
 
-=head1 METHDOS
+=head1 METHODS
 
-=head2 new $filename, @options
-
-Computes a minimal perfect hash table using the given dictionary,
-given as hashref or arrayref or filename.
-
-Honored options are: I<none yet>
-
-Planned: I<-minimal>
-
-=head2 perfecthash $ph, $key
-
-Look up a $key in the minimal perfect hash table and return the
-associated index into the initially given $dict.
-
-Checks if the index is correct, otherwise it will return undef.
-
-=head2 false_positives
-
-Returns undef, as cmph hashes always store the keys.
-
-=head2 save_c NYI
+See L<Perfect::Hash::CMPH>
 
 =cut
 

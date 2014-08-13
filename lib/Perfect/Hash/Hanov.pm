@@ -5,7 +5,6 @@ use strict;
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::HanovPP;
-#use Perfect::Hash::Urban;
 use integer;
 use bytes;
 our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash::C);
@@ -29,7 +28,10 @@ This version is stable and relatively fast even for bigger dictionaries.
 Computes a minimal perfect hash table using the given dictionary,
 given as hashref, arrayref or filename.
 
-Honored options are: I<-false-positives>
+Honored options are: 
+
+I<-false-positives>
+I<-nul>
 
 It returns an object with a list of [\@G, \@V, ...].
 @G contains the intermediate table of seeds needed to compute the
@@ -88,7 +90,7 @@ sub c_hash_impl {
   }
 }
 
-=item c_lib
+=item c_lib c_include
 
 Hanov and Urban need -lz.
 
@@ -99,6 +101,7 @@ TODO: honor given LIBS paths to Makefile.PL
 =cut
 
 sub c_lib { " -lz" }
+sub c_include { "" }
 
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug));

@@ -24,7 +24,7 @@ for my $m (@$methods) {
     $i++;
     next;
   }
-  if ($m =~ /^-cmph/) {
+  if ($m =~ /^-xxcmph/) {
     ok(1, "SKIP nyi save_c for $m");
     ok(1) for 1..4;
     $i++;

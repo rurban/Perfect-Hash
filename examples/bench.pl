@@ -95,7 +95,7 @@ for my $opt (@{&powerset(@$opts)}) {
     next if $m eq '-pearson8';
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
-    my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
+    my $ph = new Perfect::Hash $dict, $m, split(/ /,$opt);
     $t0 = tv_interval($t0);
     unless ($ph) {
       $i++;

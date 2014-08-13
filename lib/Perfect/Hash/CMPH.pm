@@ -4,6 +4,7 @@ use strict;
 our $VERSION = '0.01';
 #use warnings;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
+use B ();
 
 use XSLoader;
 XSLoader::load('Perfect::Hash::CMPH');
@@ -23,6 +24,8 @@ L<http://cmph.sourceforge.net>
 
 filename only so far
 
+Honored options are: I<-nul>
+
 =cut
 
 # TODO support arrayref and hashref converted to arrayrefs, as byte-packed vector
@@ -33,7 +36,7 @@ sub new {
 
 =item perfecthash $ph
 
-XS method
+XS method. Returns the position of the found key in the file.
 
 =item false_positives
 
@@ -52,14 +55,14 @@ Access the option hash in $ph.
 =cut
 
 sub option {
-  return $_[0]->[1]->{$_[1]};
+  return $_[0]->[2]->{$_[1]};
 }
 
 =item save_c fileprefix, options
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
-for all CMPH variants.
+For all CMPH variants.
 
 =cut
 
@@ -67,23 +70,24 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
-  my $dump = $ph->[2];
 
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
+  # need to initialize mphf from the temp FILE
+  # into a memory buffer.
   print $FH "#include \"cmph.h\"\n";
   print $FH $ph->c_funcdecl($base)." {";
   print $FH "
-    FILE *fd = fopen(\"$dump\", \"r\");
-    cmph_t *mphf = cmph_load(fd);
-    return cmph_search(mphf, s, ";
+    static char *packed_mphf = ",B::cstring($ph->[1]),";
+    return cmph_search_packed(packed_mphf, s, ";
   if ($ph->option('-nul')) {
     print $FH "len";
   } else {
     print $FH "strlen(s)";
   }
   print $FH ");
-}";
+}
+";
 }
 
 =item c_lib, c_include

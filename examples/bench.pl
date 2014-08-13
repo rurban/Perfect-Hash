@@ -116,7 +116,7 @@ for my $opt (@{&powerset(@$opts)}) {
     }
     printf "%-12s %.06f %.06f %.06g  %s\n", substr($m,1), $t0, $t1, $t2, $opt;
     if ($retval>>8) {
-      print "\twith", $retval>>8, " errors.\n";
+      print "\twith ", $retval>>8, " errors.\n";
     }
   }
 }

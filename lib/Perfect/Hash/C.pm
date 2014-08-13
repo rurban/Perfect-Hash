@@ -111,11 +111,13 @@ sub _save_c_array {
   }
 }
 
-=item c_lib
+=item c_lib c_include
 
-Returns a string with the required libs to link to.
+Returns a string with the required include path and libs to link to.
 
 =cut
+
+sub c_include { "" }
 
 sub c_lib { "" }
 

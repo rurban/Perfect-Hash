@@ -23,11 +23,14 @@ _new(class, dict, ...)
   CODE:
   {
     int i;
-    AV *result, *options;
+    AV *result;
+    HV *options;
     FILE * keys_fd = NULL;
     cmph_io_adapter_t *key_source;
     cmph_config_t *mph;
     cmph_t *mphf;
+    FILE *dump_fd;
+    char *dump_fname;
     CMPH_ALGO algo = CMPH_CHM;
     const char *classname = SvPVX(class);
 
@@ -56,12 +59,23 @@ _new(class, dict, ...)
     mphf = cmph_new(mph);
 
     result = newAV();
-    av_push(result, newSViv(PTR2IV(mphf)));
-    options = newAV();
+    av_push(result, newSViv(PTR2IV(mphf))); /* [0] */
+
+    dump_fname = "cmph_dump.tmp";
+    options = newHV();
     for (i=2; i<items; i++) { /* CHECKME */
-      av_push(options, ST(i));
+      hv_store_ent(options, ST(i), newSViv(1), 0);
+      if (strEQ(SvPVX(ST(i)), "dump")) {
+        dump_fname = SvPVX(ST(++i));
+      }
     }
-    av_push(result, newRV((SV*)options));
+    av_push(result, newRV((SV*)options));  /* [1] */
+
+    dump_fd = fopen(dump_fname, "w");
+    cmph_dump(mphf, dump_fd);
+    fclose(dump_fd);
+
+    av_push(result, newSVpvn(dump_fname, strlen(dump_fname)));  /* [2] */
     RETVAL = sv_bless(newRV_noinc((SV*)result), gv_stashpv(classname, GV_ADDWARN));
   }
 OUTPUT:

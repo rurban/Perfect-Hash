@@ -33,7 +33,7 @@ sub compile_cmd {
   my $suffix = shift || "";
   my $opt = $Config{optimize};
   $opt =~ s/-O[s2]/-O3/;
-  my $cmd = $Config{cc}." -I. $opt ".ccflags
+  my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
            ." -o phash$suffix main$suffix.c phash$suffix.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
   if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {

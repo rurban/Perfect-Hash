@@ -32,7 +32,21 @@ the index of an existing key when you searched for a non-existing key.
 The default is undef, unless you created the hash with the option
 C<-false-positives>.
 
-=item save_c NYI
+=item option $ph
+
+Access the option hash in $ph.
+
+=cut
+
+sub option {
+  return $_[0]->[1]->{$_[1]};
+}
+
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
+NYI
 
 =back
 

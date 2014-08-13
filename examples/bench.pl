@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
-# pb examples/bench.pl -hanovpp -urban -pearsonnp
+# pb examples/bench.pl -hanovpp -urban -pearsonnp ...
+# TODO: bench against traditional hash tables (linked list, double hashing, cuckoo)
 use strict;
 use Perfect::Hash;
 use B ();
@@ -81,7 +82,7 @@ sub powerset {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
-printf "%-12s %7s %7s %7s  %s\n", "Method", "generate", "compile", "*lookup*", "options";
+printf "%-12s %7s %7s %7s  %s\n", "Method", "*lookup*", "generate", "compile", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
@@ -106,6 +107,7 @@ for my $opt (@{&powerset(@$opts)}) {
     my $cmd = compile_cmd($ph);
     $t1 = [gettimeofday];
     $ph->save_c("phash");
+    print "$cmd\n" if $ENV{TEST_VERBOSE};
     my $retval = system($cmd.($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     $t1 = tv_interval($t1);
     if (!($retval>>8)) {
@@ -114,7 +116,7 @@ for my $opt (@{&powerset(@$opts)}) {
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06g  %s\n", substr($m,1), $t0, $t1, $t2, $opt;
+    printf "%-12s %.06f %.06f %.06f  %s\n", substr($m,1), $t2, $t0, $t1, $opt;
     if ($retval>>8) {
       print "\twith ", $retval>>8, " errors.\n";
     }

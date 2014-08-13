@@ -1,9 +1,9 @@
 package Perfect::Hash::CMPH;
 
-our $VERSION = '0.01';
 use strict;
+our $VERSION = '0.01';
 #use warnings;
-our @ISA = qw(Perfect::Hash);
+our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 
 use XSLoader;
 XSLoader::load('Perfect::Hash::CMPH');
@@ -39,23 +39,62 @@ XS method
 
 Returns undef, as cmph hashes always store the keys.
 
-=item save_c NYI
-
 =cut
 
 sub false_positives {
   return undef;
 }
 
-sub save_c { "save_c NYI" }
+=item option $ph
 
-=item c_lib
-
-TODO: temp. and installed Alien libpath
+Access the option hash in $ph.
 
 =cut
 
-sub c_lib { " -lcmph" }
+sub option {
+  return $_[0]->[1]->{$_[1]};
+}
+
+=item save_c fileprefix, options
+
+Generates a $fileprefix.c and $fileprefix.h file.
+
+for all CMPH variants.
+
+=cut
+
+sub save_c {
+  my $ph = shift;
+  require Perfect::Hash::C;
+  Perfect::Hash::C->import();
+  my $dump = $ph->[2];
+
+  my ($fileprefix, $base) = $ph->save_h_header(@_);
+  my $FH = $ph->save_c_header($fileprefix, $base);
+  print $FH "#include \"cmph.h\"\n";
+  print $FH $ph->c_funcdecl($base)." {";
+  print $FH "
+    FILE *fd = fopen(\"$dump\", \"r\");
+    cmph_t *mphf = cmph_load(fd);
+    return cmph_search(mphf, s, ";
+  if ($ph->option('-nul')) {
+    print $FH "len";
+  } else {
+    print $FH "strlen(s)";
+  }
+  print $FH ");
+}";
+}
+
+=item c_lib, c_include
+
+TODO: to the installed Alien libpath
+
+=cut
+
+sub c_include { " -Icmph-2.0/include" }
+
+sub c_lib { " -Wl,-rpath=cmph-2.0/lib -Lcmph-2.0/lib -lcmph" }
 
 =back
 

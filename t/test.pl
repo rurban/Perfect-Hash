@@ -23,7 +23,7 @@ sub test_parse_args {
     @methods = @m if @m;
   } else {
     $default = 1;
-    @methods = map {"-$_"} @methods;
+    @methods = ('', map {"-$_"} @methods);
   }
   return ($default, \@methods, \@opts);
 }
@@ -32,7 +32,7 @@ sub compile_cmd {
   my $ph = shift;
   my $suffix = shift || "";
   my $opt = $Config{optimize};
-  $opt =~ s/-O[s2]/-O3/;
+  $opt =~ s/-O[xs12]/-O3/;
   my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
            ." -o phash$suffix main$suffix.c phash$suffix.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n

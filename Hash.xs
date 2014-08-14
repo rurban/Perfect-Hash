@@ -6,8 +6,15 @@
 
 #ifdef HAVE_ZLIB
 #  include "zlib.h"
+#  define HASHNAME "crc32_zlib"
 #else
-#  define crc32(seed,str,len) fnv_hash_len((seed),(str),(len))
+#  ifdef __SSE4_2__
+#    define crc32(seed,str,len) crc32_sse42((seed),(str),(len))
+#    define HASHNAME "crc32_sse42"
+#  else
+#    define crc32(seed,str,len) fnv_hash_len((seed),(str),(len))
+#    define HASHNAME "fnv"
+#  endif
 #endif
 
 #ifdef _MSC_VER
@@ -37,6 +44,42 @@ unsigned fnv_hash_len (unsigned d, const char *s, const int l) {
     }
     return d;
 }
+
+#ifdef __SSE4_2__
+#include <stdint.h>
+#include <smmintrin.h>
+
+/* Byte-boundary alignment issues */
+#define ALIGN_SIZE      0x08UL
+#define ALIGN_MASK      (ALIGN_SIZE - 1)
+#define CALC_CRC(op, crc, type, buf, len)                               \
+  do {                                                                  \
+    for (; (len) >= sizeof (type); (len) -= sizeof(type), buf += sizeof (type)) { \
+      (crc) = op((crc), *(type *) (buf));                               \
+    }                                                                   \
+  } while(0)
+
+
+/* iSCSI CRC-32C using the Intel hardware instruction. */
+/* for better parallelization with bigger buffers see
+   http://www.drdobbs.com/parallel/fast-parallelized-crc-computation-using/229401411 */
+static INLINE
+unsigned int crc32_sse42(unsigned int crc, const char *buf, int len) {
+    /* XOR the initial CRC with INT_MAX */
+    crc ^= 0xFFFFFFFF;
+    /* Align the input to the word boundary */
+    for (; (len > 0) && ((size_t)buf & ALIGN_MASK); len--, buf++) {
+        crc = _mm_crc32_u8(crc, *buf);
+    }
+#ifdef __x86_64__ /* or Aarch64... */
+    CALC_CRC(_mm_crc32_u64, crc, uint64_t, buf, len);
+#endif
+    CALC_CRC(_mm_crc32_u32, crc, uint32_t, buf, len);
+    CALC_CRC(_mm_crc32_u16, crc, uint16_t, buf, len);
+    CALC_CRC(_mm_crc32_u8, crc, uint8_t, buf, len);
+    return (crc ^ 0xFFFFFFFF);
+}
+#endif
 
 /* #define VEC(G, index, bits) (IV)((*(IV*)(G + ((index) * bits/8))) & ((1<<bits)-1)) */
 
@@ -72,7 +115,15 @@ IV vec(char *G, IV index, IV bits) {
   return 0;
 }
 
+static char *
+hashname() {
+  return HASHNAME;
+}
+
+
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Hanov
+
+PROTOTYPES: DISABLE
 
 UV
 hash(obj, key, seed=0)
@@ -120,7 +171,20 @@ CODE:
 OUTPUT:
     RETVAL
 
+# TODO: allow setting the hashname via 2nd arg
+# and store it in a global symbol
+
+char *
+hashname(obj)
+  SV* obj
+CODE:
+    RETVAL = hashname();
+OUTPUT:
+    RETVAL
+
 MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Urban
+
+PROTOTYPES: DISABLE
 
 IV
 iv_perfecthash(ph, key)

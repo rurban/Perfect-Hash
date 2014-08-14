@@ -66,33 +66,89 @@ Use the hw-assisted crc32 from libz (aka zlib).
 
 Generates a $fileprefix.c and $fileprefix.h file.
 
+=item hashname $ph
+
+Returns "crc32_zlib", "crc32_sse42" or "fnv",
+depending on the build-time generated HAVE_ZLIB and __SSE4_2__ CFLAGS.
+
 =item c_hash_impl $ph, $base
 
-String for C code for the hash function, depending on C<-nul>.
+String for C code for the hash function, depending on hashname and C<-nul>.
 
 =cut
 
 sub c_hash_impl {
   my ($ph, $base) = @_;
+  my $hashname = $ph->hashname();
+  my $s;
+  if ($hashname eq 'crc32_zlib') {
+    $s = "
+#include \"zlib.h\" /* libz crc32 */";
+  }
+  elsif ($hashname eq 'crc32_sse42') {
+    # TODO windows stdint
+    $s = <<'EOF';
+#ifdef __SSE4_2__
+#include <stdint.h>
+#include <smmintrin.h>
+
+/* Byte-boundary alignment issues */
+#define ALIGN_SIZE      0x08UL
+#define ALIGN_MASK      (ALIGN_SIZE - 1)
+#define CALC_CRC(op, crc, type, buf, len)                               \
+  do {                                                                  \
+    for (; (len) >= sizeof (type); (len) -= sizeof(type), buf += sizeof (type)) { \
+      (crc) = op((crc), *(type *) (buf));                               \
+    }                                                                   \
+  } while(0)
+
+
+/* iSCSI CRC-32C using the Intel hardware instruction. */
+/* for better parallelization with bigger buffers see
+   http://www.drdobbs.com/parallel/fast-parallelized-crc-computation-using/229401411 */
+unsigned int crc32(unsigned int crc, const char *buf, int len)
+{
+    /* XOR the initial CRC with INT_MAX */
+    crc ^= 0xFFFFFFFF;
+
+    /* Align the input to the word boundary */
+    for (; (len > 0) && ((size_t)buf & ALIGN_MASK); len--, buf++) {
+        crc = _mm_crc32_u8(crc, *buf);
+    }
+
+#ifdef __x86_64__ /* or Aarch64... */
+    CALC_CRC(_mm_crc32_u64, crc, uint64_t, buf, len);
+#endif
+    CALC_CRC(_mm_crc32_u32, crc, uint32_t, buf, len);
+    CALC_CRC(_mm_crc32_u16, crc, uint16_t, buf, len);
+    CALC_CRC(_mm_crc32_u8, crc, uint8_t, buf, len);
+
+    return (crc ^ 0xFFFFFFFF);
+}
+#endif
+EOF
+
+  }
+  else {
+    return Perfect::Hash::HanovPP::c_hash_impl(@_);
+  }
+
   if ($ph->option('-nul')) {
-    return "
-#include \"zlib.h\"
-/* libz crc32 */
+    $s .= "
 #define $base\_hash_len(d, s, len) crc32((d), (const unsigned char*)(s), (len))
-"
+";
   } else {
-    return "
-#include <string.h>
-#include \"zlib.h\"
-/* libz crc32 */
+    $s .= "
 #define $base\_hash(d, s) crc32((d), ((const unsigned char*)s), strlen(s))
 ";
   }
+  return $s;
 }
 
 =item c_lib c_include
 
-Hanov and Urban need -lz.
+Compiler flags depending on the hashname.
+Hanov and Urban need -lz or -msse42 for our own sse4.2 iSCSI CRC32 hash function.
 
 TODO: honor given LIBS paths to Makefile.PL
 
@@ -100,8 +156,13 @@ TODO: honor given LIBS paths to Makefile.PL
 
 =cut
 
-sub c_lib { " -lz" }
-sub c_include { "" }
+sub c_lib {
+  # TODO zlib uses the HW iSCSI CRC32 hash function, but it does *not* on macports.
+  return ($_[0]->hashname() eq 'crc32_zlib') ? " -lz" : "";
+}
+sub c_include { 
+  return ($_[0]->hashname() eq 'crc32_sse42') ? " -msse4.2" : "";
+}
 
 sub _test_tables {
   my $ph = __PACKAGE__->new("examples/words20",qw(-debug));
@@ -120,9 +181,9 @@ sub _test_tables {
   }
 }
 
-# local testing: p -d -Ilib lib/Perfect/Hash/HanovPP.pm examples/words20
+# local testing: p -d -Ilib lib/Perfect/Hash/Hanov.pm examples/words20
 unless (caller) {
-  &Perfect::Hash::_test(@ARGV)
+  &Perfect::Hash::_test('-hanov',@ARGV)
 }
 
 1;

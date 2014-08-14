@@ -242,10 +242,10 @@ our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH
               );
 # Still failing:
-our %algo_todo = map {$_=>1}
-             qw(-pearson8 -urban);
-                #-cmph-bdz -cmph-bmz -cmph-bmz8 -cmph-brz -cmph-chm -cmph-fch
-                #-cmph-bdz_ph -cmph-chd -cmph-chd_ph);
+our %algo_todo = map {$_=>1} # pure-perl and save_c
+  qw(-pearson8);
+  #-urban -cmph-bdz -cmph-bmz -cmph-bmz8 -cmph-brz -cmph-chm -cmph-fch
+  #-cmph-bdz_ph -cmph-chd -cmph-chd_ph);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;
@@ -292,19 +292,35 @@ sub _dict_init {
 sub new {
   my $class = shift;
   my $dict = shift;
-  my $option = shift || '-hanovpp'; # the first must be the algo method
-  my $method = $algo_methods{substr($option,1)};
+  my $option = shift; # the first must be the algo method
+  my $method = $algo_methods{substr($option,1)} if $option;
   if (substr($option,0,1) eq "-" and $method) {
-    eval "require $method;";
   } else {
-    # no algo given, check which would be the best
+    # no or wrong algo method given, check which would be the best
     unshift @_, $option;
-    # TODO: choose the right default, based on the given options and the dict size,
-    # and if we have the compiled methods or only pure-perl available.
-    $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
-    #eval "require $method;";
+    $method = analyze_data($dict, @_);
+    print "Using $method\n";
   }
+  eval "require $method;" unless $method eq 'Perfect::Hash::HanovPP';
   return $method->new($dict, @_);
+}
+
+=item analyze_data $dict, @options
+
+Scans the given dictionary and returns a recommended hash table algorithm
+for fast lookups.
+
+=cut
+
+sub analyze_data {
+  my $dict = shift;
+  my @options = @_;
+  # TODO: choose the right default, based on the given options and the
+  # dict size and types, architecture,
+  # and if we have the compiled methods, fast iSCSI CRC32 or only
+  # pure-perl available.
+  my $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
+  return $method;
 }
 
 =item perfecthash $key
@@ -362,17 +378,17 @@ L<Perfect::Hash::Urban>,
 L<Perfect::Hash::Pearson>,
 L<Perfect::Hash::Pearson8>,
 L<Perfect::Hash::PearsonNP>,
-L<Perfect::Hash::Bob>,
-L<Perfect::Hash::Gperf>,
+L<Perfect::Hash::Bob> I<(not yet)>,
+L<Perfect::Hash::Gperf> I<(not yet)>,
 L<Perfect::Hash::CMPH::CHM>,
 L<Perfect::Hash::CMPH::BMZ>,
-L<Perfect::Hash::CMPH::BMZ8>,
-L<Perfect::Hash::CMPH::BRZ>,
+L<Perfect::Hash::CMPH::BMZ8> I<(not yet)>,
+L<Perfect::Hash::CMPH::BRZ> I<(not yet)>,
 L<Perfect::Hash::CMPH::FCH>
 L<Perfect::Hash::CMPH::BDZ>,
 L<Perfect::Hash::CMPH::BDZ_PH>,
 L<Perfect::Hash::CMPH::CHD>,
-L<Perfect::Hash::CMPH::CHD_PH>,
+L<Perfect::Hash::CMPH::CHD_PH>
 
 =head2 Output classes
 
@@ -468,7 +484,7 @@ sub _test {
 
 # Local Variables:
 #   mode: cperl
-#   cperl-indent-level: 4
+#   cperl-indent-level: 2
 #   fill-column: 78
 # End:
 # vim: expandtab shiftwidth=4:

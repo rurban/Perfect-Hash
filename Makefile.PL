@@ -172,6 +172,8 @@ release : dist
 	git push --tags
 testfast :: pure_all
 	$(FULLPERLRUN) -S prove -b -j4 -f
+test_release :: pure_all
+	RELEASE_TESTING=1 $(FULLPERLRUN) -S prove -b -j4
 test_cover :: pure_all
 	$(RM_RF) cover_db
 	$(PERLRUNINST) -S cover -test

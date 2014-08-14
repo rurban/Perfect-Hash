@@ -9,12 +9,9 @@ use lib 't';
 require "test.pl";
 
 my ($default, $methods, $opts) = test_parse_args();
-
-if ($default) {
-  delete $Perfect::Hash::algo_todo{'-urban'};
-  #my @methods = grep { $_ = $Perfect::Hash::algo_todo{$_} ? undef : $_ } @$methods;
-  #$methods = \@methods;
-}
+#if ($default) { # -urban fixed with 6b1a94e46f893b
+#  delete $Perfect::Hash::algo_todo{'-urban'};
+#}
 
 my ($dict, @dict);
 for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
@@ -34,6 +31,7 @@ if (grep /^-size$/, @$opts) {
       if ($s > 2 and $s <= $#dict) {
         $#dict = $s - 1;
         $size = scalar @dict;
+        # TODO cmph can only read files so far
       } else {
         warn "Invalid -size $size\n";
       }
@@ -118,7 +116,7 @@ for my $opt (@{&powerset(@$opts)}) {
     next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
-    my $ph = new Perfect::Hash $dict, $m, split(/ /,$opt);
+    my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
     $t0 = tv_interval($t0);
     unless ($ph) {
       $i++;

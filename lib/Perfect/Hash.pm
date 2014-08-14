@@ -49,17 +49,12 @@ algorithms for big hashes, but lookup time is slower for smaller hashes and
 you need to link to an external library.
 
 As input we need to provide a set of unique keys, either as arrayref
-or hashref or as keyfile.
+or hashref or as keyfile. The keys can so far only be strings (will be
+extended to ints on demand) and the values can so far be only ints and strings.
+More types later.
 
-WARNING: When querying a perfect hash you need to be sure that the key really
-exists on some algorithms, as querying for non-existing keys might return
-false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually as in the SYNOPSIS or
-do not use the option C<-false-positives> so that all keys are stored
-also. It's still faster than using a Bloom filter though.
-
-As generation algorithm there exist various hashing classes,
-e.g. Hanov, CMPH::*, Bob, Pearson, Gperf.
+As generation algorithm there exist various hashing methods,
+e.g. Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo, Switch.
 
 As output there exist several output formater classes, e.g. C, XS or
 you can create your own for any language e.g. Java, Ruby, PHP, Python,
@@ -98,9 +93,10 @@ dictionary size, the options, and if the compiled algos are available.
 
 =item -false-positives
 
-Do not store the keys of the hash. Needs much less space, but might only be used
-either if you know in advance that you'll never lookup not existing keys, or
-check the result manually by yourself to avoid false positives.
+Do not store the keys of the hash. Needs much less space and is faster, but
+might only be used either if you know in advance that you'll never lookup not
+existing keys, or check the result manually by yourself to avoid false
+positives.
 
 =item -optimal-size (not yet)
 
@@ -115,19 +111,33 @@ lookup.
 
 =item -hanovpp
 
-Default pure perl method.
+The default pure perl method.
+
+=item -hanov
+
+Improved version of HanovPP, using optimized XS methods,
+2-3x faster with HW supported iSCSI CRC32 (via zlib or manually).
+
+The fast hash function requires a relatively new 64bit Intel, AMD or ARM
+processor.  This might need the external zlib library (-lz) at run-time.
 
 =item -urban
 
-Improved version of HanovPP, using compressed temp. arrays and
-optimized XS methods, ~2x faster (zlib crc32) and 300x smaller than
-HanovPP.  Can only store index values, not strings.
+Improved version of Hanov, using compressed temp. arrays and
+the same optimized XS methods and hash functionsas in -hanov.
+But can only store index values in a limited range, not strings.
 
 =item -pearson8
 
 Strict variant of a 8-bit (256 byte) Pearson hash table.  Generates
 very fast lookup, but limited dictionaries with a 8-bit pearson table
 for 5-255 keys.  Returns undef for invalid dictionaries.
+
+=item -switch
+
+This is similar to -pearson8 only recommended for small dictionary
+sizes < 256. Generates a nested switch table first switching on the
+size and then on the keys.
 
 =item -pearson
 
@@ -160,17 +170,26 @@ Nice and easy.
 
 Pretty fast lookup, but limited dictionaries.
 
-=item -cmph-chd (not yet)
+=item -cmph-bdz_ph
 
-The current state of the art for bigger dictionaries.
+The C<-cmph-*> methods are the current state of the art for bigger
+dictionaries.  This needs the external cmph library even at run-time.
 
-=item -cmph-bdz (not yet)
+The performance depends on the dictionary size.
+-cmph-bdz_ph is usually the fastest cmph method for
+1.000 - 250.000 keys.
 
-=item -cmph-brz (not yet)
+=item -cmph-bdz
 
-=item -cmph-chm (not yet)
+=item -cmph-bmz
 
-=item -cmph-fch (not yet)
+=item -cmph-chm
+
+=item -cmph-fch
+
+=item -cmph-chd_ph
+
+=item -cmph-chd
 
 =item -for-c (yet unused)
 
@@ -244,7 +263,7 @@ our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
   qw(-pearson8
-     -cmph-bdz -cmph-bmz -cmph-bmz8 -cmph-brz -cmph-chm -cmph-fch -cmph-bdz_ph -cmph-chd -cmph-chd_ph);
+     -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph -cmph-chd -cmph-bmz8 -cmph-brz);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;
@@ -316,8 +335,8 @@ sub new {
 
 =item analyze_data $dict, @options
 
-Scans the given dictionary and returns a recommended hash table algorithm
-for fast lookups.
+Scans the given dictionary, honors the given options and current architecture
+and returns the name of the recommended hash table algorithm for fast lookups.
 
 =cut
 

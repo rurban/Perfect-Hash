@@ -37,17 +37,12 @@ algorithms for big hashes, but lookup time is slower for smaller hashes and
 you need to link to an external library.
 
 As input we need to provide a set of unique keys, either as arrayref
-or hashref or as keyfile.
+or hashref or as keyfile. The keys can so far only be strings (will be
+extended to ints on demand) and the values can so far be only ints and strings.
+More types later.
 
-WARNING: When querying a perfect hash you need to be sure that the key really
-exists on some algorithms, as querying for non-existing keys might return
-false positives.  If you are not sure how the perfect hash deals with
-non-existing keys, you need to check the result manually as in the SYNOPSIS or
-do not use the option `-false-positives` so that all keys are stored
-also. It's still faster than using a Bloom filter though.
-
-As generation algorithm there exist various hashing classes,
-e.g. Hanov, CMPH::\*, Bob, Pearson, Gperf.
+As generation algorithm there exist various hashing methods,
+e.g. Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo, Switch.
 
 As output there exist several output formater classes, e.g. C, XS or
 you can create your own for any language e.g. Java, Ruby, PHP, Python,
@@ -82,9 +77,10 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
     - \-false-positives
 
-        Do not store the keys of the hash. Needs much less space, but might only be used
-        either if you know in advance that you'll never lookup not existing keys, or
-        check the result manually by yourself to avoid false positives.
+        Do not store the keys of the hash. Needs much less space and is faster, but
+        might only be used either if you know in advance that you'll never lookup not
+        existing keys, or check the result manually by yourself to avoid false
+        positives.
 
     - \-optimal-size (not yet)
 
@@ -99,19 +95,33 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
     - \-hanovpp
 
-        Default pure perl method.
+        The default pure perl method.
+
+    - \-hanov
+
+        Improved version of HanovPP, using optimized XS methods,
+        2-3x faster with HW supported iSCSI CRC32 (via zlib or manually).
+
+        The fast hash function requires a relatively new 64bit Intel, AMD or ARM
+        processor.  This might need the external zlib library (-lz) at run-time.
 
     - \-urban
 
-        Improved version of HanovPP, using compressed temp. arrays and
-        optimized XS methods, ~2x faster (zlib crc32) and 300x smaller than
-        HanovPP.  Can only store index values, not strings.
+        Improved version of Hanov, using compressed temp. arrays and
+        the same optimized XS methods and hash functionsas in -hanov.
+        But can only store index values in a limited range, not strings.
 
     - \-pearson8
 
         Strict variant of a 8-bit (256 byte) Pearson hash table.  Generates
         very fast lookup, but limited dictionaries with a 8-bit pearson table
         for 5-255 keys.  Returns undef for invalid dictionaries.
+
+    - \-switch
+
+        This is similar to -pearson8 only recommended for small dictionary
+        sizes < 256. Generates a nested switch table first switching on the
+        size and then on the keys.
 
     - \-pearson
 
@@ -144,14 +154,21 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
         Pretty fast lookup, but limited dictionaries.
 
-    - \-cmph-chd (not yet)
+    - \-cmph-bdz\_ph
 
-        The current state of the art for bigger dictionaries.
+        The `-cmph-*` methods are the current state of the art for bigger
+        dictionaries.  This needs the external cmph library even at run-time.
 
-    - \-cmph-bdz (not yet)
-    - \-cmph-brz (not yet)
-    - \-cmph-chm (not yet)
-    - \-cmph-fch (not yet)
+        The performance depends on the dictionary size.
+        \-cmph-bdz\_ph is usually the fastest cmph method for
+        1.000 - 250.000 keys.
+
+    - \-cmph-bdz
+    - \-cmph-bmz
+    - \-cmph-chm
+    - \-cmph-fch
+    - \-cmph-chd\_ph
+    - \-cmph-chd
     - \-for-c (yet unused)
 
         Optimize for C libraries
@@ -211,6 +228,11 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         comparison. Note that locale dependent case mappings are done via
         `libicu`.
 
+- analyze\_data $dict, @options
+
+    Scans the given dictionary, honors the given options and current architecture
+    and returns the name of the recommended hash table algorithm for fast lookups.
+
 - perfecthash $key
 
     Returns the index into the arrayref, resp. the provided hash value.
@@ -244,17 +266,17 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 [Perfect::Hash::Pearson](https://metacpan.org/pod/Perfect::Hash::Pearson),
 [Perfect::Hash::Pearson8](https://metacpan.org/pod/Perfect::Hash::Pearson8),
 [Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
-[Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob),
-[Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf),
+[Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob) _(not yet)_,
+[Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf) _(not yet)_,
 [Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
 [Perfect::Hash::CMPH::BMZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ),
-[Perfect::Hash::CMPH::BMZ8](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ8),
-[Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ),
+[Perfect::Hash::CMPH::BMZ8](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ8) _(not yet)_,
+[Perfect::Hash::CMPH::BRZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BRZ) _(not yet)_,
 [Perfect::Hash::CMPH::FCH](https://metacpan.org/pod/Perfect::Hash::CMPH::FCH)
 [Perfect::Hash::CMPH::BDZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ),
 [Perfect::Hash::CMPH::BDZ_PH](https://metacpan.org/pod/Perfect::Hash::CMPH::BDZ_PH),
 [Perfect::Hash::CMPH::CHD](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD),
-[Perfect::Hash::CMPH::CHD_PH](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD_PH),
+[Perfect::Hash::CMPH::CHD_PH](https://metacpan.org/pod/Perfect::Hash::CMPH::CHD_PH)
 
 ## Output classes
 

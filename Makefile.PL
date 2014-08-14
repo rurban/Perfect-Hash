@@ -170,11 +170,11 @@ release : dist
 	cpan-upload $(DISTVNAME).tar$(SUFFIX)
 	git push
 	git push --tags
-testfast :: pure_all
+testfast :: pure_all README.md
 	$(FULLPERLRUN) -S prove -b -j4 -f
-test_release :: pure_all
+test_release :: pure_all README.md
 	RELEASE_TESTING=1 $(FULLPERLRUN) -S prove -b -j4
-test_cover :: pure_all
+test_cover :: pure_all README.md
 	$(RM_RF) cover_db
 	$(PERLRUNINST) -S cover -test
 test_coveralls :: pure_all

@@ -16,7 +16,7 @@ if ($default) {
 }
 
 my ($dict, @dict);
-for (qw(examples/words /usr/share/dict/words /usr/dict/words /opt/local/share/dict/words)) {
+for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
   if (-e $_) { $dict = $_; last }
 }
 
@@ -43,7 +43,7 @@ sub wmain {
 static const char *testkeys[] = {
   ';
   my $size = int(scalar(@$dict) / 5);
-  srand(42); # same random dict lookups for all
+  srand(42); # same random dict lookups for all, with some utf8 keys
   for (0..$size) {
     my $i = int(rand($size));
     print $FH B::cstring($dict->[$i]),", ";
@@ -61,7 +61,10 @@ int main () {
     print $FH ', strlen(testkeys[i])';
   }
   print $FH ');
-    if (h<0) err++;
+    if (h<0) err++;';
+  print $FH '
+    if (i != h) err++;' if $opt !~ /-false-positives/;
+  print $FH '
   }
   return err;
 }
@@ -82,7 +85,7 @@ sub powerset {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
-printf "%-12s %7s %7s %7s  %s\n", "Method", "*lookup*", "generate", "compile", "options";
+printf "%-12s %-7s %-7s %-7s %-8s  %s\n", "Method", "*lookup*", "generate", "compile", "size", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
@@ -93,6 +96,8 @@ for my $opt (@{&powerset(@$opts)}) {
   #}
   for my $m (@try_methods) {
     next if $m eq '-pearson8';
+    #next if $m =~ /-pearson/;
+    next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
     my $ph = new Perfect::Hash $dict, $m, split(/ /,$opt);
@@ -107,6 +112,7 @@ for my $opt (@{&powerset(@$opts)}) {
     my $cmd = compile_cmd($ph);
     $t1 = [gettimeofday];
     $ph->save_c("phash");
+    my $s = -s "phash.c";
     print "$cmd\n" if $ENV{TEST_VERBOSE};
     my $retval = system($cmd.($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     $t1 = tv_interval($t1);
@@ -116,11 +122,12 @@ for my $opt (@{&powerset(@$opts)}) {
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06f  %s\n", substr($m,1), $t2, $t0, $t1, $opt;
+    printf "%-12s %.06f %.06f %.06f %8d %s\n", substr($m,1), $t2, $t0, $t1, $s, $opt;
     if ($retval>>8) {
       print "\twith ", $retval>>8, " errors.\n";
     }
   }
+  print "----\n";
 }
 
 unlink("phash","phash.c","phash.h","main.c") if $default;

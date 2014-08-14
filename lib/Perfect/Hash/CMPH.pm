@@ -82,7 +82,7 @@ sub save_c {
     static char *packed_mphf = ",B::cstring($ph->[1]),";
     return cmph_search_packed(packed_mphf, s, ";
   if ($ph->option('-nul')) {
-    print $FH "len";
+    print $FH "l";
   } else {
     print $FH "strlen(s)";
   }

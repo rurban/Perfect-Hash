@@ -5,6 +5,7 @@ our $VERSION = '0.01';
 #use warnings;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 use B ();
+use Config;
 
 use XSLoader;
 XSLoader::load('Perfect::Hash::CMPH');
@@ -96,9 +97,19 @@ TODO: to the installed Alien libpath
 
 =cut
 
+# quirks on temp. uninstalled -lcmph
 sub c_include { " -Icmph-2.0/include" }
 
-sub c_lib { " -Wl,-rpath=cmph-2.0/lib -Lcmph-2.0/lib -lcmph" }
+sub c_lib {
+  # quirks on temp. uninstalled -lcmph
+  my $l = " -Lcmph-2.0/lib -lcmph";
+  # rpath not with darwin, solaris, msvc. we should rather install cmph locally or via Alien
+  $l .= " -Wl,-rpath=cmph-2.0/lib" if $^O =~ /linux|bsd|cygwin$/ and $Config{cc} =~ /cc|clang/;
+  if ($^O eq 'darwin' and $Config{ccflags} =~ /-DDEBUGGING/) {
+    $l = " cmph-2.0/lib/libcmph.a"; # static to enable debugging
+  }
+  return $l;
+}
 
 =back
 

@@ -12,8 +12,8 @@ my ($default, $methods, $opts) = test_parse_args();
 
 if ($default) {
   delete $Perfect::Hash::algo_todo{'-urban'};
-  my @methods = grep { $_ = $Perfect::Hash::algo_todo{$_} ? undef : $_ } @$methods;
-  $methods = \@methods;
+  #my @methods = grep { $_ = $Perfect::Hash::algo_todo{$_} ? undef : $_ } @$methods;
+  #$methods = \@methods;
 }
 
 my ($dict, @dict);
@@ -97,6 +97,7 @@ for my $opt (@{&powerset(@$opts)}) {
   #  push @try_methods, ('-pearson','-pearsonnp');
   #}
   for my $m (@try_methods) {
+    next if $m eq '';
     next if $m eq '-pearson8';
     #next if $m =~ /-pearson/;
     next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
@@ -127,7 +128,7 @@ for my $opt (@{&powerset(@$opts)}) {
       $retval = $?;
     }
     printf "%-12s %.06f % .06f %.06f %8d %8d  %s\n",
-       substr($m,1), $t2, $t0, $t1, $s, $so, $opt;
+       $m?substr($m,1):"", $t2, $t0, $t1, $s, $so, $opt;
     if ($retval>>8) {
       print "\t\t\twith ", $retval>>8, " errors.\n";
     }

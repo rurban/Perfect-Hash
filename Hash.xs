@@ -94,20 +94,20 @@ IV vec(char *G, IV index, IV bits) {
   else if (bits == 4)
     return *(char*)(G + (index / 2)) & 15;
   else if (bits == 16) {
-    short l = *(short*)((short*)G + index); /* __UINT16_MAX__ */
+    short l = *(short*)((short*)G + index) & 65535; /* __UINT16_MAX__ */
     return (IV)l;
   }
   else if (bits == 32) {
-#if INTSIZE == 4
     int l = *(int*)((int*)G + index); /* __UINT32_MAX__ */
-#else
+    return (IV)l;
+  }
+  else if (bits == 64) {
     long l = *(long*)((long*)G + index);
-#endif
     return (IV)l;
   }
 #ifdef HAS_QUAD
-  else if (bits == 64) {
-    IV l = *(long long*)((long long*)G + index);
+  else if (bits == 128) {
+    IV l = *(IV*)((long long*)G + index);
     return l;
   }
 #endif
@@ -196,7 +196,7 @@ CODE:
     char *G = SvPVX(g);
     IV bits = SvIVX(AvARRAY(ref)[1]);
     UV size = 4 * SvCUR(g) / bits; /* 40 = (20 * BITS / 4); 20 = 40 * 4 / BITS */
-    char *V = SvPVX(g)+size;
+    char *V = G+(size * bits/8);
     unsigned long h = crc32(0, CRCSTR(key), SvCUR(key)) % size;
     IV d = vec(G, h, bits);
     IV v;
@@ -282,14 +282,11 @@ CODE:
     *(char*)(V + (index / 2)) = value & 15;
   else if (bits == 16)
     *(short*)((short*)V + index) = value & 65535;
-  else if (bits == 32) {
-#if INTSIZE == 4
-    *(int*)((int*)V + index) = value & 65535;
-#else
-    *(long*)((long*)V + index) = value & 2147483647;
-#endif
-  }
-#ifdef HAS_QUAD
+  else if (bits == 32)
+    *(int*)((int*)V + index) = value & 2147483647;
   else if (bits == 64)
+    *(long*)((long*)V + index) = (long)value;
+#ifdef HAS_QUAD
+  else if (bits == 128)
     *(long long*)((long long*)V + index) = (long long)value;
 #endif

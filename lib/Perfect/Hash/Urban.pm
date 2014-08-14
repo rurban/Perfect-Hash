@@ -100,6 +100,7 @@ sub new {
       my $slot = $class->hash( $bucket[$item], $d ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
+        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=0x%x, $bucket[$item]\n",$d if $options{-debug};
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
@@ -287,8 +288,12 @@ String for C code for the hash function, depending on C<-nul>.
 
 sub save_xs { die "save_xs NYI" }
 
+
+# XXX hash collision with crc32: Adan's + Addam module 128
 sub _test_tables {
-  my $ph = Perfect::Hash::Urban->new("examples/words500",qw(-debug));
+  # NOTE: avoid power of 2 dict sizes
+  my $dict = [ split/\n/, `head -n 128 examples/words` ];
+  my $ph = Perfect::Hash::Urban->new($dict, qw(-debug));
   my $keys = $ph->[3];
   my $size = scalar @$keys;
   my $G = $ph->[4];

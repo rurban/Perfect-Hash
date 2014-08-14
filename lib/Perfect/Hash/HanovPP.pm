@@ -86,6 +86,7 @@ sub new {
       my $slot = $class->hash($bucket[$item], $d) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
+        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=%d\n",$d+1 if $options{-debug};
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
@@ -249,18 +250,21 @@ sub save_c {
     $size = scalar(@$G);
   }
   my $gtype = "signed char";
-  $gtype = "int" if $size > 256;
-  $gtype = "long" if $size > 65537;
+  $gtype = "short" if $size > 256;
+  $gtype = "int" if $size > 65537;
+  $gtype = "long" if $size > 2147483647;
+  my $ugtype = $gtype eq "signed char" ? "un".$gtype : "unsigned ".$gtype;
 
   # TODO: which types of V. XXX also allow strings
   my $vtype = "unsigned char";
-  $vtype = "unsigned int" if @$V > 256;
-  $vtype = "unsigned long" if @$V > 65537;
+  $vtype = "unsigned short" if @$V > 256;
+  $vtype = "unsigned int" if @$V > 65537;
+  $vtype = "unsigned long" if @$V > 4294967295;
   my $svtype = $vtype;
   $svtype =~ s/unsigned //;
 
   print $FH "
-    unsigned h;
+    $ugtype h;
     $gtype d;
     $svtype v;
     /* hash indices, direct < 0, indirect > 0 */
@@ -285,23 +289,23 @@ sub save_c {
   }
   if ($ph->option('-nul')) {
     print $FH "
-    h = $base\_hash_len(0, s, l) % $size;
+    h = ($ugtype)($base\_hash_len(0, s, l) % $size);
     d = G[h];
     v = d < 0
-        ? V[-d-1]
+        ? V[($vtype)-d-1]
         : d == 0
-          ? V[h]
-          : V[$base\_hash_len(d, s, l) % $size];
+          ? V[($vtype)h]
+          : V[($vtype)($base\_hash_len(d, s, l) % $size)];
 ";
   } else {
     print $FH "
-    h = $base\_hash(0, s) % $size;
+    h = ($ugtype)($base\_hash(0, s) % $size);
     d = G[h];
     v = d < 0
-        ? V[-d-1]
+        ? V[($vtype)-d-1]
         : d == 0
-          ? V[h]
-          : V[$base\_hash(d, s) % $size];
+          ? V[($vtype)h]
+          : V[($vtype)($base\_hash(d, s) % $size)];
 ";
   }
   if (!$ph->false_positives) { # check keys
@@ -360,7 +364,7 @@ unsigned $base\_hash (unsigned d, const char *s) {
   }
 }
 
-=item c_lib
+=item c_lib c_include
 
 empty
 
@@ -368,12 +372,14 @@ empty
 
 sub c_lib {""}
 
+sub c_include {""}
+
 =back
 
 =cut
 
 sub _test_tables {
-  my @dict = split /\n/, `cat "examples/words20"`;
+  my @dict = split /\n/, `head -n20 "examples/words"`;
   $dict[19] = "éclair";
   #$dict[19] = "\x{c3}\x{a9}clair";
   my $ph = __PACKAGE__->new(\@dict, qw(-debug));

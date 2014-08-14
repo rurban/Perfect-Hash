@@ -238,14 +238,13 @@ C<libicu>.
 # Not yet:      Bob Gperf
 #               CMPH::BMZ8 CMPH::BRZ
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
-                CMPH::BMZ CMPH::CHM CMPH::FCH CMPH::BDZ
-                CMPH::BDZ_PH CMPH::CHD CMPH::CHD_PH
+                CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
+                CMPH::FCH CMPH::CHD_PH CMPH::CHD
               );
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-pearson8);
-  #-urban -cmph-bdz -cmph-bmz -cmph-bmz8 -cmph-brz -cmph-chm -cmph-fch
-  #-cmph-bdz_ph -cmph-chd -cmph-chd_ph);
+  qw(-pearson8
+     -cmph-bdz -cmph-bmz -cmph-bmz8 -cmph-brz -cmph-chm -cmph-fch -cmph-bdz_ph -cmph-chd -cmph-chd_ph);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;
@@ -254,9 +253,14 @@ our %algo_methods = map {
 
 # split hash or filename with keys
 # into 2 arrays of keys and values
+# avoid power of 2 sizes, for less modulo hassle
+# if so just add a dummy "" key at the end
 sub _dict_init {
   my $dict = shift;
   if (ref $dict eq 'ARRAY') {
+    if (sprintf("%b", scalar @$dict) =~ /000+$/) {
+      push @$dict, "";
+    }
     return ($dict, []);
   }
   elsif (ref $dict ne 'HASH') {
@@ -266,6 +270,7 @@ sub _dict_init {
         local $/;
         @keys = split /\n/, <$d>;
         #TODO: check for key<ws>value or just lineno
+        push @keys, "" if sprintf("%b", scalar @keys) =~ /000+$/;
       }
       close $d;
       return (\@keys, []);
@@ -285,6 +290,10 @@ sub _dict_init {
     $keys[$i] = $_;
     $values[$i] = $dict->{$_};
     $i++;
+  }
+  if (sprintf("%b", $size) =~ /000+$/) {
+    push @keys, "";
+    push @values, -1;
   }
   return (\@keys, \@values);
 }

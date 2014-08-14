@@ -8,7 +8,7 @@ use B ();
 # usage: my ($default, $methods, $opts) = parse_args(@default_opts);
 sub test_parse_args {
   my @opts = @_;
-  my @methods = sort keys %Perfect::Hash::algo_methods;
+  my @methods = map {s/::/-/g; lc $_} @Perfect::Hash::algos;
   my $default;
   if (@ARGV and grep /^-/, @ARGV) {
     my @m = ();

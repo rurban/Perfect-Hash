@@ -14,16 +14,16 @@ sub test_parse_args {
     my @m = ();
     for (@ARGV) {
       my ($m) = /^-(.*)/;
-      if (exists $Perfect::Hash::algo_methods{$m}) {
-        push @m, $_;
+      if (defined($m) and exists $Perfect::Hash::algo_methods{$m}) {
+        push @m, "-".$_;
       } else {
         push @opts, $_;
       }
     }
-    @methods = @m if @m;
+    @methods = @m ? @m : ('', map {"-".$_} @methods);
   } else {
     $default = 1;
-    @methods = ('', map {"-$_"} @methods);
+    @methods = ('', map {"-".$_} @methods);
   }
   return ($default, \@methods, \@opts);
 }

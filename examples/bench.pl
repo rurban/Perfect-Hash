@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
-# pb examples/bench.pl -hanovpp -urban -pearsonnp ...
-# TODO: bench against traditional hash tables (linked list, double hashing, cuckoo)
+# pb examples/bench.pl -size 1023 -hanovpp -urban -pearsonnp ...
+# TODO: bench against traditional hash tables (linked list, sorted list, double hashing, cuckoo)
 use strict;
 use Perfect::Hash;
 use B ();
@@ -27,6 +27,21 @@ open my $d, $dict or die; {
 }
 close $d;
 my $size = scalar @dict;
+if (grep /^-size$/, @$opts) {
+  for (0..scalar(@$opts)-1) {
+    if ($opts->[$_] eq '-size') {
+      my $s = $opts->[$_ + 1];
+      if ($s > 2 and $s <= $#dict) {
+        $#dict = $s - 1;
+        $size = scalar @dict;
+      } else {
+        warn "Invalid -size $size\n";
+      }
+      splice(@$opts, $_, 2);
+      last;
+    }
+  }
+}
 
 sub wmain {
   my $dict = $_[0];

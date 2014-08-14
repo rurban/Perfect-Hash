@@ -11,6 +11,7 @@ require "test.pl";
 my ($default, $methods, $opts) = test_parse_args();
 
 if ($default) {
+  delete $Perfect::Hash::algo_todo{'-urban'};
   my @methods = grep { $_ = $Perfect::Hash::algo_todo{$_} ? undef : $_ } @$methods;
   $methods = \@methods;
 }
@@ -85,7 +86,8 @@ sub powerset {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
-printf "%-12s %-7s %-7s %-7s %8s  %s %s\n", "Method", "*lookup*", "generate", "compile", "size", "options", "exesize";
+printf "%-12s %-7s %-7s %-7s %8s %8s  %s\n",
+       "Method", "*lookup*", "generate", "compile", "c size", "exesize", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
@@ -124,10 +126,10 @@ for my $opt (@{&powerset(@$opts)}) {
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06f %8d %s %d\n",
-           substr($m,1), $t2, $t0, $t1, $s, $opt, $so;
+    printf "%-12s %.06f %.06f %.06f %8d %8d  %s\n",
+       substr($m,1), $t2, $t0, $t1, $s, $so, $opt;
     if ($retval>>8) {
-      print "\twith ", $retval>>8, " errors.\n";
+      print "\t\t\twith ", $retval>>8, " errors.\n";
     }
   }
   print "----\n";

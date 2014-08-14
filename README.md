@@ -4,20 +4,25 @@ Perfect::Hash - generate perfect hashes, library backend for phash
 
 # SYNOPSIS
 
+    # generate c file for readonly lookup
     phash keyfile --prefix=phash ...
 
+    # pure-perl usage
     use Perfect::Hash;
-    my @dict = split/\n/,`cat /usr/share.dict/words`;
-
+    my @dict = split/\n/,`cat /usr/share/dict/words`;
     my $ph = Perfect::Hash->new(\@dict, -minimal);
     for (@ARGV) {
       my $v = $ph->perfecthash($_);
-      if ($dict[$v] eq $_) {
-        print "$_ at line $v";
-      } else {
-        print "$_ not found";
-      }
+      print ($dict[$v] eq $_ ? "$_ at line ".$v+1."\n" : "$_ not found\n");
     }
+
+    Perfect::Hash->new("keyfile", '-urban', ...)->save_c;
+    # or just:
+    phash keyfile --urban
+    cc -O3 -msse4.2 phash.c ... -lz
+
+    phash /usr/share/dict/words --cmph-bdz_ph --nul
+    cc -O3 phash.c ... -lcmph
 
 # DESCRIPTION
 
@@ -36,13 +41,13 @@ bigger hashes.  cmph `CHD` and the other cmph algorithms might be the best
 algorithms for big hashes, but lookup time is slower for smaller hashes and
 you need to link to an external library.
 
-As input we need to provide a set of unique keys, either as arrayref
-or hashref or as keyfile. The keys can so far only be strings (will be
-extended to ints on demand) and the values can so far be only ints and strings.
-More types later.
+As input we need to provide a set of unique keys, either as arrayref or
+hashref or as keyfile. The keys can so far only be strings (will be extended
+to ints on demand) and the values can so far be only ints and strings.  More
+types later.
 
-As generation algorithm there exist various hashing methods,
-e.g. Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo, Switch.
+As generation algorithm there exist various hashing methods:
+Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
 
 As output there exist several output formater classes, e.g. C, XS or
 you can create your own for any language e.g. Java, Ruby, PHP, Python,
@@ -181,14 +186,16 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
         Use the specified hash function instead of the default.
         Only useful for hardware assisted `crc32` and `aes` system calls,
-        provided by compiler intrinsics (sse4.2) or libz.
+        provided by compiler intrinsics (sse4.2) or libz. Note that some
+        zlib libraries do not provide a HW-assisted fast crc32 function,
+        rather a slow SW variant.
         See -hash=help for a list of all supported hash function names:
-        `crc32`, `aes`, `crc32-zlib`
+        `crc32_zlib`, `fnv`, `crc32_sse42`, `aes`, ...
 
-        The hardware assisted `crc32` and `aes` functions add a run-time
-        probe with slow software fallback code.  `crc32-zlib` does all this
-        also, and is especially optimized for long keys to hash them in
-        parallel.
+        The hardware assisted `crc32` and `aes` functions add a run-time probe with
+        slow software fallback code (not yet). `crc32_zlib` does all this also, and
+        is especially optimized for long keys to hash them in parallel, if implemented
+        in your library.
 
     - \-pic (not yet)
 

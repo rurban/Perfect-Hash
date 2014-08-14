@@ -61,20 +61,20 @@ Methods:
 --hanovpp
 --hanov
 --urban
---pearsonnp
+--pearson --pearsonnp --pearson8
+--cmph-bdz_ph --cmph-bdz --cmph-bmz --cmph-chm --cmph-fch --cmph-chd_ph --cmph-chd
 ...
 
 Options:
 --false-positives
 --nul
---for-c
---prefix=name
+--for-c       (default)
+--prefix=name (default: phash)
 
 Planned:
 --minimal
 --optimal-size
 --optimal-speed
---for-c
 --for-xs
 --hash=name
 --pic
@@ -102,10 +102,13 @@ GetOptions
   ($options,
    'help|h',
    'hanovpp',
+   'hanov',
    'urban',
    'pearson',
    'pearson8',
    'pearsonnp',
+   'cmph-bdz_ph', 'cmph-bdz', 'cmph-bmz', 'cmph-chm', 'cmph-fch', 'cmph-chd_ph', 'cmph-chd',
+   #'gperf', 'bob', 'switch', 'cuckoo',
    # and many more ... get them from %algo_methods?
    'false-positives!',
    'nul',

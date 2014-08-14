@@ -85,8 +85,8 @@ sub powerset {
 }
 
 my $i = 0;
-print "size=$size, lookups=",int($size/5),"  (smaller sec and sizes are better)\n";
-printf "%-12s %-7s %-7s %-7s %8s  %8s  %s\n",
+print "size=$size, lookups=",int($size/5),"  (smaller sec and size is better)\n";
+printf "%-12s %8s %9s %7s %8s  %8s  %s\n",
        "Method", "*lookup*", "generate", "compile", "c size", "exesize", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
@@ -126,7 +126,7 @@ for my $opt (@{&powerset(@$opts)}) {
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06f %8d %8d  %s\n",
+    printf "%-12s %.06f % .06f %.06f %8d %8d  %s\n",
        substr($m,1), $t2, $t0, $t1, $s, $so, $opt;
     if ($retval>>8) {
       print "\t\t\twith ", $retval>>8, " errors.\n";

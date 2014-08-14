@@ -85,7 +85,7 @@ sub powerset {
 
 my $i = 0;
 print "size=$size, lookups=",int($size/5),"\n";
-printf "%-12s %-7s %-7s %-7s %-8s  %s\n", "Method", "*lookup*", "generate", "compile", "size", "options";
+printf "%-12s %-7s %-7s %-7s %8s  %s %s\n", "Method", "*lookup*", "generate", "compile", "size", "options", "exesize";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
@@ -112,17 +112,20 @@ for my $opt (@{&powerset(@$opts)}) {
     my $cmd = compile_cmd($ph);
     $t1 = [gettimeofday];
     $ph->save_c("phash");
-    my $s = -s "phash.c";
     print "$cmd\n" if $ENV{TEST_VERBOSE};
     my $retval = system($cmd.($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     $t1 = tv_interval($t1);
+    my $s = -s "phash.c";
+    my $so = 0;
     if (!($retval>>8)) {
+      $so = -s "phash";
       $t2 = [gettimeofday];
       my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
       $t2 = tv_interval($t2);
       $retval = $?;
     }
-    printf "%-12s %.06f %.06f %.06f %8d %s\n", substr($m,1), $t2, $t0, $t1, $s, $opt;
+    printf "%-12s %.06f %.06f %.06f %8d %s %d\n",
+           substr($m,1), $t2, $t0, $t1, $s, $opt, $so;
     if ($retval>>8) {
       print "\twith ", $retval>>8, " errors.\n";
     }

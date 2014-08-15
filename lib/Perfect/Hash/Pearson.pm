@@ -278,8 +278,10 @@ sub save_c {
   my $H = $ph->[1];
   my $hsize = scalar @$H;
   my $htype = "char";
-  $htype = "int" if $hsize > 256;
+  $htype = "short" if $hsize > 256;
   $htype = "long" if $hsize > 65537;
+  print $FH "
+    int l = strlen(s);" unless $ph->option('-nul');
   print $FH "
     long h = 0;
     const char *key = s;
@@ -397,13 +399,8 @@ sub save_c {
       const char **ck = (const char **)Ck[h];
       int i = 0;
       for (; i < Cs[h]; i++) {";
-      if ($ph->option('-nul')) {
-        print $FH "
+      print $FH "
         if (!memcmp(ck[i], key, l)) return Cv[h][i];";
-      } else {
-        print $FH "
-        if (!strcmp(ck[i], key)) return Cv[h][i];";
-      }
       print $FH "
       }
     }
@@ -412,13 +409,8 @@ sub save_c {
     }";
   }
   if (!$ph->false_positives) { # check keys
-    if ($ph->option('-nul')) {
-      print $FH "
+    print $FH "
     if (memcmp(K[h], key, l)) h = -1;";
-    } else {
-      print $FH "
-    if (strcmp(K[h], key)) h = -1;";
-    }
   }
   print $FH "
     return h;

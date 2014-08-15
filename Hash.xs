@@ -98,17 +98,13 @@ IV vec(char *G, IV index, IV bits) {
     return (IV)l;
   }
   else if (bits == 32) {
-    int l = *(int*)((int*)G + index); /* __UINT32_MAX__ */
-    return (IV)l;
-  }
-  else if (bits == 64) {
-    long l = *(long*)((long*)G + index);
+    long l = *(long*)((long*)G + index); /* __UINT32_MAX__ */
     return (IV)l;
   }
 #ifdef HAS_QUAD
-  else if (bits == 128) {
-    IV l = *(IV*)((long long*)G + index);
-    return l;
+  else if (bits == 64) {
+    long long l = *(long long*)((long long*)G + index);
+    return (IV)l;
   }
 #endif
   die("Unsupported bits %"IVdf"\n", bits);
@@ -283,10 +279,8 @@ CODE:
   else if (bits == 16)
     *(short*)((short*)V + index) = value & 65535;
   else if (bits == 32)
-    *(int*)((int*)V + index) = value & 2147483647;
-  else if (bits == 64)
-    *(long*)((long*)V + index) = (long)value;
+    *(long*)((long*)V + index) = value & 2147483647;
 #ifdef HAS_QUAD
-  else if (bits == 128)
+  else if (bits == 64)
     *(long long*)((long long*)V + index) = (long long)value;
 #endif

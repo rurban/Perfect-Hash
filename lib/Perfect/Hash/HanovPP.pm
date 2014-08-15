@@ -235,10 +235,22 @@ sub save_c {
     my $bits = $ph->[1];
     $size = 4 * length($G) / $bits;
     my $voff = $size;
+    my $pack = {
+      8  => "c",
+      16 => "s",
+      32 => "l",
+      64 => "q",
+    };
     for my $i (0..$size-1) {
-      my $d = vec($G, $i, $bits);
-      $d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
-      $G[$i] = $d;
+      if ($pack->{$bits}) {
+        my $byte = $bits / 8;
+        $G[$i] = unpack($pack->{$bits}, substr($G, $i * $byte, $byte));
+      } else {
+        $G[$i] = Perfect::Hash::Urban::nvecget($G, $i, $bits);
+        #my $d = vec($G, $i, $bits);
+        #$d = ($d - (1<<$bits)) if $d >= 1<<($bits-1);
+        #$G[$i] = $d;
+      }
     }
     # TODO: if @V contains only int indices
     for my $i (0..$size-1) {
@@ -250,21 +262,21 @@ sub save_c {
     $size = scalar(@$G);
   }
   my $gtype = "signed char";
-  $gtype = "short" if $size > 256;
-  $gtype = "int" if $size > 65537;
+  $gtype = "short" if $size > 127;
+  $gtype = "int" if $size > 32767;
   $gtype = "long" if $size > 2147483647;
   my $ugtype = $gtype eq "signed char" ? "un".$gtype : "unsigned ".$gtype;
 
   # TODO: which types of V. XXX also allow strings
   my $vtype = "unsigned char";
-  $vtype = "unsigned short" if @$V > 256;
-  $vtype = "unsigned int" if @$V > 65537;
+  $vtype = "unsigned short" if @$V > 255;
+  $vtype = "unsigned int" if @$V > 65535;
   $vtype = "unsigned long" if @$V > 4294967295;
   my $svtype = $vtype;
   $svtype =~ s/unsigned //;
 
   print $FH "
-    $ugtype h;
+    $vtype h;
     $gtype d;
     $svtype v;
     /* hash indices, direct < 0, indirect > 0 */
@@ -287,37 +299,21 @@ sub save_c {
     _save_c_array(8, $FH, $keys, "\"%s\"");
     print $FH "    };";
   }
-  if ($ph->option('-nul')) {
+  unless ($ph->option('-nul')) {
     print $FH "
-    h = ($ugtype)($base\_hash_len(0, s, l) % $size);
-    d = G[h];
-    v = d < 0
-        ? V[($vtype)-d-1]
-        : d == 0
-          ? V[($vtype)h]
-          : V[($vtype)($base\_hash_len(d, s, l) % $size)];
-";
-  } else {
-    print $FH "
-    h = ($ugtype)($base\_hash(0, s) % $size);
-    d = G[h];
-    v = d < 0
-        ? V[($vtype)-d-1]
-        : d == 0
-          ? V[($vtype)h]
-          : V[($vtype)($base\_hash(d, s) % $size)];
-";
+    long l = strlen(s);";
   }
+  print $FH "
+    h = ($vtype)($base\_hash(0, s, l) % $size);
+    d = G[h];
+    v = d < 0
+        ? V[($vtype)-d-1]
+        : d == 0
+          ? V[h]
+          : V[($vtype)($base\_hash(d, s, l) % $size)];";
   if (!$ph->false_positives) { # check keys
-    if ($ph->option('-nul')) {
-      print $FH "
-    if (memcmp(K[v],s,l)) v = -1;
-";
-    } else {
-      print $FH "
-    if (strcmp(K[v],s)) v = -1;
-";
-    }
+    print $FH "
+    if (memcmp(K[v],s,l)) v = -1;";
   }
   print $FH "
     return v;
@@ -334,11 +330,16 @@ String for C code for the hash function, depending on C<-nul>.
 
 sub c_hash_impl {
   my ($ph, $base) = @_;
-  if ($ph->option('-nul')) {
-    return "
+  return "
+#ifdef _MSC_VER
+#define INLINE __inline
+#else
+#define INLINE inline
+#endif
+
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-static inline
-unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
+static INLINE
+unsigned $base\_hash(unsigned d, const char *s, const int l) {
     unsigned char c = *s;
     int i = 0;
     if (!d) d = 0x01000193;
@@ -348,20 +349,6 @@ unsigned $base\_hash_len (unsigned d, const char *s, const int l) {
     return d;
 }
 ";
-  } else {
-    return "
-/* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
-static inline
-unsigned $base\_hash (unsigned d, const char *s) {
-    unsigned char c;
-    if (!d) d = 0x01000193;
-    for (c = *s++; c; c = *s++) {
-        d = ((d *  0x01000193) ^ c) & 0xffffffff;
-    }
-    return d;
-}
-";
-  }
 }
 
 =item c_lib c_include

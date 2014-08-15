@@ -133,15 +133,9 @@ EOF
     return Perfect::Hash::HanovPP::c_hash_impl(@_);
   }
 
-  if ($ph->option('-nul')) {
-    $s .= "
-#define $base\_hash_len(d, s, len) crc32((d), (const unsigned char*)(s), (len))
+  $s .= "
+#define $base\_hash(d, s, len) crc32((d), (const unsigned char*)(s), (len))
 ";
-  } else {
-    $s .= "
-#define $base\_hash(d, s) crc32((d), ((const unsigned char*)s), strlen(s))
-";
-  }
   return $s;
 }
 

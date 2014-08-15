@@ -43,7 +43,7 @@ for my $m (@$methods) {
       my $v = $ph->perfecthash($w);
       $ok = 0 if !defined($v) or $v ne $i;
       unless ($ok) {
-        is($v, $i, "method $m for '$w' => ".$v);
+        is($v, $i, "method $m for $i-th '$w' => ".$v);
         last;
       }
       $i++;

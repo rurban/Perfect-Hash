@@ -18,7 +18,7 @@ Improved version of Hanov and HanovPP, using compressed temp. arrays
 and optimized XS methods, ~2x faster than HanovPP.
 Can only store index values, not strings.
 
-WARNING: This version is still instable.
+save_c not yet working right.
 
 =head1 METHODS
 
@@ -291,9 +291,10 @@ sub save_xs { die "save_xs NYI" }
 
 # XXX hash collision with crc32: Adan's + Addam module 128
 sub _test_tables {
-  # NOTE: avoid power of 2 dict sizes
-  my $dict = [ split/\n/, `head -n 128 examples/words` ];
-  my $ph = Perfect::Hash::Urban->new($dict, qw(-debug));
+  # NOTE: avoiding power of 2 dict sizes
+  my $n = shift || 255;
+  my $dict = [ split/\n/, `head -n $n examples/words` ];
+  my $ph = Perfect::Hash::Urban->new($dict, qw(-debug), @_);
   my $keys = $ph->[3];
   my $size = scalar @$keys;
   my $G = $ph->[4];

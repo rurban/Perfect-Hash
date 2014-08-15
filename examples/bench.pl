@@ -18,23 +18,37 @@ for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
   if (-e $_) { $dict = $_; last }
 }
 
-open my $d, $dict or die; {
-  local $/;
-  @dict = split /\n/, <$d>;
+my ($size, $custom_size);
+if (!grep /^-dict$/, @$opts) {
+  open my $d, $dict or die; {
+    local $/;
+    @dict = split /\n/, <$d>;
+  }
+  close $d;
+  $size = scalar @dict;
 }
-close $d;
-my $size = scalar @dict;
-if (grep /^-size$/, @$opts) {
+if (grep /^-(size|dict)$/, @$opts) {
   for (0..scalar(@$opts)-1) {
     if ($opts->[$_] eq '-size') {
       my $s = $opts->[$_ + 1];
       if ($s > 2 and $s <= $#dict) {
         $#dict = $s - 1;
         $size = scalar @dict;
-        # TODO cmph can only read files so far
+        $custom_size++;
       } else {
         warn "Invalid -size $size\n";
       }
+      splice(@$opts, $_, 2);
+      last;
+    }
+    if ($opts->[$_] eq '-dict') {
+      $dict = $opts->[$_ + 1];
+      open my $d, $dict or die; {
+        local $/;
+        @dict = split /\n/, <$d>;
+      }
+      close $d;
+      $size = scalar @dict;
       splice(@$opts, $_, 2);
       last;
     }
@@ -106,17 +120,13 @@ $opts = [qw(-false-positives -nul)] unless @$opts;
 for my $opt (@{&powerset(@$opts)}) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
   my @try_methods = @$methods;
-  #if ($default and $opt =~ /-nul/) {
-  #  push @try_methods, ('-pearson','-pearsonnp');
-  #}
   for my $m (@try_methods) {
     next if $m eq '';
-    next if $m eq '-pearson8';
-    #next if $m =~ /-pearson/;
+    next if $m eq '-pearson8' and $size > 255;
     next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
-    my $ph = new Perfect::Hash \@dict, $m, split(/ /,$opt);
+    my $ph = new Perfect::Hash($custom_size ? \@dict : $dict, $m, split(/ /,$opt));
     $t0 = tv_interval($t0);
     unless ($ph) {
       $i++;

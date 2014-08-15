@@ -18,7 +18,7 @@ install:
     - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
 # cpanm does not 5.6
 before_script:
-    - cpan Devel::Cover::Report::Coveralls Test::CPAN::Meta
+    - cpan Devel::Cover::Report::Coveralls
 script:
     perl Makefile.PL && make && cover -test -report coveralls
 
@@ -34,7 +34,7 @@ matrix:
     - perl: "5.6"
     - perl: "5.20"
     - perl: "blead"
-# unknown to perlbrew at travis. ERROR: The installation "5.20" is unknown.
+# unknown to perlbrew at travis. Using perl-travis-helper
 
 # Hack to not run on tag pushes:
 branches:

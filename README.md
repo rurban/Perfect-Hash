@@ -319,6 +319,91 @@ CPAN Testers: [http://cpantesters.org/distro/P/Perfect-Hash](http://cpantesters.
 
 [![Coveralls](https://coveralls.io/repos/rurban/Perfect-Hash/badge.png)](https://coveralls.io/r/rurban/Perfect-Hash?branch=master)
 
+# BENCHMARKS
+
+linux/amd64 with a dictionary size=99171 and Intel Core i5-2300 CPU @ 2.80GHz
+with native iSCSI CRC32-C from zlib.
+Note that searching for utf8 keys is still broken.
+
+    size=99171, lookups=19834  (smaller sec and size is better)
+    Method       *lookup*  generate compile   c size   exesize  options
+    hanovpp      0.003559  1.500453 0.686831  1199116  1069340  -false-positives -nul
+    hanov        0.004246  0.802108 0.685475  1197842  1069442  -false-positives -nul
+    urban        0.004258  0.912100 0.800518  1197842  1069442  -false-positives -nul
+    pearson      0.007302  60.782395 4.279730  8531573  7870287  -false-positives -nul
+    pearsonnp    0.010261  10.924107 1.838053  2647938  3916273  -false-positives -nul
+    ----
+    hanovpp      0.005107  1.759427 1.600238  2393770  2592567  -nul
+    			with 189 errors.
+    hanov        0.005396  0.973060 1.612685  2392496  2592637  -nul
+    			with 122 errors.
+    urban        0.005363  1.041718 1.731006  2392496  2592637  -nul
+    			with 122 errors.
+    pearson      0.007824  61.046319 5.160074  9726231  8905519  -nul
+    			with 189 errors.
+    pearsonnp    0.010437  10.981826 2.532491  3842596  4708496  -nul
+    			with 189 errors.
+    cmph-bdz_ph  0.006023  0.051516 0.205664    67005   300257  -nul
+    			with 122 errors.
+    cmph-bdz     0.008608  0.049154 0.211789    98105   310169  -nul
+    			with 122 errors.
+    cmph-bmz     0.007910  0.128633 0.328867  1590581   732057  -nul
+    			with 122 errors.
+    cmph-chm     0.008509  0.085596 0.459539  3074289  1104945  -nul
+    			with 122 errors.
+    cmph-fch     0.007814  12.502236 0.215060   196138   334497  -nul
+    			with 122 errors.
+    cmph-chd_ph  0.008144  0.039556 0.210535    36047   288129  -nul
+    			with 122 errors.
+    cmph-chd     0.010228  0.044528 0.212329   141652   328777  -nul
+    			with 122 errors.
+    ----
+    hanovpp      0.004833  1.846433 0.701910  1199133  1069356  -false-positives
+    hanov        0.005344  1.039758 0.691065  1197859  1069434  -false-positives
+    urban        0.005060  1.096482 0.786573  1197859  1069434  -false-positives
+    pearson      0.008008  61.140093 4.385373  8531600  7870286  -false-positives
+    pearsonnp    0.010480  11.017392 1.845092  2647965  3916273  -false-positives
+    ----
+    hanovpp      0.005233  1.815628 1.611002  2393787  2592575  
+    			with 189 errors.
+    hanov        0.005842  1.023560 1.597355  2392513  2592629  
+    			with 122 errors.
+    urban        0.005623  1.099580 1.734883  2392513  2592629  
+    			with 122 errors.
+    pearson      0.007954 61.131227 5.142186  9726258  8905518  
+    			with 122 errors.
+    pearsonnp    0.010176 11.073165 2.532958  3842623  4708496  
+    			with 122 errors.
+    cmph-bdz_ph  0.006179  0.051152 0.202600    66648   300257  
+    			with 122 errors.
+    cmph-bdz     0.007714  0.048990 0.205134    97679   310169  
+    			with 122 errors.
+    cmph-bmz     0.007925  0.086077 0.318825  1589301   732057  
+    			with 121 errors.
+    cmph-chm     0.008619  0.293717 0.441057  3073424  1104945  
+    			with 122 errors.
+    cmph-fch     0.007941  3.345252 0.210624   196252   334497  
+    			with 122 errors.
+    cmph-chd_ph  0.008241  0.039189 0.200733    35935   288105  
+    			with 122 errors.
+    cmph-chd     0.010375  0.044615 0.206307   142312   328777  
+    			with 122 errors.
+
+For a smaller dictionary with 2000 keys the relevant timings are:
+
+    hanovpp      0.001686  0.029126 0.102906    47332    56335  -nul
+    			with 143 errors.
+    hanov        0.001780  0.012525 0.105465    47018    56405  -nul
+    			with 143 errors.
+    urban        0.001683  0.015771 0.105878    47018    56405  -nul
+    			with 143 errors.
+    pearson      0.001708 17.683428 0.158598   187056   172285  -nul
+    			with 143 errors.
+    pearsonnp    0.001757  0.229568 0.131471   109984   135184  -nul
+    			with 143 errors.
+
+
+
 # AUTHOR
 
 Reini Urban `rurban@cpanel.net` 2014

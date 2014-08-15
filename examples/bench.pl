@@ -70,12 +70,10 @@ sub wmain {
 
 static const char *testkeys[] = {
   ';
-  my $size = int(scalar(@$dict) / 5);
-  srand(42); # same random dict lookups for all, with some utf8 keys
-  for (0..$size) {
-    my $i = int(rand($size));
+  my $size = int(scalar(@$dict));
+  for my $i (0..$size) {
     print $FH B::cstring($dict->[$i]),", ";
-    print $FH "\n  " unless $_ % 8;
+    print $FH "\n  " unless $i % 8;
   }
   print $FH '
 };
@@ -84,14 +82,24 @@ int main () {
   int i;
   int err = 0;
   for (i=0; i < ',$size,'; i++) {
-    long h = phash_lookup(testkeys[i]';
+    long v = phash_lookup(testkeys[i]';
   if ($opt =~ /-nul/) {
     print $FH ', strlen(testkeys[i])';
   }
   print $FH ');
-    if (h<0) err++;';
-  print $FH '
-    if (i != h) err++;' if $opt !~ /-false-positives/;
+    if (v < 0) err++;';
+  #if ($opt !~ /-false-positives/) {
+  if ($opt =~ /-debug-c/) {
+      print $FH '
+    if (i != v) {
+      if (v>=0) err++;
+      printf("%d: %s[%d]=>%ld\n", err, testkeys[i], i, v);
+    }';
+    } else {
+      print $FH '
+    if (i != v) err++;';
+  }
+  #}
   print $FH '
   }
   return err;
@@ -117,7 +125,9 @@ printf "%-12s %8s %9s %7s %8s  %8s  %s\n",
        "Method", "*lookup*", "generate", "compile", "c size", "exesize", "options";
 # all combinations of save_c inflicting @opts
 $opts = [qw(-false-positives -nul)] unless @$opts;
-for my $opt (@{&powerset(@$opts)}) {
+my @opts = @{&powerset(@$opts)};
+@opts = (join " ",@$opts) if grep /-1opt/, @$opts;
+for my $opt (@opts) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
   my @try_methods = @$methods;
   for my $m (@try_methods) {

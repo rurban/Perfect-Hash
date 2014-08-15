@@ -15,7 +15,7 @@ before_install:
     - build-perl
     - perl -V
 install:
-    - export RELEASE_TESTING=1 AUTOMATED_TESTING=1 AUTHOR_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1
+    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1
 before_script:
     - cpanm -n Devel::Cover::Report::Coveralls
 script:

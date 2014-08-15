@@ -10,8 +10,9 @@ my ($default, $methods, $opts) = test_parse_args();
 
 plan tests => 5 * scalar(@$methods);
 
-my $n = shift || 20;
-my $dict = [ split/\n/,`head -n $n examples/words` ];
+#my $n = shift || 200;
+#my $dict = [ split/\n/,`head -n $n examples/words500` ];
+my $dict = "examples/words500";
 
 # Pearson and PearsonNP do pass/fail randomly
 # delete $Perfect::Hash::algo_todo{'-pearson'};

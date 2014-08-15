@@ -41,9 +41,9 @@ for my $m (@$methods) {
     my $i = 0;
     for my $w (@dict) {
       my $v = $ph->perfecthash($w);
-      $ok = 0 if $v ne $i;
+      $ok = 0 if !defined($v) or $v ne $i;
       unless ($ok) {
-        is($v, $i, "method $m for '$w' => $v");
+        is($v, $i, "method $m for '$w' => ".$v);
         last;
       }
       $i++;

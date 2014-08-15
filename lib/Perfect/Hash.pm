@@ -196,13 +196,18 @@ The performance depends on the dictionary size.
 
 =item -cmph-chd
 
-=item -for-c (yet unused)
+=item -for-c (default)
 
 Optimize for C libraries
 
 =item -for-xs (yet unused)
 
 Optimize for shared Perl XS code. Stores the values as perl types.
+
+=item -for-I<class> (yet unused)
+
+Optimize for any I<CLASS> output formatter class, loaded dynamically.
+Such as PYTHON, RUBY, JAVA, PHP, PECL, ...
 
 =item -hash=C<name> (not yet)
 

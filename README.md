@@ -174,13 +174,18 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
     - \-cmph-fch
     - \-cmph-chd\_ph
     - \-cmph-chd
-    - \-for-c (yet unused)
+    - \-for-c (default)
 
         Optimize for C libraries
 
     - \-for-xs (yet unused)
 
         Optimize for shared Perl XS code. Stores the values as perl types.
+
+    - \-for-_class_ (yet unused)
+
+        Optimize for any _CLASS_ output formatter class, loaded dynamically.
+        Such as PYTHON, RUBY, JAVA, PHP, PECL, ...
 
     - \-hash=`name` (not yet)
 
@@ -389,7 +394,7 @@ Note that searching for utf8 keys is still broken.
     cmph-chd     0.010375  0.044615 0.206307   142312   328777  
     			with 122 errors.
 
-For a smaller dictionary with 2000 keys the relevant timings are:
+Medium sized dictionary with 2000 keys:
 
     hanovpp      0.001686  0.029126 0.102906    47332    56335  -nul
     			with 143 errors.
@@ -402,7 +407,18 @@ For a smaller dictionary with 2000 keys the relevant timings are:
     pearsonnp    0.001757  0.229568 0.131471   109984   135184  -nul
     			with 143 errors.
 
+Small dictionary with 127 keys:
 
+    hanovpp      0.001691  0.001588 0.077698     3536    10799  -nul
+    			with 23 errors.
+    hanov        0.001720  0.000938 0.077489     3263    10869  -nul
+    			with 23 errors.
+    urban        0.001760  0.001068 0.077163     3263    10869  -nul
+    			with 23 errors.
+    pearson      0.001706  0.072921 0.079308    12413    18425  -nul
+    			with 23 errors.
+    pearsonnp    0.001742  0.018580 0.078671    12299    18498  -nul
+    			with 23 errors.
 
 # AUTHOR
 

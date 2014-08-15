@@ -98,7 +98,11 @@ IV vec(char *G, IV index, IV bits) {
     return (IV)l;
   }
   else if (bits == 32) {
+#if INTSIZE == 4
+    int l = *(int*)((int*)G + index); /* __UINT32_MAX__ */
+#else
     long l = *(long*)((long*)G + index); /* __UINT32_MAX__ */
+#endif
     return (IV)l;
   }
 #ifdef HAS_QUAD
@@ -200,12 +204,12 @@ CODE:
       if (d >= 2147483647)
         d = (long)(d - 4294967295U);
     }
-    else if (bits == 64) {
 #ifdef HAVE_QUAD
+    else if (bits == 64) {
       if (d >= 9223372036854775807ULL)
         d = (IV)((long long)(d - 18446744073709551615ULL));
-#endif
     }
+#endif
     else {
       if (d >= 1<<(bits-1))
         d = (d - (1<<bits));
@@ -279,7 +283,11 @@ CODE:
   else if (bits == 16)
     *(short*)((short*)V + index) = value & 65535;
   else if (bits == 32)
-    *(long*)((long*)V + index) = value & 2147483647;
+#if INTSIZE == 4
+    *(int*)((int*)V + index) = value & 4294967295;
+#else
+    *(long*)((long*)V + index) = value & 4294967295;
+#endif
 #ifdef HAS_QUAD
   else if (bits == 64)
     *(long long*)((long long*)V + index) = (long long)value;

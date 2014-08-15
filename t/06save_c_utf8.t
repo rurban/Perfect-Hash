@@ -22,6 +22,8 @@ $dict[499] = "\x{c3}\x{a9}clair";
 # Pearson and PearsonNP do pass consistently with -nul, but fail randomly without
 delete $Perfect::Hash::algo_todo{'-pearson'};
 delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+# but hanovpp still has a unicode problem
+$Perfect::Hash::algo_todo{'-hanovpp'} = 1;
 
 my $pearson8_dict = [qw(\x{c3}\x{a9}clair Abrus Absalom absampere Absaroka absarokite abscess abscessed abscession
                         abscessroot abscind abscise abscision absciss)];
@@ -55,14 +57,14 @@ for my $m (@$methods) {
       my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
       $retval = $?;
       TODO: {
-        local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+        local $TODO = "$m not yet" if !$m or exists $Perfect::Hash::algo_todo{$m};
         like($retstr, qr/^ok - c lookup exists/m, "$m c lookup exists");
       }
     } else {
       ok(1, "SKIP") for 1..2;
     }
     TODO: {
-      local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
+      local $TODO = "$m not yet" if !$m or exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
       ok(!($retval>>8), "could run $m");
     }
   } else {

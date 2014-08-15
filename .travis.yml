@@ -8,6 +8,14 @@ perl:
     - "5.16"
     - "5.18"
     - "5.20"
+    - "blead"
+before_install:
+    - git clone git://github.com/haarg/perl-travis-helper
+    - source perl-travis-helper/init
+    - build-perl
+    - perl -V
+install:
+    - export RELEASE_TESTING=1 AUTOMATED_TESTING=1 AUTHOR_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1
 before_script:
     - cpanm -n Devel::Cover::Report::Coveralls
 script:
@@ -24,6 +32,7 @@ matrix:
   allow_failures:
     - perl: "5.6"
     - perl: "5.20"
+    - perl: "blead"
 # unknown to perlbrew at travis. ERROR: The installation "5.20" is unknown.
 
 # Hack to not run on tag pushes:

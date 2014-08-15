@@ -213,7 +213,7 @@ fast endian-less, vec version for bits>4
 
 =head2 pp_perfecthash $obj, $key
 
-unused pure-perl version, just for reference
+unused pure-perl version, just for reference and debugging
 
 =cut
 

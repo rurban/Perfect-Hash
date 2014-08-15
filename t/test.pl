@@ -15,7 +15,7 @@ sub test_parse_args {
     for (@ARGV) {
       my ($m) = /^-(.*)/;
       if (defined($m) and exists $Perfect::Hash::algo_methods{$m}) {
-        push @m, "-".$_;
+        push @m, $_;
       } else {
         push @opts, $_;
       }

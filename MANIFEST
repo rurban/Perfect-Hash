@@ -4,10 +4,11 @@ Changes
 cmph-2.0.tar.gz
 cmph-2.0/Makefile.PL
 cmph-2.0/CMPH.xs
-examples/epmh.py
-examples/words500
-examples/words20
 examples/bench.pl
+examples/epmh.py
+examples/utf8
+examples/words20
+examples/words500
 inc/Devel/CheckLib.pm
 lib/Perfect/Hash.pm
 lib/Perfect/Hash/Bob.pm

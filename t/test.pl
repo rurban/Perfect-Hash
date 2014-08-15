@@ -58,7 +58,7 @@ sub test_wmain {
 
 int main () {
   int err = 0;
-  long v = phash$suffix\_lookup(\"$key\"" . ($nul ? ', '.length($key) : "") . ");
+  long v = phash$suffix\_lookup(", B::cstring($key) . ($nul ? ', '.length($key) : "") . ");
   if (v == $value) {
     printf(\"ok - c lookup exists %ld\\n\", v);
   } else {

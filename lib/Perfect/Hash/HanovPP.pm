@@ -366,15 +366,17 @@ sub c_include {""}
 =cut
 
 sub _test_tables {
-  my @dict = split /\n/, `head -n20 "examples/words"`;
-  $dict[19] = "éclair";
+  use utf8;
+  my $n = shift || 255;
+  my @dict = split /\n/, `head -n $n "examples/utf8"`;
+  $dict[19] = "éclair" if $n >= 19;
   #$dict[19] = "\x{c3}\x{a9}clair";
   my $ph = __PACKAGE__->new(\@dict, qw(-debug));
   my $keys = $ph->[3];
   # bless [\@G, \@V, \%options, $keys], $class;
   my $G = $ph->[0];
   my $V = $ph->[1];
-  for (0..19) {
+  for (0..$#dict) {
     my $k = $keys->[$_];
     my $d = $G->[$_] < 0 ? 0 : $G->[$_];
     printf "%2d: ph=%2d   G[%2d]=%3d  V[%2d]=%3d   h(%2d,%d)=%2d %s\n",

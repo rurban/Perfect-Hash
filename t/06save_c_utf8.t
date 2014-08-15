@@ -10,36 +10,45 @@ my ($default, $methods, $opts) = test_parse_args();
 
 plan tests => 4 * scalar(@$methods);
 
-my $dict = "examples/words500";
+my $dict = "examples/utf8";
 my ($d, @dict);
-open $d, $dict or die; {
+open $d, "<", $dict or die; {
   local $/;
   @dict = split /\n/, <$d>;
 }
 close $d;
-$dict[499] = "\x{c3}\x{a9}clair";
+#$dict[$#dict] = "\x{c3}\x{a9}clair";
 
 # Pearson and PearsonNP do pass consistently with -nul, but fail randomly without
-delete $Perfect::Hash::algo_todo{'-pearson'};
-delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+#delete $Perfect::Hash::algo_todo{'-pearson'};
+#delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+# CMPH works fine here
+delete $Perfect::Hash::algo_todo{'-cmph-bdz_ph'};
+delete $Perfect::Hash::algo_todo{'-cmph-bdz'};
+delete $Perfect::Hash::algo_todo{'-cmph-bmz'};
+delete $Perfect::Hash::algo_todo{'-cmph-chm'};
+delete $Perfect::Hash::algo_todo{'-cmph-fch'};
+delete $Perfect::Hash::algo_todo{'-cmph-chd_ph'};
+delete $Perfect::Hash::algo_todo{'-cmph-chd'};
 # but hanovpp still has a unicode problem
 $Perfect::Hash::algo_todo{'-hanovpp'} = 1;
 
-my $pearson8_dict = [qw(\x{c3}\x{a9}clair Abrus Absalom absampere Absaroka absarokite abscess abscessed abscession
+my $pearson8_dict = [qw(Abrus Absalom absampere Absaroka absarokite
+                        \x{c3}\x{a9}clair abscess abscessed abscession
                         abscessroot abscind abscise abscision absciss)];
 my $i = 0;
-my $key = "\x{c3}\x{a9}clair";
+my $key = $dict[5];
 my $suffix = "_utf8";
 
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? $pearson8_dict : \@dict, $m, @$opts);
+  my $ph = new Perfect::Hash($m eq '-pearson8' ? $pearson8_dict : $dict, $m, @$opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..3;
     $i++;
     next;
   }
-  if ($m =~ /^-cmph/) {
+  if ($m =~ /^-xxcmph/) {
     ok(1, "SKIP nyi save_c for $m");
     ok(1) for 1..3;
     $i++;

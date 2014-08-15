@@ -44,8 +44,11 @@ for my $m (@$methods) {
       my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
       $retval = $?;
       TODO: {
-        local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
+        local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m} and $m !~ /^-cmph/;
         like($retstr, qr/^ok - c lookup exists/m, "$m c lookup exists");
+      }
+      TODO: {
+        local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m};
         like($retstr, qr/^ok - c lookup notexists/m, "$m c lookup notexists");
       }
     } else {

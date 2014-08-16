@@ -332,90 +332,82 @@ CPAN Testers: [http://cpantesters.org/distro/P/Perfect-Hash](http://cpantesters.
 
 linux/amd64 with a dictionary size=99171, lookup every key.
 with Intel Core i5-2300 CPU @ 2.80GHz with native iSCSI CRC32-C from zlib.
-Note that searching for utf8 keys is still broken.
 
     size=99171  (smaller sec and size is better)
     Method       *lookup*  generate compile   c size   exesize  options
-    hanovpp      0.008310  1.552239 1.468896  1199116  2434100  -false-positives -nul
-    			with 243 errors.
-    hanov        0.008859  0.866445 1.451252  1197842  2434154  -false-positives -nul
-    urban        0.009298  0.998483 1.557304  1197842  2434154  -false-positives -nul
-    pearson      0.017395  60.834231 4.851349  8510679  8738311  -false-positives -nul
-    			with 244 errors.
-    pearsonnp    0.083467  10.871864 2.383523  2647938  4551353  -false-positives -nul
-    			with 113 errors.
+    hanovpp      0.006989  1.436367 1.351763  1199097  2434100  -false-positives -nul
+    hanov        0.008307  0.804571 1.353573  1197842  2434154  -false-positives -nul
+    urban        0.008450  0.911321 1.455943  1197842  2434154  -false-positives -nul
+    pearson      0.020871 60.974142 5.006366  8527047  8744321  -false-positives -nul
+                            with 244 errors.
+    pearsonnp    0.083467 10.801427 2.635511  2647938  4551585  -false-positives -nul
+                            with 119 errors.
     ----
-    hanovpp      0.009811  1.743224 2.196535  2393770  3227319  -nul
-    			with 230 errors.
-    hanov        0.010591  0.971491 2.218390  2392496  3227389  -nul
-    urban        0.010585  1.042257 2.292982  2392496  3227389  -nul
-    pearson      0.018907  61.108329 5.666719  9719722  9538826  -nul
-    			with 232 errors.
-    pearsonnp    0.091336  10.972348 3.102794  3842596  5343032  -nul
-    			with 226 errors.
-    cmph-bdz_ph  0.017414  0.051691 0.859552    67005  1664617  -nul
-    			with 97 errors.
-    cmph-bdz     0.023212  0.049323 0.854017    98105  1674529  -nul
-    			with 98 errors.
-    cmph-bmz     0.024882  0.120898 0.974986  1590581  2096417  -nul
-    			with 99 errors.
-    cmph-chm     0.027066  0.078448 1.082637  3074289  2469305  -nul
-    cmph-fch     0.026325  12.309645 0.848319   196138  1698857  -nul
-    			with 99 errors.
-    cmph-chd_ph  0.027976  0.039797 0.846604    36049  1652489  -nul
-    			with 99 errors.
-    cmph-chd     0.038445  0.045539 0.852139   141652  1692769  -nul
-    			with 99 errors.
+    hanovpp      0.009675  1.689798 2.213405  2393751  3227319  -nul
+    hanov        0.010605  0.968302 2.176248  2392496  3227389  -nul
+    urban        0.010532  1.039979 2.324133  2392496  3227389  -nul
+    pearson      0.023665 61.169050 5.660405  9722900  9538005  -nul
+                            with 232 errors.
+    pearsonnp    0.088344 10.980605 3.129068  3842596  5343376  -nul
+                            with 220 errors.
+    cmph-bdz_ph  0.017992  0.054180 0.932670    67005  1664617  -nul
+                            with 97 errors.
+    cmph-bdz     0.023886  0.057615 0.872904    98105  1674529  -nul
+                            with 98 errors.
+    cmph-bmz     0.025001  0.121611 0.981429  1590581  2096417  -nul
+                            with 99 errors.
+    cmph-chm     0.027271  0.080735 1.120437  3074289  2469305  -nul
+    cmph-fch     0.026378  12.378517 0.872177   196138  1698857  -nul
+                            with 99 errors.
+    cmph-chd_ph  0.027743  0.039562 0.850820    36049  1652489  -nul
+                            with 99 errors.
+    cmph-chd     0.038430  0.045187 0.852698   141652  1692769  -nul
+                            with 99 errors.
     ----
-    hanovpp      0.008769  1.803279 1.342928  1199133  2434100  -false-positives
-    			with 243 errors.
-    hanov        0.009319  1.024418 1.341149  1197859  2434154  -false-positives
-    urban        0.009257  1.092134 1.430297  1197859  2434154  -false-positives
-    pearson      0.017682  61.240168 4.895238  8520638  8743405  -false-positives
-    pearsonnp    0.086840  10.992291 2.412136  2647965  4551649  -false-positives
+    hanovpp      0.008010  1.759084 1.352361  1199114  2434100  -false-positives
+    hanov        0.009259  1.024201 1.336644  1197859  2434154  -false-positives
+    urban        0.009543  1.094011 1.471859  1197859  2434154  -false-positives
+    pearson      0.017978 60.941614 4.871941  8526699  8746009  -false-positives
+    pearsonnp    0.086658 11.000568 2.427189  2647965  4551705  -false-positives
     ----
-    hanovpp      0.009715  1.796466 2.185432  2393787  3227327  
-    			with 230 errors.
-    hanov        0.010439  1.020980 2.232476  2392513  3227381  
-    urban        0.010443  1.090666 2.291128  2392513  3227381  
-    pearson      0.019122  60.844343 5.845965  9715321  9534692  
-    pearsonnp    0.084030  10.970390 3.084734  3842623  5343016  
-    cmph-bdz_ph  0.018457  0.049795 0.850063    66648  1664617  
-    			with 98 errors.
-    cmph-bdz     0.023770  0.048585 0.852258    97681  1674529  
-    			with 98 errors.
-    cmph-bmz     0.025734  0.085363 0.953043  1589301  2096417  
-    			with 98 errors.
-    cmph-chm     0.027038  0.287344 1.064825  3073424  2469305  
-    cmph-fch     0.026190  3.312613 0.845060   196255  1698857  
-    			with 99 errors.
-    cmph-chd_ph  0.028125  0.039232 0.832115    35938  1652465  
-    			with 98 errors.
-    cmph-chd     0.038516  0.044471 0.844778   142312  1692801  
-    			with 99 errors.
+    hanovpp      0.010562  1.751556 2.214865  2393768  3227327
+    hanov        0.010598  1.016665 2.193283  2392513  3227381
+    urban        0.010507  1.086292 2.311609  2392513  3227381
+    pearson      0.019339 61.244146 5.683251  9709707  9534345
+    pearsonnp    0.083965 11.032944 3.129065  3842623  5346576
+    cmph-bdz_ph  0.017602  0.052354 0.835667    66648  1664617
+                            with 98 errors.
+    cmph-bdz     0.023596  0.050567 0.855532    97679  1674529
+                            with 98 errors.
+    cmph-bmz     0.026002  0.086047 0.980673  1589301  2096417
+                            with 98 errors.
+    cmph-chm     0.027161  0.294937 1.091579  3073424  2469305
+    cmph-fch     0.026335  3.315327 0.844936   196255  1698857
+                            with 99 errors.
+    cmph-chd_ph  0.027760  0.039251 0.845953    35938  1652465
+                            with 98 errors.
+    cmph-chd     0.038633  0.044931 0.854745   142315  1692801
+                            with 99 errors.
     ----
 
 Medium sized dictionary with 2000 keys:
+`perl -Mblib examples/bench.pl -size 2000 -nul`
 
-    hanovpp      0.001686  0.029126 0.102906    47332    56335  -nul
-    			with 143 errors.
-    hanov        0.001780  0.012525 0.105465    47018    56405  -nul
-    urban        0.001683  0.015771 0.105878    47018    56405  -nul
-    pearson      0.001708 17.683428 0.158598   187056   172285  -nul
-    			with 143 errors.
-    pearsonnp    0.001757  0.229568 0.131471   109984   135184  -nul
-    			with 143 errors.
+    hanovpp      0.001290  0.024794 0.113399    43698    65615  -nul
+    hanov        0.001334  0.013031 0.115256    43404    65685  -nul
+    urban        0.001380  0.014536 0.116168    43404    65685  -nul
+    pearson      0.001327 15.854757 0.172386   181564   181210  -nul
+                            with 15 errors.
+    pearsonnp    0.001424  0.210114 0.145279   102931   143328  -nul
+                            with 15 errors.
 
 Small dictionary with 127 keys:
 
-    hanovpp      0.001691  0.001588 0.077698     3536    10799  -nul
-    			with 23 errors.
-    hanov        0.001720  0.000938 0.077489     3263    10869  -nul
-    urban        0.001760  0.001068 0.077163     3263    10869  -nul
-    pearson      0.001706  0.072921 0.079308    12413    18425  -nul
-    			with 23 errors.
-    pearsonnp    0.001742  0.018580 0.078671    12299    18498  -nul
-    			with 23 errors.
+    hanovpp      0.001163  0.001839 0.076842     3437    11567  -nul
+    hanov        0.001288  0.001723 0.077527     3183    11637  -nul
+    urban        0.001235  0.002297 0.077904     3183    11637  -nul
+    pearson      0.001150  0.070689 0.079403    12405    19236  -nul
+    pearsonnp    0.001197  0.018541 0.079585    12094    19167  -nul
 
 # AUTHOR
 

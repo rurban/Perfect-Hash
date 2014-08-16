@@ -201,15 +201,26 @@ c variant in c_hash_impl
 
 =cut
 
+#BEGIN { sub DEBUG{1} }
+
 sub hash {
   use bytes;
-  my $ph = shift;
-  my str $str = shift;
-  my int $d = shift || 0x01000193;
-  for my $c (split "", $str) {
-    $d = ( ($d * 0x01000193) ^ ord($c) ) & 0xffffffff;
+  my $ph = $_[0];
+  #my str $str = $_[1];
+  #my ($d0, $l);
+  #if (DEBUG) {
+  #  $d0 = $_[2];
+  #  $l = scalar (split "", $str);
+  #}
+  my int $d = $_[2] || 0x01000193;
+  for my $c (split "", $_[1]) {
+    $d = ( ($d * 0x01000193) ^ ord($c) );
+    #printf("%d 0x%08x\n", ord($c), $d & 0xffffffff);
   }
-  return $d
+  #if (DEBUG) {
+  #  printf("hash \"%s\":%d:%u => 0x%08x, %d\n", $str, $l, $d0, $d & 0xffffffff, $d % 11);
+  #}
+  return $d & 0xffffffff;
 }
 
 =item save_c fileprefix, options
@@ -326,6 +337,7 @@ sub save_c {
 =item c_hash_impl $ph, $base
 
 String for C code for the FNV-1 hash function, depending on C<-nul>.
+I<(Broken for utf8)>
 
 =cut
 
@@ -340,14 +352,13 @@ sub c_hash_impl {
 
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
 static INLINE
-unsigned $base\_hash(unsigned d, const char *s, const int l) {
-    unsigned char c = *s;
+unsigned $base\_hash(unsigned d, const unsigned char *s, const int l) {
     int i = 0;
     if (!d) d = 0x01000193;
     for (; i < l; i++) {
-        d = ((d * 0x01000193) ^ *s++) & 0xffffffff;
+        d = (d * 0x01000193) ^ *s++;
     }
-    return d;
+    return d & 0xffffffff;
 }
 ";
 }
@@ -368,9 +379,9 @@ sub c_include {""}
 
 sub _test_tables {
   use utf8;
-  my $n = shift || 255;
+  my $n = shift || 11;
   my @dict = split /\n/, `head -n $n "examples/utf8"`;
-  $dict[19] = "éclair" if $n >= 19;
+  #$dict[19] = "éclair" if $n >= 19;
   #$dict[19] = "\x{c3}\x{a9}clair";
   my $ph = __PACKAGE__->new(\@dict, qw(-debug));
   my $keys = $ph->[3];
@@ -381,9 +392,9 @@ sub _test_tables {
     my $k = $keys->[$_];
     my $d = $G->[$_] < 0 ? 0 : $G->[$_];
     printf "%2d: ph=%2d   G[%2d]=%3d  V[%2d]=%3d   h(%2d,%d)=%2d %s\n",
-      $_,$ph->perfecthash($k),
-      $_,$G->[$_],$_,$V->[$_],
-      $_,$d,hash($k,$d)%20,
+      $_, $ph->perfecthash($k),
+      $_, $G->[$_], $_, $V->[$_],
+      $_, $d, hash($k,$d)%20,
       $k;
   }
 }

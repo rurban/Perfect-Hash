@@ -14,6 +14,8 @@ my $dict = "examples/words500";
 # Pearson and PearsonNP do pass consistently with -nul, but fail randomly without
 delete $Perfect::Hash::algo_todo{'-pearson'};
 delete $Perfect::Hash::algo_todo{'-pearsonnp'};
+# CHM passes pure-perl, but not compiled yet
+$Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
 
 my $i = 0;
 my $key = "AOL";

@@ -14,8 +14,8 @@ plan tests => 5 * scalar(@$methods);
 #my $dict = [ split/\n/,`head -n $n examples/words500` ];
 my $dict = "examples/words500";
 
-# Pearson and PearsonNP do pass/fail randomly
-# delete $Perfect::Hash::algo_todo{'-pearson'};
+# CHM passes pure-perl, but not compiled yet
+$Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
 
 my $i = 0;
 for my $m (@$methods) {

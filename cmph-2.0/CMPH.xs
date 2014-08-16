@@ -34,7 +34,7 @@ _new(class, dict, ...)
     CMPH_ALGO algo = CMPH_CHM;
     const char *classname = SvPVX(class);
 
-    if (SvTYPE(dict) == SVt_PV) {
+    if (SvPOK(dict)) {
       keys_fd = fopen(SvPVX(dict), "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     } else {
@@ -44,8 +44,8 @@ _new(class, dict, ...)
       /* XXX support arrayrefs at least, probably created via nvecset
          and use the io_vector or io_byte_vector adapter */
       warn("CMPH only accepts filenames yet\n");
-      keys_fd = fopen("examples/words500", "r");
-      key_source = cmph_io_nlfile_adapter(keys_fd);
+      /*keys_fd = fopen("examples/words500", "r");
+        key_source = cmph_io_nlfile_adapter(keys_fd);*/
       XSRETURN_UNDEF;
     }
     if (!strcmp(classname, "Perfect::Hash::CMPH::CHM"))         algo = CMPH_CHM;

@@ -120,10 +120,10 @@ sub powerset {
 }
 
 my $i = 0;
-print "size=$size, lookups=",int($size/5),"  (smaller sec and size is better)\n";
+print "size=$size  (smaller sec and size is better)\n";
 printf "%-12s %8s %9s %7s %8s  %8s  %s\n",
        "Method", "*lookup*", "generate", "compile", "c size", "exesize", "options";
-# all combinations of save_c inflicting @opts
+# all combinations of save_c inflicting @opts:
 $opts = [qw(-false-positives -nul)] unless @$opts;
 my @opts = @{&powerset(@$opts)};
 @opts = (join " ",@$opts) if grep /-1opt/, @$opts;

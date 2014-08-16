@@ -197,6 +197,7 @@ sub false_positives {
 =item hash string, [seed]
 
 pure-perl FNV-1 hash function as in http://isthe.com/chongo/tech/comp/fnv/
+c variant in c_hash_impl
 
 =cut
 
@@ -324,7 +325,7 @@ sub save_c {
 
 =item c_hash_impl $ph, $base
 
-String for C code for the hash function, depending on C<-nul>.
+String for C code for the FNV-1 hash function, depending on C<-nul>.
 
 =cut
 

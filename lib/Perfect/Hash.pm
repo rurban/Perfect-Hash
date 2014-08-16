@@ -44,14 +44,14 @@ perfect hashes even guaranteed minimal size. It is only possible to build one
 when we know all of the keys in advance. Minimal perfect hashing implies that
 the resulting table contains one entry for each key, and no empty slots.
 
-There exist various C and a primitive python library to generate code to
+There exist various C and a simple python script to generate code to
 access perfect hashes and minimal versions thereof, but nothing to use
 easily. C<gperf> is not very well suited to create big maps and cannot deal
-with anagrams, but creates fast C code. C<Pearson> hashes are simplier and
-fast for small machines, but not guaranteed to be creatable for small or
-bigger hashes.  cmph C<CHD> and the other cmph algorithms might be the best
-algorithms for big hashes, but lookup time is slower for smaller hashes and
-you need to link to an external library.
+with anagrams, but creates fast C code for small dictionaries.
+C<Pearson> hashes are simplier and fast for small machines, but not guaranteed
+to be creatable for small or bigger hashes.  cmph C<CHD>, C<BDZ_PH> and the
+other cmph algorithms might be the best algorithms for big hashes, but lookup
+time is slower for smaller hashes and you need to link to an external library.
 
 As input we need to provide a set of unique keys, either as arrayref or
 hashref or as keyfile. The keys can so far only be strings (will be extended
@@ -61,9 +61,10 @@ types later.
 As generation algorithm there exist various hashing methods:
 Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
 
-As output there exist several output formater classes, e.g. C, XS or
-you can create your own for any language e.g. Java, Ruby, PHP, Python,
-PECL...
+As output there exist several output formater classes, e.g. C and later: XS,
+Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
+they either roll their own, or FFI into the generated C library.  For Go,
+Rust, Scala, Clojure, etc just roll you own library, based on an existing one.
 
 The best algorithm used in Hanov and various others is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
@@ -81,20 +82,15 @@ generate the minimal perfect hash for the given keys.
 
 The values in the dict are not needed to generate the perfect hash function,
 but might be needed later. So you can use either an arrayref where the index
-is returned, or a full hashref.
+is returned, or a full hashref or a keyfile as with C<gperf>.
 
 Options for output classes are prefixed with C<-for->,
 e.g. C<-for-c>. They might be needed to make a better decision which
 perfect hash to use.
 
-The following algorithms and options are planned:
+The following algorithms and options are done and planned:
 
 =over 4
-
-=item -minimal (not yet)
-
-Selects the best available method for a minimal hash, given the
-dictionary size, the options, and if the compiled algos are available.
 
 =item -false-positives
 
@@ -102,6 +98,11 @@ Do not store the keys of the hash. Needs much less space and is faster, but
 might only be used either if you know in advance that you'll never lookup not
 existing keys, or check the result manually by yourself to avoid false
 positives.
+
+=item -minimal (not yet)
+
+Selects the best available method for a minimal hash, given the
+dictionary size, the options, and if the compiled algos are available.
 
 =item -optimal-size (not yet)
 
@@ -169,7 +170,8 @@ fit into every CPU cache.
 
 =item -bob (not yet)
 
-Nice and easy.
+Generates nice and easy C code without external library dependency.
+However to generate -bob you need a C compiler.
 
 =item -gperf (not yet)
 
@@ -178,11 +180,11 @@ Pretty fast lookup, but limited dictionaries.
 =item -cmph-bdz_ph
 
 The C<-cmph-*> methods are the current state of the art for bigger
-dictionaries.  This needs the external cmph library even at run-time.
+dictionaries.  This needs the external C<cmph> library even at run-time.
 
 The performance depends on the dictionary size.
 -cmph-bdz_ph is usually the fastest cmph method for
-1.000 - 250.000 keys.
+1.000 - 250.000 keys, and -cmph-chm is usually the second best option.
 
 =item -cmph-bdz
 
@@ -200,11 +202,11 @@ The performance depends on the dictionary size.
 
 Optimize for C libraries
 
-=item -for-xs (yet unused)
+=item -for-xs (not yet)
 
 Optimize for shared Perl XS code. Stores the values as perl types.
 
-=item -for-I<class> (yet unused)
+=item -for-I<class> (not yet)
 
 Optimize for any I<CLASS> output formatter class, loaded dynamically.
 Such as PYTHON, RUBY, JAVA, PHP, PECL, ...

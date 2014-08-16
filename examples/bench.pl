@@ -9,9 +9,9 @@ use lib 't';
 require "test.pl";
 
 my ($default, $methods, $opts) = test_parse_args();
-#if ($default) { # -urban fixed with 6b1a94e46f893b
-#  delete $Perfect::Hash::algo_todo{'-urban'};
-#}
+if ($default) { # -urban fixed with 6b1a94e46f893b
+  push @$methods, "-switch";
+}
 
 my ($dict, @dict);
 for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {

@@ -43,7 +43,7 @@ index of the value in @V.  @V contains the values of the dictionary.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
-  my %options = map {$_ => 1 } @_;
+  my %options = map { $_ => 1 } @_;
   my ($keys, $values) = Perfect::Hash::_dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size - 1;

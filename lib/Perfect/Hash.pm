@@ -142,8 +142,8 @@ for 5-255 keys.  Returns undef for invalid dictionaries.
 =item -switch
 
 This is similar to -pearson8 only recommended for small dictionary
-sizes < 256. Generates a nested switch table first switching on the
-size and then on the keys.
+sizes < 256. Generates a nested switch table, first switching on the
+size and then on the keys. I<Probably optimized on word-size sse ops>
 
 =item -pearson
 
@@ -273,6 +273,7 @@ C<libicu>.
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
+                Switch
               );
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c

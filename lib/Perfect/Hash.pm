@@ -268,16 +268,17 @@ C<libicu>.
 
 =cut
 
-# Not yet:      Bob Gperf
+# Not yet:      Bob
 #               CMPH::BMZ8 CMPH::BRZ
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
-                Switch
+                Switch Gperf
               );
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-fch -cmph-chd_ph -cmph-chd -cmph-bmz8 -cmph-brz);
+  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
+     -cmph-chd -cmph-bmz8 -cmph-brz);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;
@@ -385,6 +386,13 @@ need to check the result manually again.
 
 The default is undef, unless you created the hash with the option
 C<-false-positives>.
+
+=cut
+
+sub false_positives {
+  return $_[0]->options('-false-positives');
+}
+
 
 =item save_c fileprefix, options
 

@@ -32,7 +32,48 @@ Honored options are: I<-nul>
 # TODO support arrayref and hashref converted to arrayrefs, as byte-packed vector
 # for the cmph io_vector or io_byte_vector adapter.
 sub new {
-  return _new(@_);
+  my $class = shift or die;
+  my $dict = shift; #hashref, arrayref or filename
+  # enforce KEYFILE
+  my $fn = "phash_keys.tmp";
+  if (ref $dict eq 'ARRAY') {
+    open my $F, ">", $fn;
+    my $i = 0;
+    my %dict;
+    for (@$dict) {
+      print $F "$_\n";
+      $dict{$_} = $i++;
+    }
+    #print $F "%%";
+    close $F;
+    $dict = \%dict;
+  }
+  elsif (ref $dict eq 'HASH') {
+    open my $F, ">", $fn;
+    for (sort keys %$dict) {
+      print $F $_,"\t",$dict->{$_},"\n";
+    }
+    #print $F "%%";
+    close $F;
+  } elsif (!ref $dict and ! -e $dict) {
+    die "wrong dict argument. arrayref, hashref or filename expected";
+  } else {
+    $fn = $dict;
+    # against -false-positive
+    my %hash;
+    open my $d, "<", $dict or die; {
+      local $/;
+      my $i = 0;
+      %hash = map {$_ => $i++ } split /\n/, <$d>;
+    }
+    close $d;
+    $dict = \%hash;
+  }
+  my $ph = _new($class, $fn, @_);
+  if (grep /^-false-positives/, @_) {
+    push @$ph, $dict;
+  }
+  return $ph;
 }
 
 =item perfecthash $ph
@@ -40,14 +81,6 @@ sub new {
 XS method. Returns the position of the found key in the file.
 
 =item false_positives
-
-Returns undef, as cmph hashes always store the keys.
-
-=cut
-
-sub false_positives {
-  return undef;
-}
 
 =item option $ph
 
@@ -78,6 +111,7 @@ sub save_c {
   # into a memory buffer.
   print $FH "#include \"cmph.h\"\n";
   print $FH $ph->c_funcdecl($base)." {";
+  # false positives from dict at [3]
   print $FH "
     static char *packed_mphf = ",B::cstring($ph->[1]),";
     return cmph_search_packed(packed_mphf, s, ";

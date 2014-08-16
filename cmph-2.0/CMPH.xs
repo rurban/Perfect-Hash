@@ -17,9 +17,9 @@
 MODULE = Perfect::Hash::CMPH	PACKAGE = Perfect::Hash::CMPH
 
 SV*
-_new(class, dict, ...)
+_new(class, keyfile, ...)
     SV*  class
-    SV*  dict
+    SV*  keyfile
   CODE:
   {
     int i;
@@ -34,12 +34,12 @@ _new(class, dict, ...)
     CMPH_ALGO algo = CMPH_CHM;
     const char *classname = SvPVX(class);
 
-    if (SvPOK(dict)) {
-      keys_fd = fopen(SvPVX(dict), "r");
+    if (SvPOK(keyfile)) {
+      keys_fd = fopen(SvPVX(keyfile), "r");
       key_source = cmph_io_nlfile_adapter(keys_fd);
     } else {
-      if (SvTYPE(dict) == SVt_PVAV) {
-      } else if (SvTYPE(dict) == SVt_PVHV) {
+      if (SvTYPE(keyfile) == SVt_PVAV) {
+      } else if (SvTYPE(keyfile) == SVt_PVHV) {
       }
       /* XXX support arrayrefs at least, probably created via nvecset
          and use the io_vector or io_byte_vector adapter */
@@ -70,7 +70,7 @@ _new(class, dict, ...)
     size = cmph_packed_size(mphf);
     packed = (char *)malloc(size);
     cmph_pack(mphf, packed);
-    av_push(result, newSVpvn(packed, size+1));                /* packed in [1] */
+    av_push(result, newSVpvn(packed, size+1));             /* packed in [1] */
     options = newHV();
     for (i=2; i<items; i++) { /* CHECKME */
       hv_store_ent(options, ST(i), newSViv(1), 0);

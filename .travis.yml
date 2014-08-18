@@ -19,6 +19,8 @@ install:
     - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
 # cpanm does not 5.6
 before_script:
+    - sudo apt-get install gperf
+    - gperf --version
     - cpanm -q -n Devel::Cover::Report::Coveralls
 script:
     perl Makefile.PL && make && cover -test -report coveralls

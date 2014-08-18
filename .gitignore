@@ -34,6 +34,7 @@ pm_to_blib
 /log.test-*
 /log.bench-*
 cmph-2.0/CMPH.gcda
+cmph-2.0/CMPH.gcno
 cmph-2.0/bin/
 cmph-2.0/blib/
 cmph-2.0/cmph.pc

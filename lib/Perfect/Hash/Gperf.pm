@@ -33,8 +33,8 @@ sub new {
 
   # see if we can use the gperf executable, return undef if not
   # no PP fallback variant yet
-  my $retval = system("gperf --version");
-  if ($retval < 0 or !($retval>>8)) {
+  my $retval = system("gperf --version".($^O eq 'MSWin32' ? "" : " >/dev/null"));
+  if ($retval != 0) {
     return undef;
   }
 

@@ -110,6 +110,7 @@ sub save_c {
 # length optimized memcmp
 # it's the last statement if $last, otherwise as fallthrough to the next case statement.
 # TODO: do away with most memcmp for shorter strings (< 128?)
+# TODO: might need to check run-time char* alignment on non-intel platforms
 sub _strcmp {
   my ($s, $l, $v, $last) = @_;
   my $cmp;
@@ -149,6 +150,7 @@ sub _strcmp {
 
 # handle candidate list of keys with equal length
 # either 1 or do a nested switch
+# TODO: check char* alignment on non-intel platforms for _strcmp
 sub _do_cand {
   my ($ph, $FH, $l, $cand) = @_;
   my ($dict, $options) = ($ph->[0], $ph->[1]);
@@ -193,25 +195,29 @@ sub _do_switch {
   print $FH " /* ",join(", ",@$cand)," */";
   # TODO: collect @cand into buckets for the selected char
   # and switch on these
-  my @c = map { substr($_,$i,1) } @$cand;
-
+  #my @c = map { substr($_,$i,1) } @$cand;
   my ($old_c, $new_case) = ('');
   for my $s (sort {substr($a,$i,1) cmp substr($b,$i,1) } @$cand) {
     my $c = substr($s, $i, 1);
-    if ($new_case and $c ne $old_c) {
-      print $FH "\n    "," " x $space,"break;";
-    }
-    # TODO: if $h{$c} > 5-10 nest one more switch recursively
+    # if $h{$c} > 3 nest one more switch recursively
     print ">3 cases on $i in @$cand\n" if $options->{-debug} and $h->{$c} > 3;
-    if (0 and $h->{$c} > 3) {
+    if ($h->{$c} > 3) {
+      # TODO check for recursive loop
       my @cand_c = grep { substr($_,$i,1) eq $c ? $_ : undef } @$cand;
       _do_switch($ph, $FH, \@cand_c, $indent+1);
+      #TODO: restart loop without cand_c?
       my @rest = grep { substr($_,$i,1) ne $c ? $_ : undef } @$cand;
       _do_switch($ph, $FH, \@rest, $indent+1);
+      print $FH "\n"," " x $space,"}\n",
+                " " x $space, "return -1;";
+      return;
     } else {
       my $v = $dict->{$s};
       my $ord = ord($c);
       my $case = ($ord >= 40 and $ord < 127) ? "'$c':" : "$ord: /* $c */";
+      if ($new_case and $c ne $old_c) {
+        print $FH "\n    "," " x $space,"break;";
+      }
       if ($h->{$c} == 1) {
         print $FH "\n  "," " x $space,"case $case";
         print $FH "\n    "," " x $space, _strcmp($s, $l, $v);
@@ -226,8 +232,10 @@ sub _do_switch {
       }
     }
   }
-  print $FH "\n"," " x $space,"}\n",
-            " " x $space, "return -1;"
+  print $FH "\n"," " x $space,"}\n";
+  if ($indent == 1) {
+    print $FH "\n"," " x $space, "return -1;",
+  }
 }
 
 =item perfecthash $ph, $key

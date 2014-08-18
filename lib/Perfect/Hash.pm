@@ -149,15 +149,9 @@ But can only store index values in a limited range, not strings.
 
 =item -pearson8
 
-Strict variant of a 8-bit (256 byte) Pearson hash table.  Generates
-very fast lookup, but limited dictionaries with a 8-bit pearson table
-for 5-255 keys.  Returns undef for invalid dictionaries.
-
-=item -switch
-
-This is similar to -pearson8 only recommended for small dictionary
-sizes < 256. Generates a nested switch table, first switching on the
-size and then on the keys. I<Probably optimized on word-size sse ops>
+Strict variant of a 8-bit (256 byte) Pearson hash table.  Generates fast
+lookups for small 8-bit machines, but limited dictionaries with a 8-bit
+pearson table for 5-255 keys.  Returns undef for invalid dictionaries.
 
 =item -pearson
 
@@ -169,18 +163,18 @@ If not, collision resolution is done via static binary trees.
 
 This version generates arbitrary sized pearson lookup tables and thus
 should be able to find a perfect hash, but success is very
-unlikely. The generated lookup might be however still faster than most
-other hash tables for <100.000 keys.
+unlikely.
 
 =item -pearsonnp
 
-"np" for non-perfect. Try to find a 8-bit (256 byte) sized pearson
-table for the given dictionary. Keeps the best found hash table, with
-no guarantees that it is a perfect hash table.  If not, collision
-resolution is done via static binary trees.
+"np" for non-perfect. Try to find a 8-bit (256 byte) sized pearson table for
+the given dictionary. Keeps the best found hash table, with no guarantees that
+it is a perfect hash table.  If not, collision resolution is done via static
+binary search. I<(currently only linear search)>.
 
-This is also a very fast variant as the 256 byte table is guaranteed to
-fit into every CPU cache.
+This is also a very fast variant for small 8-bit machines as the 256 byte
+table is guaranteed to fit into every CPU cache, but it only iterates
+in byte steps.
 
 =item -bob (not yet)
 
@@ -206,7 +200,7 @@ Generates a nested switch table, first switching on the size and then on the
 best combination of keys. The difference to C<gperf --switch> is the automatic
 generation of nested switch levels, depending on the number of collisions, and
 it is optimized to use word size comparisons if possible for the fixed length
-comparisons, which is faster then C<memcmp>.
+comparisons, which is faster than C<memcmp>.
 
 =item -cmph-bdz_ph
 

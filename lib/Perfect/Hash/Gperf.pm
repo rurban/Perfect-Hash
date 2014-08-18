@@ -30,6 +30,14 @@ sub new {
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
   my %options = map { $_ => 1 } @_;
+
+  # see if we can use the gperf executable, return undef if not
+  # no PP fallback variant yet
+  my $retval = system("gperf --version");
+  if ($retval < 0 or !($retval>>8)) {
+    return undef;
+  }
+
   # enforce KEYFILE
   my $fn = "phash_keys.tmp";
   if (ref $dict eq 'ARRAY') {

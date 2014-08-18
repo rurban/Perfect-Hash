@@ -53,22 +53,25 @@ for my $m (@$methods) {
     my $cmd = compile_cmd($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
-    if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
-      $retval = $?;
+    TODO: {
+      local $TODO = "$m not yet" if $m eq '-gperf';
+      if (ok(!($retval>>8), "could compile $m")) {
+        my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
+        $retval = $?;
       TODO: {
         local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m};
         like($retstr, qr/^ok - c lookup exists/m, "$m c lookup exists");
+        }
+      } else {
+        ok(1, "SKIP !compile");
       }
-    } else {
-      ok(1, "SKIP") for 1..2;
-    }
     TODO: {
       local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
       ok(!($retval>>8), "could run $m");
+      }
     }
   } else {
-    ok(1, "SKIP") for 1..3;
+    ok(1, "SKIP !save_c") for 1..3;
   }
   unlink("phash$suffix","phash$suffix.c","phash$suffix.h","main$suffix.c") if $default;
 }

@@ -10,6 +10,17 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use Exporter 'import';
 our @EXPORT = qw(_dict_init gettimeofday tv_interval);
 
+# Not yet:      Bob
+#               CMPH::BMZ8 CMPH::BRZ Cuckoo RobinHood HAMT
+our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
+                CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
+                CMPH::FCH CMPH::CHD_PH CMPH::CHD
+                Switch Gperf);
+# Still failing:
+our %algo_todo = map {$_=>1} # pure-perl and save_c
+  qw(-gperf -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
+     -cmph-chd -cmph-bmz8 -cmph-brz);
+
 =head1 NAME
 
 Perfect::Hash - generate perfect hashes, library backend for phash
@@ -44,22 +55,16 @@ perfect hashes even guaranteed minimal size. It is only possible to build one
 when we know all of the keys in advance. Minimal perfect hashing implies that
 the resulting table contains one entry for each key, and no empty slots.
 
-There exist various C and a simple python script to generate code to
-access perfect hashes and minimal versions thereof, but nothing to use
-easily. C<gperf> is not very well suited to create big maps and cannot deal
-with anagrams, but creates fast C code for small dictionaries.
-C<Pearson> hashes are simplier and fast for small machines, but not guaranteed
-to be creatable for small or bigger hashes.  cmph C<CHD>, C<BDZ_PH> and the
-other cmph algorithms might be the best algorithms for big hashes, but lookup
-time is slower for smaller hashes and you need to link to an external library.
-
 As input we need to provide a set of unique keys, either as arrayref or
 hashref or as keyfile. The keys can so far only be strings (will be extended
 to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
-As generation algorithm there exist various hashing methods:
+As generation algorithm there exist various hashing and other fast lookup methods:
 Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
+Not all generated lookup methods are perfect hashes per se. We also implemented
+traditional methods which might be faster for smaller key sets, like nested switches,
+hash array mapped tries or ordinary linear addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -70,6 +75,15 @@ The best algorithm used in Hanov and various others is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
 Fabiano C. Botelho, and Martin Dietzfelbinger
 L<http://cmph.sourceforge.net/papers/esa09.pdf>
+
+There exist various C and a simple python script to generate code to
+access perfect hashes and minimal versions thereof, but nothing to use
+easily. C<gperf> is not very well suited to create big maps and cannot deal
+with certain anagrams, but creates fast C code for small dictionaries.
+C<Pearson> hashes are simplier and fast for small machines, but not guaranteed
+to be creatable for small or bigger hashes.  cmph C<CHD>, C<BDZ_PH> and the
+other cmph algorithms might be the best algorithms for big hashes, but lookup
+time is slower for smaller hashes and you need to link to an external library.
 
 =head1 METHODS
 
@@ -275,17 +289,6 @@ C<libicu> or the better C<libunistring>.
 
 =cut
 
-# Not yet:      Bob
-#               CMPH::BMZ8 CMPH::BRZ Cuckoo RobinHood
-our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
-                CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
-                CMPH::FCH CMPH::CHD_PH CMPH::CHD
-                Switch Gperf
-              );
-# Still failing:
-our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
-     -cmph-chd -cmph-bmz8 -cmph-brz);
 our %algo_methods = map {
   my ($m, $o) = ($_, $_);
   $o =~ s/::/-/g;

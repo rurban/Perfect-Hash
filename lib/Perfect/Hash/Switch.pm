@@ -5,12 +5,11 @@ our $VERSION = '0.01';
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::C;
+our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 use Config;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 use B ();
-#use Config;
 
 =head1 DESCRIPTION
 
@@ -93,7 +92,7 @@ sub save_c {
     $old = $l unless defined $old;
     if ($l != $old and @cand) {
       print "dump l=$old: [",join(" ",@cand),"]\n" if $options->{-debug};
-      _do_cand($FH, $old, \@cand, $dict);
+      _do_cand($ph, $FH, $old, \@cand);
       @cand = ();
     }
     push @cand, $s;
@@ -101,7 +100,7 @@ sub save_c {
     $old = $l;
   }
   print "rest l=$old: [",join(" ",@cand),"]\n" if $options->{-debug};
-  _do_cand($FH, $old, \@cand, $dict) if @cand;
+  _do_cand($ph, $FH, $old, \@cand) if @cand;
   print $FH "
     }
 }
@@ -142,35 +141,37 @@ sub _strcmp {
     $cmp = "!memcmp(s, ".B::cstring($s).", $l)";
   }
   if ($last) {
-    return "
-        return $cmp ? $v : -1;";
+    return "return $cmp ? $v : -1;";
   } else {
-    return "
-        if ($cmp) return $v;";
+    return "if ($cmp) return $v;";
   }
 }
 
 # handle candidate list of keys with equal length
 # either 1 or do a nested switch
 sub _do_cand {
-  my ($FH, $l, $cand, $dict) = @_;
+  my ($ph, $FH, $l, $cand) = @_;
+  my ($dict, $options) = ($ph->[0], $ph->[1]);
   # switch on length
   print $FH "
-    case $l: /* ", join(", ", @$cand)," */";
+      case $l: "; #/* ", join(", ", @$cand)," */";
   if (@$cand == 1) { # only one candidate to check
     my $s0 = $cand->[0];
     my $v = $dict->{$s0};
-    print $FH _strcmp($s0, $l, $v, 1);
+    print $FH "\n        ",_strcmp($s0, $l, $v);
   } else {
     # switch on the most diverse char in the strings
-    _do_switch($FH, $cand, $dict);
+    _do_switch($ph, $FH, $cand);
   }
 }
 
 # handle candidate list of keys with equal length
-# find the best char to switch on
+# find the best char(s) to switch on
+# TODO: try char ranges 8,4,2,1 if length allows it (long*,int*,short*,char*)
 sub _do_switch {
-  my ($FH, $cand, $dict) = @_;
+  my ($ph, $FH, $cand, $indent) = @_;
+  $indent = 1 unless $indent;
+  my ($dict, $options) = ($ph->[0], $ph->[1]);
   # find the best char in @cand to switch on
   my $maxkeys = [0,0,undef];
   my $l = bytes::length($cand->[0]);
@@ -186,43 +187,47 @@ sub _do_switch {
   }
   my $i = $maxkeys->[1];
   my $h = $maxkeys->[2];
-  print $FH "
-      switch ((unsigned char)s[$i]) {";
+  my $space = 4 + (4 * $indent);
+  print $FH "\n"," " x $space,"switch ((unsigned char)s[$i]) {";
+  print "switch on $i in @$cand\n" if $options->{-debug};
+  print $FH " /* ",join(", ",@$cand)," */";
   # TODO: collect @cand into buckets for the selected char
   # and switch on these
+  my @c = map { substr($_,$i,1) } @$cand;
+
   my ($old_c, $new_case) = ('');
   for my $s (sort {substr($a,$i,1) cmp substr($b,$i,1) } @$cand) {
     my $c = substr($s, $i, 1);
     if ($new_case and $c ne $old_c) {
-      print $FH "
-        break;";
+      print $FH "\n    "," " x $space,"break;";
     }
     # TODO: if $h{$c} > 5-10 nest one more switch recursively
-    if (0 and $h->{$c} > 8) {
-      my @cand_c = map { substr($_,$i,1) eq $c } @$cand;
-      _do_switch($FH, \@cand_c, $dict);
+    print ">3 cases on $i in @$cand\n" if $options->{-debug} and $h->{$c} > 3;
+    if (0 and $h->{$c} > 3) {
+      my @cand_c = grep { substr($_,$i,1) eq $c ? $_ : undef } @$cand;
+      _do_switch($ph, $FH, \@cand_c, $indent+1);
+      my @rest = grep { substr($_,$i,1) ne $c ? $_ : undef } @$cand;
+      _do_switch($ph, $FH, \@rest, $indent+1);
     } else {
       my $v = $dict->{$s};
       my $ord = ord($c);
       my $case = ($ord >= 40 and $ord < 127) ? "'$c':" : "$ord: /* $c */";
       if ($h->{$c} == 1) {
-        print $FH "
-      case $case";
-        print $FH _strcmp($s, $l, $v, 1);
+        print $FH "\n  "," " x $space,"case $case";
+        print $FH "\n    "," " x $space, _strcmp($s, $l, $v);
+        $new_case = 1;
       } else {
         if ($c ne $old_c) {
-          print $FH "
-      case $case";
+          print $FH "\n  "," " x $space,"case $case";
           $new_case = 1;
         }
-        print $FH _strcmp($s, $l, $v);
+        print $FH "\n    "," " x $space, _strcmp($s, $l, $v);
         $old_c = $c;
       }
     }
   }
-  print $FH "
-      }
-      return -1;";
+  print $FH "\n"," " x $space,"}\n",
+            " " x $space, "return -1;"
 }
 
 =item perfecthash $ph, $key
@@ -271,7 +276,7 @@ sub c_lib { "" }
 =cut
 
 unless (caller) {
-  __PACKAGE__->new("examples/words20",@ARGV)->save_c;
+  __PACKAGE__->new(@ARGV ? @ARGV : "examples/words20")->save_c;
 }
 
 1;

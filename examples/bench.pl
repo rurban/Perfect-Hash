@@ -149,7 +149,7 @@ for my $opt (@opts) {
     $t1 = [gettimeofday];
     $ph->save_c("phash");
     print "$cmd\n" if $ENV{TEST_VERBOSE};
-    my $retval = system($cmd)); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+    my $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     $t1 = tv_interval($t1);
     my $s = -s "phash.c";
     my $so = 0;

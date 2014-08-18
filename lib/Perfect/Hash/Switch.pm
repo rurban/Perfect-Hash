@@ -111,7 +111,7 @@ sub save_c {
 # length optimized memcmp
 # it's the last statement if $last, otherwise as fallthrough to the next case statement.
 # TODO: do away with most memcmp for shorter strings (< 128?)
-sub _cmp {
+sub _strcmp {
   my ($s, $l, $v, $last) = @_;
   my $cmp;
   if ($l == 1) {
@@ -124,11 +124,18 @@ sub _cmp {
   } elsif ($l == 2) {
     my $short = sprintf("0x%x", unpack("S", $s));
     $cmp = "*(short*)s == $short /* $s */";
-  } elsif ($l == 4) {
+  } elsif ($Config{intsize} == 4 and $l == 4) {
     my $int = sprintf("0x%x", unpack("L", $s));
     $cmp = "*(int*)s == $int /* $s */";
-  } elsif ($Config{d_quad} and $l == 8) {
+  } elsif ($Config{longsize} == 8 and $l == 8) {
+    my $long = sprintf("0x%lx", unpack("J", $s));
+    $cmp = "*(long *)s == $long /* $s */";
+  } elsif ($Config{d_quad} and $Config{longlongsize} == 8 and $l == 8) {
     my $quad = sprintf("0x%lx", unpack("Q", $s));
+    my $quadtype = $Config{uquadtype};
+    $cmp = "*($quadtype *)s == $quad /* $s */";
+  } elsif ($Config{d_quad} and $Config{longlongsize} == 16 and $l == 16) { # 128-bit qword
+    my $quad = sprintf("0x%llx", unpack("Q", $s));
     my $quadtype = $Config{uquadtype};
     $cmp = "*($quadtype *)s == $quad /* $s */";
   } else {
@@ -143,6 +150,8 @@ sub _cmp {
   }
 }
 
+# handle candidate list of keys with equal length
+# either 1 or do a nested switch
 sub _do_cand {
   my ($FH, $l, $cand, $dict) = @_;
   # switch on length
@@ -151,13 +160,15 @@ sub _do_cand {
   if (@$cand == 1) { # only one candidate to check
     my $s0 = $cand->[0];
     my $v = $dict->{$s0};
-    print $FH _cmp($s0, $l, $v, 1);
+    print $FH _strcmp($s0, $l, $v, 1);
   } else {
     # switch on the most diverse char in the strings
     _do_switch($FH, $cand, $dict);
   }
 }
 
+# handle candidate list of keys with equal length
+# find the best char to switch on
 sub _do_switch {
   my ($FH, $cand, $dict) = @_;
   # find the best char in @cand to switch on
@@ -176,7 +187,7 @@ sub _do_switch {
   my $i = $maxkeys->[1];
   my $h = $maxkeys->[2];
   print $FH "
-      switch (s[$i]) {";
+      switch ((unsigned char)s[$i]) {";
   # TODO: collect @cand into buckets for the selected char
   # and switch on these
   my ($old_c, $new_case) = ('');
@@ -197,14 +208,14 @@ sub _do_switch {
       if ($h->{$c} == 1) {
         print $FH "
       case $case";
-        print $FH _cmp($s, $l, $v, 1);
+        print $FH _strcmp($s, $l, $v, 1);
       } else {
         if ($c ne $old_c) {
           print $FH "
       case $case";
           $new_case = 1;
         }
-        print $FH _cmp($s, $l, $v);
+        print $FH _strcmp($s, $l, $v);
         $old_c = $c;
       }
     }

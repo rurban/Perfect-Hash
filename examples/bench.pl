@@ -146,26 +146,31 @@ for my $opt (@opts) {
     wmain(\@dict, $opt);
     $i++;
     my $cmd = compile_cmd($ph);
+    my $out = "phash.c";
+    unlink $out;
     $t1 = [gettimeofday];
     $ph->save_c("phash");
-    print "$cmd\n" if $ENV{TEST_VERBOSE};
-    my $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+    my $retval;
+    if (-f $out and -s $out) {
+      print "$cmd\n" if $ENV{TEST_VERBOSE};
+      $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+    } else {
+      $retval = -1;
+    }
     $t1 = tv_interval($t1);
-    my $s = -s "phash.c";
+    my $s = -s $out;
     my $so = 0;
-    if (!($retval>>8)) {
+    if ($retval == 0) {
       $so = -s "phash";
       $t2 = [gettimeofday];
       my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
       $t2 = tv_interval($t2);
-      $retval = $?;
-    } else {
-      print $retval;
+      $retval = $? >> 8;
     }
     printf "%-12s %.06f % .06f %.06f %8d %8d  %s\n",
        $m?substr($m,1):"", $t2, $t0, $t1, $s, $so, $opt;
     if ($retval>>8) {
-      print "\t\t\twith ", $retval>>8, " errors.\n";
+      print "\t\t\twith ", $retval, " errors.\n";
     }
   }
   print "----\n";

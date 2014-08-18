@@ -47,7 +47,7 @@ sub new {
     my $i = 0;
     my %dict;
     for (@$dict) {
-      print $F $_."\n";
+      print $F $_."\n" if length($_);
       $dict{$_} = $i++;
     }
     print $F "%%";
@@ -57,7 +57,7 @@ sub new {
   elsif (ref $dict eq 'HASH') {
     open my $F, ">", $fn;
     for (sort keys %$dict) {
-      print $F $_,"\t",$dict->{$_},"\n";
+      print $F $_,"\t",$dict->{$_},"\n" if length($_);
     }
     print $F "%%";
     close $F;
@@ -71,7 +71,11 @@ sub new {
       %hash = map {$_ => $i++ } split /\n/, <$d>;
     }
     close $d;
+    $fn = $dict;
     $dict = \%hash;
+  }
+  if (!-f $fn or !-s $fn) {
+    return undef;
   }
   return bless [$fn, \%options, $dict], $class;
 }

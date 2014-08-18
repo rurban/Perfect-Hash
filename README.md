@@ -32,22 +32,16 @@ perfect hashes even guaranteed minimal size. It is only possible to build one
 when we know all of the keys in advance. Minimal perfect hashing implies that
 the resulting table contains one entry for each key, and no empty slots.
 
-There exist various C and a simple python script to generate code to
-access perfect hashes and minimal versions thereof, but nothing to use
-easily. `gperf` is not very well suited to create big maps and cannot deal
-with anagrams, but creates fast C code for small dictionaries.
-`Pearson` hashes are simplier and fast for small machines, but not guaranteed
-to be creatable for small or bigger hashes.  cmph `CHD`, `BDZ_PH` and the
-other cmph algorithms might be the best algorithms for big hashes, but lookup
-time is slower for smaller hashes and you need to link to an external library.
-
 As input we need to provide a set of unique keys, either as arrayref or
 hashref or as keyfile. The keys can so far only be strings (will be extended
 to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
-As generation algorithm there exist various hashing methods:
+As generation algorithm there exist various hashing and other fast lookup methods:
 Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
+Not all generated lookup methods are perfect hashes per se. We also implemented
+traditional methods which might be faster for smaller key sets, like nested switches,
+hash array mapped tries or ordinary linear addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -58,6 +52,15 @@ The best algorithm used in Hanov and various others is derived from
 "Compress, Hash, and Displace algorithm" by Djamal Belazzougui,
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)
+
+There exist various C and a simple python script to generate code to
+access perfect hashes and minimal versions thereof, but nothing to use
+easily. `gperf` is not very well suited to create big maps and cannot deal
+with certain anagrams, but creates fast C code for small dictionaries.
+`Pearson` hashes are simplier and fast for small machines, but not guaranteed
+to be creatable for small or bigger hashes.  cmph `CHD`, `BDZ_PH` and the
+other cmph algorithms might be the best algorithms for big hashes, but lookup
+time is slower for smaller hashes and you need to link to an external library.
 
 # METHODS
 
@@ -126,8 +129,8 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
     - \-switch
 
         This is similar to -pearson8 only recommended for small dictionary
-        sizes < 256. Generates a nested switch table first switching on the
-        size and then on the keys.
+        sizes < 256. Generates a nested switch table, first switching on the
+        size and then on the keys. _Probably optimized on word-size sse ops_
 
     - \-pearson
 
@@ -157,9 +160,26 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         Generates nice and easy C code without external library dependency.
         However to generate -bob you need a C compiler.
 
-    - \-gperf (not yet)
+    - \-gperf
 
-        Pretty fast lookup, but limited dictionaries.
+        Generates pretty fast lookup, because it is not hashing the string,
+        it just takes some characters from the string to create a unique key.
+        Only limited dictionaries and smaller sizes.
+
+        Currently only via the `gperf` executable. Planned to do it in pure-perl
+        to be independent and improve the generated memcpy comparisons, as in `-switch`.
+
+    - \-switch
+
+        Only for very small dictionaries.
+        Uses no hash function nor hash table, just generates a fast switch
+        table in `C` as with `gperf --switch` for smaller dictionaries.
+
+        Generates a nested switch table, first switching on the size and then on the
+        best combination of keys. The difference to `gperf --switch` is the automatic
+        generation of nested switch levels, depending on the number of collisions, and
+        it is optimized to use word size comparisons if possible for the fixed length
+        comparisons, which is faster then `memcmp`.
 
     - \-cmph-bdz\_ph
 
@@ -211,6 +231,13 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
         shared library containing the generated code. As with [gperf](https://metacpan.org/pod/gperf)
         `--pic`
 
+        gperf:
+
+        \-P/--pic does a perfect optimization but may require some small code changes
+        (see the gperf documentation for details), whereas --null-strings does only a
+        half-hearted optimization but works without needing any change to surrounding
+        code.
+
     - \-nul
 
         Allow `NUL` bytes in keys, i.e. store the length for keys and compare
@@ -239,8 +266,8 @@ Fabiano C. Botelho, and Martin Dietzfelbinger
 
         Consider upper and lower case unicode characters as equivalent. The
         string comparison will use a case insignificant character
-        comparison. Note that locale dependent case mappings are done via
-        `libicu`.
+        comparison. Note that locale dependent case mappings are planned to be done via
+        `libicu` or the better `libunistring`.
 
 - analyze\_data $dict, @options
 

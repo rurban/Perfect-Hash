@@ -187,9 +187,26 @@ fit into every CPU cache.
 Generates nice and easy C code without external library dependency.
 However to generate -bob you need a C compiler.
 
-=item -gperf (not yet)
+=item -gperf
 
-Pretty fast lookup, but limited dictionaries.
+Generates pretty fast lookup, because it is not hashing the string,
+it just takes some characters from the string to create a unique key.
+Only limited dictionaries and smaller sizes.
+
+Currently only via the C<gperf> executable. Planned to do it in pure-perl
+to be independent and improve the generated memcpy comparisons, as in C<-switch>.
+
+=item -switch
+
+Only for very small dictionaries.
+Uses no hash function nor hash table, just generates a fast switch
+table in C<C> as with C<gperf --switch> for smaller dictionaries.
+
+Generates a nested switch table, first switching on the size and then on the
+best combination of keys. The difference to C<gperf --switch> is the automatic
+generation of nested switch levels, depending on the number of collisions, and
+it is optimized to use word size comparisons if possible for the fixed length
+comparisons, which is faster then C<memcmp>.
 
 =item -cmph-bdz_ph
 

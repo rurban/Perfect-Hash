@@ -14,11 +14,16 @@ use B ();
 =head1 DESCRIPTION
 
 Uses no hash function nor hash table, just generates a fast switch
-table in C<C>, for smaller dictionaries.
+table in C<C> as with C<gperf --switch>, for smaller dictionaries.
 
-This is similar to -pearson8 only recommended for small dictionary
-sizes < 256. Generates a nested switch table, first switching on the
-size and then on the keys. I<Probably optimized on word-size sse ops>
+Generates a nested switch table, first switching on the
+size and then on the best combination of keys. The difference to
+C<gperf --switch> is the automatic generation of nested switch levels,
+depending on the number of collisions, and it is optimized to use word size
+comparisons if possible for the fixed length comparisons, which is faster
+then C<memcmp>.
+
+I<TODO: optimize with more sse ops>
 
 =head1 METHODS
 
@@ -86,31 +91,102 @@ sub save_c {
     $old = $l unless defined $old;
     if ($l == $old) {
       push @cand, $s;
-    } else {
-      print $FH "
-    case $old: /* ", join(", ", @cand)," */";
-      if (@cand == 1) {
-        my $v = $dict->{$s};
-        print $FH "
-      return memcmp(s, ",B::cstring($cand[0]),", l) ? -1 : $v;";
-      } else {
-        # prefix trie or word cmp or just binary search? nothing yet
-        for (@cand) {
-          my $v = $dict->{$_};
-          print $FH "
-      if (!memcmp(s, ",B::cstring($_),", l)) return $v;";
-        }
-          print $FH "
-      return -1;";
-      }
+    } elsif (@cand) {
+      do_cand($FH, $old, \@cand, $dict);
       @cand = ();
       $old = $l;
     }
   }
+  do_cand($FH, $old, \@cand, $dict) if @cand;
   print $FH "
     }
 }
 ";
+}
+sub do_cand {
+  my ($FH, $l, $cand, $dict) = @_;
+  # switch on length
+  print $FH "
+    case $l: /* ", join(", ", @$cand)," */";
+  if (@$cand == 1) { # only one candidate to check
+    my $s0 = $cand->[0];
+    my $v = $dict->{$s0};
+    if ($l == 1) {
+      $s0 = substr(B::cstring($s0),1,-1);
+      $s0 =~ s/'/\\'/;
+      print $FH "
+      return *s == '$s0' ? $v : -1;";
+    } else {
+      print $FH "
+      return memcmp(s, ",B::cstring($cand->[0]),", $l) ? -1 : $v;";
+    }
+  } else {
+    # switch on the most diverse char in the strings
+    do_switch($FH, $cand, $dict);
+  }
+}
+
+sub do_switch {
+  my ($FH, $cand, $dict) = @_;
+  # find the best char in @cand to switch on
+  my $maxkeys = [0,0,undef];
+  my $l = bytes::length($cand->[0]);
+  for my $i (0 .. $l-1) {
+    my %h = ();
+    for my $c (map { substr($_,$i,1) } @$cand) {
+      $h{$c}++;
+    }
+    # find max of keys, i-th char in @cand
+    my $keys = scalar keys %h;
+    $maxkeys = [$keys,$i,\%h] if $keys > $maxkeys->[0];
+    last if $keys == scalar @$cand;
+  }
+  my $i = $maxkeys->[1];
+  my $h = $maxkeys->[2];
+  print $FH "
+      switch (s[$i]) {";
+  # TODO: collect @cand into buckets for the selected char
+  # and switch on these
+  my ($old_c, $new_case) = ('');
+  for my $s (sort {substr($a,$i,1) cmp substr($b,$i,1) } @$cand) {
+    my $c = substr($s, $i, 1);
+    if ($new_case and $c ne $old_c) {
+      print $FH "
+        break;";
+    }
+    # TODO: if $h{$c} > 5-10 nest one more switch recursively
+    if (0 and $h->{$c} > 8) {
+      my @cand_c = map { substr($_,$i,1) eq $c } @$cand;
+      do_switch($FH, \@cand_c, $dict);
+    } else {
+      my $v = $dict->{$s};
+      my $qc = substr(B::cstring($c),1,-1);
+      $qc =~ s/'/\\'/g;
+      if ($h->{$c} == 1) {
+        print $FH "
+      case '$qc':";
+        if (length($s) == 1) {
+          print $FH "
+        return s[$i] == '$qc' ? $v : -1;";
+        } else {
+          print $FH "
+        return memcmp(s, ",B::cstring($s),", $l) ? -1 : $v;";
+        }
+      } else {
+        if ($c ne $old_c) {
+          print $FH "
+      case '$qc':";
+          $new_case = 1;
+        }
+        print $FH "
+        if (!memcmp(s, ",B::cstring($s),", $l)) return $v;";
+        $old_c = $c;
+      }
+    }
+  }
+  print $FH "
+      }
+      return -1;";
 }
 
 =item perfecthash $ph, $key
@@ -155,5 +231,9 @@ sub c_lib { "" }
 =back
 
 =cut
+
+unless (caller) {
+  __PACKAGE__->new("examples/words500")->save_c;
+}
 
 1;

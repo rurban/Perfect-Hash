@@ -233,6 +233,13 @@ constant stringpool. This reduces the startup time of programs using a
 shared library containing the generated code. As with L<gperf>
 C<--pic>
 
+gperf:
+
+-P/--pic does a perfect optimization but may require some small code changes
+(see the gperf documentation for details), whereas --null-strings does only a
+half-hearted optimization but works without needing any change to surrounding
+code.
+
 =item -nul
 
 Allow C<NUL> bytes in keys, i.e. store the length for keys and compare
@@ -261,15 +268,15 @@ comparison. Note that locale dependent case mappings are ignored.
 
 Consider upper and lower case unicode characters as equivalent. The
 string comparison will use a case insignificant character
-comparison. Note that locale dependent case mappings are done via
-C<libicu>.
+comparison. Note that locale dependent case mappings are planned to be done via
+C<libicu> or the better C<libunistring>.
 
 =back
 
 =cut
 
 # Not yet:      Bob
-#               CMPH::BMZ8 CMPH::BRZ
+#               CMPH::BMZ8 CMPH::BRZ Cuckoo RobinHood
 our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
@@ -390,7 +397,7 @@ C<-false-positives>.
 =cut
 
 sub false_positives {
-  return $_[0]->options('-false-positives');
+  return $_[0]->option('-false-positives');
 }
 
 

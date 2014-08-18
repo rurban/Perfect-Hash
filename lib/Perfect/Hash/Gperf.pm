@@ -33,11 +33,13 @@ sub new {
   # enforce KEYFILE
   my $fn = "phash_keys.tmp";
   if (ref $dict eq 'ARRAY') {
+    unlink $fn;
     open my $F, ">", $fn;
+    print $F "%%\n";
     my $i = 0;
     my %dict;
     for (@$dict) {
-      print $F "$_\n";
+      print $F $_."\n";
       $dict{$_} = $i++;
     }
     print $F "%%";
@@ -74,10 +76,10 @@ Generates a $fileprefix.c file.
 
 sub save_c {
   my $ph = shift;
-  my ($dict, $options) = ($ph->[0], $ph->[1]);
+  my ($fn, $options, $dict) = ($ph->[0], $ph->[1], $ph->[2]);
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my %opts = ('-pic'      => '-P',
-              '-nul'      => '-l',
+             #'-nul'      => '-l',
               '-7bit'     => '-7',
               '-switches' => '--switch=2',
              );
@@ -85,7 +87,7 @@ sub save_c {
   for (keys %$options) {
     push @opts, $opts{$_} if exists $opts{$_}; 
   }
-  my @cmd = ("gperf", @opts, $dict, ">$fileprefix.c");
+  my @cmd = ("gperf", @opts, $fn, ">$fileprefix.c");
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
   system(join(" ",@cmd));
 }

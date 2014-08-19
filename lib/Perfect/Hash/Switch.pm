@@ -230,8 +230,12 @@ sub _do_switch {
   my $i = $maxkeys->[1];
   my $h = $maxkeys->[2];
   my $space = 4 + (4 * $indent);
+  my $maxc;
   print $FH "\n"," " x $space,"switch ((unsigned char)s[$i]) {";
-  print "switch on $i in @$cand\n" if $options->{-debug};
+  if ($options->{-debug}) {
+    $maxc = scalar @$cand >= 5 ? 4 : scalar(@$cand) -1;
+    printf("switch on $i in cand %s\n", join(",", @$cand[0..$maxc])) ;
+  }
   print $FH " /* ",join(", ",@$cand)," */";
   # TODO: collect @cand into buckets for the selected char
   # and switch on these
@@ -240,14 +244,24 @@ sub _do_switch {
   for my $s (sort {substr($a,$i,1) cmp substr($b,$i,1) } @$cand) {
     my $c = substr($s, $i, 1);
     # if $h{$c} > 3 nest one more switch recursively
-    print ">3 cases on $i in @$cand\n" if $options->{-debug} and $h->{$c} > 3;
+    my @cand_c;
     if ($h->{$c} > 3) {
-      # TODO check for recursive loop
-      my @cand_c = grep { substr($_,$i,1) eq $c ? $_ : undef } @$cand;
-      _do_switch($ph, $FH, \@cand_c, $indent+1);
-      #TODO: restart loop without cand_c?
+      # check for recursive loop. XXX but still not good enough. maybe check for same $i also
+      @cand_c = grep { substr($_,$i,1) eq $c ? $_ : undef } @$cand;
+      if ($options->{-debug}) {
+        my $maxc_c = scalar(@cand_c) >= 5 ? 4 : $#cand_c;
+        printf("excess: %d cases on $i in cand %s => %s\n", $h->{$c},
+               join(",", @$cand[0..$maxc]), join(",", @cand_c[0..$maxc]))
+      }
+    }
+    if ($h->{$c} > 3 and @cand_c < @$cand) {
+      my $len = scalar @cand_c;
+      $indent++;
+      print "recurse into $indent switch on $i with $len elements\n" if $options->{-debug};
+      _do_switch($ph, $FH, \@cand_c, $indent);
+      # maybe: restart loop without cand_c? No, the return below is pretty good.
       my @rest = grep { substr($_,$i,1) ne $c ? $_ : undef } @$cand;
-      _do_switch($ph, $FH, \@rest, $indent+1);
+      _do_switch($ph, $FH, \@rest, $indent);
       print $FH "\n"," " x $space,"}\n",
                 " " x $space, "return -1;";
       return;

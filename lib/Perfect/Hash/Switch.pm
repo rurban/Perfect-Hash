@@ -88,6 +88,7 @@ sub save_c {
   my ($old, @cand);
   for my $s (sort { length($a) <=> length($b) } keys %$dict) {
     my $l = bytes::length($s);
+    next if !$l; # skip saving/checking empty strings
     #print "l=$l, old=$old, s=$s\n" if $options->{-debug};
     $old = $l unless defined $old;
     if ($l != $old and @cand) {
@@ -147,7 +148,9 @@ sub _strcmp_i {
 sub _strcmp {
   my ($s, $l, $v, $last) = @_;
   my $cmp;
-  if ($l > 36) { # cutoff 36 for short words, not using memcmp.
+  if ($l == 0) {
+    return "0"; # empty string is false, this key does not exist (added by ourself most likely)
+  } elsif ($l > 36) { # cutoff 36 for short words, not using memcmp.
     $cmp = _strcmp_i("s", $s, $l);
   } else {
     my ($n, $ptr) = (1, "s");

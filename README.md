@@ -172,8 +172,8 @@ time is slower for smaller hashes and you need to link to an external library.
         Generates a nested switch table, first switching on the size and then on the
         best combination of keys. The difference to `gperf --switch` is the automatic
         generation of nested switch levels, depending on the number of collisions, and
-        it is optimized to use word size comparisons if possible for the fixed length
-        comparisons, which is faster than `memcmp`.
+        it is optimized to use word size comparisons for the fixed length
+        comparisons, which is up to 50% faster than `memcmp`.
 
     - \-cmph-bdz\_ph
 
@@ -425,7 +425,7 @@ Medium sized dictionary with 2000 keys:
     cmph-fch     0.001740  0.088907 0.083519     6673    42929  -nul
     cmph-chd_ph  0.001802  0.002350 0.083385     1102    42057  -nul
     cmph-chd     0.001937  0.002489 0.087175     3390    42297  -nul
-    switch       0.001647  0.002336 1.582009   151038   106730  -nul
+    switch       0.001256  0.002336 1.582009   151038   106730  -nul
     gperf        0.001344  0.003922 0.849867   295195   297154  -nul
 
 Small dictionary with 127 keys:
@@ -443,7 +443,7 @@ Small dictionary with 127 keys:
     cmph-fch     0.001372  0.000511 0.066843      942    10177
     cmph-chd_ph  0.001310  0.000361 0.066292      418    10033
     cmph-chd     0.001323  0.000343 0.066428      735    10129
-    switch       0.001211  0.000173 0.131323    12517    17450
+    switch       0.001190  0.000173 0.131323    12517    17450
     gperf        0.001199  0.002180 0.064883     8987    12574
 
 # AUTHOR

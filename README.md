@@ -165,7 +165,7 @@ time is slower for smaller hashes and you need to link to an external library.
 
     - \-switch
 
-        Only for very small dictionaries.
+        Only for smaller dictionaries.
         Uses no hash function nor hash table, just generates a fast switch
         table in `C` as with `gperf --switch` for smaller dictionaries.
 
@@ -174,6 +174,7 @@ time is slower for smaller hashes and you need to link to an external library.
         generation of nested switch levels, depending on the number of collisions, and
         it is optimized to use word size comparisons for the fixed length
         comparisons, which is up to 50% faster than `memcmp`.
+        The performance is comparable to the best perfect hashes.
 
     - \-cmph-bdz\_ph
 

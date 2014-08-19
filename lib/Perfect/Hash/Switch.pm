@@ -16,11 +16,11 @@ use B ();
 Uses no hash function nor hash table, just generates a fast switch
 table in C<C> as with C<gperf --switch>, for smaller dictionaries.
 
-Generates a nested switch table, first switching on the
-size and then on the best combination of keys. The difference to
-C<gperf --switch> is the automatic generation of nested switch levels,
-depending on the number of collisions, and it is optimized to use word size
-comparisons if possible for the fixed length comparisons, which is faster
+Generates a nested switch table, first switching on the size and then
+on the best combination of keys. The difference to C<gperf --switch>
+is the automatic generation of nested switch levels, depending on the
+number of collisions, and it is optimized to use word size comparisons
+for the fixed length comparisons on short words, which is ~1.5x faster
 then C<memcmp>.
 
 I<TODO: optimize with more sse ops>
@@ -108,38 +108,72 @@ sub save_c {
 }
 
 # length optimized memcmp
+sub _strcmp_i {
+  my ($ptr, $s, $l) = @_;
+  my $u8s = $s;
+  utf8::decode($u8s);
+  if ($Config{d_quad} and $Config{longlongsize} == 16 and $l == 16) { # 128-bit qword
+    my $quad = sprintf("0x%llx", unpack("Q", $s));
+    my $quadtype = $Config{uquadtype};
+    return "*($quadtype *)$ptr == $quad"."ULL /* $s */";
+  } elsif ($Config{d_quad} and $Config{longlongsize} == 8 and $l == 8) {
+    my $quad = sprintf("0x%lx", unpack("Q", $s));
+    my $quadtype = $Config{uquadtype};
+    return "*($quadtype *)$ptr == $quad"."ULL /* $u8s */";
+  } elsif ($Config{longsize} == 8 and $l == 8) {
+    my $long = sprintf("0x%lx", unpack("J", $s));
+    return "*(long *)$ptr == $long /* $u8s */";
+  } elsif ($Config{intsize} == 4 and $l == 4) {
+    my $int = sprintf("0x%x", unpack("L", $s));
+    return "*(int*)$ptr == $int /* $u8s */";
+  } elsif ($l == 2) {
+    my $short = sprintf("0x%x", unpack("S", $s));
+    return "*(short*)$ptr == $short /* $u8s */";
+  } elsif ($l == 1) {
+    my $ord = ord($s);
+    if ($ord >= 40 and $ord < 127) {
+      return "*($ptr) == '$s'";
+    } else {
+      return "*($ptr) == $ord /* $s */";
+    }
+  } else {
+    return "!memcmp($ptr, ".B::cstring($s).", $l)";
+  }
+}
+
 # it's the last statement if $last, otherwise as fallthrough to the next case statement.
-# TODO: do away with most memcmp for shorter strings (< 128?)
+# do away with most memcmp for shorter strings. cutoff 36 (TODO: try higher cutoffs, 128)
 # TODO: might need to check run-time char* alignment on non-intel platforms
 sub _strcmp {
   my ($s, $l, $v, $last) = @_;
   my $cmp;
-  if ($l == 1) {
-    my $ord = ord($s);
-    if ($ord >= 40 and $ord < 127) {
-      $cmp = "*s == '$s'";
-    } else {
-      $cmp = "*s == $ord /* $s */";
-    }
-  } elsif ($l == 2) {
-    my $short = sprintf("0x%x", unpack("S", $s));
-    $cmp = "*(short*)s == $short /* $s */";
-  } elsif ($Config{intsize} == 4 and $l == 4) {
-    my $int = sprintf("0x%x", unpack("L", $s));
-    $cmp = "*(int*)s == $int /* $s */";
-  } elsif ($Config{longsize} == 8 and $l == 8) {
-    my $long = sprintf("0x%lx", unpack("J", $s));
-    $cmp = "*(long *)s == $long /* $s */";
-  } elsif ($Config{d_quad} and $Config{longlongsize} == 8 and $l == 8) {
-    my $quad = sprintf("0x%lx", unpack("Q", $s));
-    my $quadtype = $Config{uquadtype};
-    $cmp = "*($quadtype *)s == $quad /* $s */";
-  } elsif ($Config{d_quad} and $Config{longlongsize} == 16 and $l == 16) { # 128-bit qword
-    my $quad = sprintf("0x%llx", unpack("Q", $s));
-    my $quadtype = $Config{uquadtype};
-    $cmp = "*($quadtype *)s == $quad /* $s */";
+  if ($l > 36) { # cutoff 36 for short words, not using memcmp.
+    $cmp = _strcmp_i("s", $s, $l);
   } else {
-    $cmp = "!memcmp(s, ".B::cstring($s).", $l)";
+    my ($n, $ptr) = (1, "s");
+    $cmp = "";
+    my $i = 0;
+    while ($l >= 1) {
+      if ($l >= 16) {
+        $n = 16;
+      } elsif ($l >= 8) {
+        $n = 8;
+      } elsif ($l >= 4) {
+        $n = 4;
+      } elsif ($l >= 2) {
+        $n = 2;
+      } else {
+        $n = 1;
+      }
+      $cmp = "$cmp\n\t\t&& "._strcmp_i($ptr, $s, $n);
+      $l -= $n;
+      if ($l >= 1) {
+        $i += $n;
+        $s = substr($s, $n);
+        $ptr = "&s[$i]";
+      }
+    }
+    $cmp = substr($cmp, 6);
   }
   if ($last) {
     return "return $cmp ? $v : -1;";
@@ -147,6 +181,12 @@ sub _strcmp {
     return "if ($cmp) return $v;";
   }
 }
+
+# memcmp vs wordsize cmp via _strcmp_i(): (mac air)
+#switch       0.005779  0.002551 0.307492   352346    35152  -1opt (2000)
+#          => 0.004587  0.004156 0.553640  1038117    51536  -1opt
+#switch       0.006598  0.003342 0.165452    15018    22864  -1opt (127)
+#          => 0.004707  0.001989 0.171876    21062    22840
 
 # handle candidate list of keys with equal length
 # either 1 or do a nested switch
@@ -169,7 +209,7 @@ sub _do_cand {
 
 # handle candidate list of keys with equal length
 # find the best char(s) to switch on
-# TODO: try char ranges 8,4,2,1 if length allows it (long*,int*,short*,char*)
+# tries char ranges 8,4,2,1 if length allows it (quad*,long*,int*,short*,char*)
 sub _do_switch {
   my ($ph, $FH, $cand, $indent) = @_;
   $indent = 1 unless $indent;

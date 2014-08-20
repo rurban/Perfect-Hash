@@ -35,7 +35,6 @@ matrix:
   fast_finish: true
   allow_failures:
     - perl: "5.6"
-    - perl: "5.20"
     - perl: "blead"
 # unknown to perlbrew at travis. Using perl-travis-helper
 

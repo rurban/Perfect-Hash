@@ -44,7 +44,6 @@ sub new {
       print $F "$_\n";
       $dict{$_} = $i++;
     }
-    #print $F "%%";
     close $F;
     $dict = \%dict;
   }
@@ -107,14 +106,14 @@ sub save_c {
 
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
-  # need to initialize mphf from the temp FILE
+  # XXX need to initialize mphf from the temp FILE
   # into a memory buffer.
   print $FH "#include \"cmph.h\"\n";
   print $FH $ph->c_funcdecl($base)." {";
-  # false positives from dict at [3]
+  # XXX check for false positives from dict at [3]
   print $FH "
-    static char *packed_mphf = ",B::cstring($ph->[1]),";
-    return cmph_search_packed(packed_mphf, s, ";
+    static unsigned char *packed_mphf = ",B::cstring($ph->[1]),";
+    return cmph_search_packed(packed_mphf, (const char*)s, ";
   if ($ph->option('-nul')) {
     print $FH "l";
   } else {

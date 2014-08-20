@@ -8,52 +8,18 @@ use B ();
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args();
+my ($default, $methods, $opts) = opt_parse_args();
 if ($default) { # -urban fixed with 6b1a94e46f893b
   push @$methods, "-switch";
 }
 
-my ($dict, @dict);
+my ($dict, @dict, $dictarr, $size, $custom_size);
 for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
   if (-e $_) { $dict = $_; last }
 }
 
-my ($size, $custom_size);
-if (!grep /^-dict$/, @$opts) {
-  open my $d, $dict or die; {
-    local $/;
-    @dict = split /\n/, <$d>;
-  }
-  close $d;
-  $size = scalar @dict;
-}
-if (grep /^-(size|dict)$/, @$opts) {
-  for (0..scalar(@$opts)-1) {
-    if ($opts->[$_] eq '-size') {
-      my $s = $opts->[$_ + 1];
-      if ($s > 2 and $s <= $#dict) {
-        $#dict = $s - 1;
-        $size = scalar @dict;
-        $custom_size++;
-      } else {
-        warn "Invalid -size $size\n";
-      }
-      splice(@$opts, $_, 2);
-      last;
-    }
-    if ($opts->[$_] eq '-dict') {
-      $dict = $opts->[$_ + 1];
-      open my $d, $dict or die; {
-        local $/;
-        @dict = split /\n/, <$d>;
-      }
-      close $d;
-      $size = scalar @dict;
-      splice(@$opts, $_, 2);
-      last;
-    }
-  }
-}
+($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, $dict);
+@dict = @$dictarr;
 
 sub wmain {
   my $dict = $_[0];

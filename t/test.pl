@@ -5,8 +5,12 @@ use Config;
 use ExtUtils::Embed qw(ccflags ldopts);
 use B ();
 
-# usage: my ($default, $methods, $opts) = parse_args(@default_opts);
+# usage: my ($default, $methods, $opts) = opt_parse_args(@default_opts);
 sub test_parse_args {
+  opt_parse_args(@_);
+}
+
+sub opt_parse_args {
   my @opts = @_;
   my @methods = map {s/::/-/g; lc $_} @Perfect::Hash::algos;
   my $default;
@@ -26,6 +30,55 @@ sub test_parse_args {
     @methods = ('', map {"-".$_} @methods);
   }
   return ($default, \@methods, \@opts);
+}
+
+# my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/utf8");
+# my @dict = @$dictarr;
+sub opt_dict_size {
+  my $opts = $_[0];
+  my $dict = $_[1] || "examples/words";
+
+  my ($size, $custom_size, @dict);
+  if (!grep /^-dict$/, @$opts) {
+    open my $d, "<", $dict or die "$dict not found. $!"; {
+      local $/;
+      @dict = split /\n/, <$d>;
+    }
+    close $d;
+    $size = scalar @dict;
+  } else {
+    for (0..scalar(@$opts)-1) {
+      if ($opts->[$_] eq '-dict') {
+        $dict = $opts->[$_ + 1];
+        open my $d, "<", $dict or die "$dict not found. $!"; {
+          local $/;
+          @dict = split /\n/, <$d>;
+        }
+        close $d;
+        $size = scalar @dict;
+        splice(@$opts, $_, 2);
+        last;
+      }
+    }
+  }
+
+  if (grep /^-size$/, @$opts) {
+    for (0..scalar(@$opts)-1) {
+      if ($opts->[$_] eq '-size') {
+        my $s = $opts->[$_ + 1];
+        if ($s > 2 and $s <= $#dict) {
+          $#dict = $s - 1;
+          $size = scalar @dict;
+          $custom_size++;
+        } else {
+          warn "Invalid -size $size\n";
+        }
+        splice(@$opts, $_, 2);
+        last;
+      }
+    }
+  }
+  return ($dict, \@dict, $size, $custom_size);
 }
 
 sub compile_cmd {
@@ -115,8 +168,9 @@ int main () {
   if ($opt =~ /-nul/) {
     print $FH ', strlen(testkeys[i])';
   }
+  # skip the last key if empty
   print $FH ');
-    /* if (v < 0) err++; */';
+    if (i == ',$size-1,' && testkeys[i]==NULL) continue;';
   if ($opt =~ /-debug-c/) {
       print $FH '
     if (i != v) {

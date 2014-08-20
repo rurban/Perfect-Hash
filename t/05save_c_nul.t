@@ -9,6 +9,7 @@ my ($default, $methods, $opts) = test_parse_args("-nul");
 
 plan tests => 5 * scalar(@$methods);
 my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/words500");
+my $small_dict = $size > 255 ? "examples/words20" : $dict;
 
 # CHM passes pure-perl, but not compiled yet
 $Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
@@ -18,7 +19,6 @@ my $key = "AOL";
 my $suffix = "_nul";
 
 for my $m (@$methods) {
-  my $small_dict = "examples/words20" if $m eq '-pearson8' and $size > 255;
   my $ph = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m,
                              @$opts, "-nul");
   unless ($ph) {

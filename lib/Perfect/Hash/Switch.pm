@@ -80,7 +80,7 @@ sub save_c {
   print $FH $ph->c_funcdecl($base)." {";
   unless ($ph->option('-nul')) {
     print $FH "
-    const l = strlen(s);"
+    const int l = strlen(s);"
   }
   print $FH "
     switch (l) {";
@@ -108,34 +108,51 @@ sub save_c {
 ";
 }
 
+# wouldn't it be nice if perl5 core would provide a utf8::valid function?
+sub utf8_valid {
+  return shift =~
+   /^( ([\x00-\x7F])              # 1-byte pattern
+      |([\xC2-\xDF][\x80-\xBF])   # 2-byte pattern
+      |((([\xE0][\xA0-\xBF])|([\xED][\x80-\x9F])
+        |([\xE1-\xEC\xEE-\xEF][\x80-\xBF]))([\x80-\xBF]))  # 3-byte pattern
+      |((([\xF0][\x90-\xBF])|([\xF1-\xF3][\x80-\xBF])
+        |([\xF4][\x80-\x8F]))([\x80-\xBF]{2}))             # 4-byte pattern
+  )*$ /x;
+}
+
 # length optimized memcmp
 sub _strcmp_i {
   my ($ptr, $s, $l) = @_;
-  my $u8s = $s;
-  utf8::decode($u8s);
-  if ($Config{d_quad} and $Config{longlongsize} == 16 and $l == 16) { # 128-bit qword
+  # $s via byte::substr might be a non-conforming utf8 part (split in the middle).
+  # if so what should we do? only used for comments, but it screws up emacs or
+  # other strict encoding detectors. and no, utf8::valid does not work, because
+  # it returns when the utf8 flag is off
+  my $cs = utf8_valid($s)
+    ? $s
+    : B::cstring($s);
+  if ($l == 16 and $Config{d_quad} and $Config{longlongsize} == 16) { # 128-bit qword
     my $quad = sprintf("0x%llx", unpack("Q", $s));
     my $quadtype = $Config{uquadtype};
-    return "*($quadtype *)$ptr == $quad"."ULL /* $s */";
-  } elsif ($Config{d_quad} and $Config{longlongsize} == 8 and $l == 8) {
+    return "*($quadtype *)$ptr == ($quadtype)$quad"."ULL /* $cs */";
+  } elsif ($l == 8 and $Config{d_quad} and $Config{longlongsize} == 8) {
     my $quad = sprintf("0x%lx", unpack("Q", $s));
     my $quadtype = $Config{uquadtype};
-    return "*($quadtype *)$ptr == $quad"."ULL /* $u8s */";
-  } elsif ($Config{longsize} == 8 and $l == 8) {
+    return "*($quadtype *)$ptr == ($quadtype)$quad"."ULL /* $cs */";
+  } elsif ($l == 8 and $Config{longsize} == 8) {
     my $long = sprintf("0x%lx", unpack("J", $s));
-    return "*(long *)$ptr == $long /* $u8s */";
+    return "*(long *)$ptr == (long)$long /* $cs */";
   } elsif ($Config{intsize} == 4 and $l == 4) {
     my $int = sprintf("0x%x", unpack("L", $s));
-    return "*(int*)$ptr == $int /* $u8s */";
+    return "*(int*)$ptr == (int)$int /* $cs */";
   } elsif ($l == 2) {
     my $short = sprintf("0x%x", unpack("S", $s));
-    return "*(short*)$ptr == $short /* $u8s */";
+    return "*(short*)$ptr == (short)$short /* $cs */";
   } elsif ($l == 1) {
     my $ord = ord($s);
     if ($ord >= 40 and $ord < 127) {
       return "*($ptr) == '$s'";
     } else {
-      return "*($ptr) == $ord /* $s */";
+      return "*($ptr) == $ord";
     }
   } else {
     return "!memcmp($ptr, ".B::cstring($s).", $l)";
@@ -172,7 +189,7 @@ sub _strcmp {
       $l -= $n;
       if ($l >= 1) {
         $i += $n;
-        $s = substr($s, $n);
+        $s = bytes::substr($s, $n);
         $ptr = "&s[$i]";
       }
     }
@@ -203,18 +220,24 @@ sub _do_cand {
   if (@$cand == 1) { # only one candidate to check
     my $s0 = $cand->[0];
     my $v = $dict->{$s0};
-    print $FH "\n        ",_strcmp($s0, $l, $v);
+    print $FH "\n        ",_strcmp($s0, $l, $v, 1);
   } else {
     # switch on the most diverse char in the strings
-    _do_switch($ph, $FH, $cand);
+    _do_switch($ph, $FH, $cand, 1);
   }
+}
+
+sub _list_max5 {
+  my $list = shift;
+  my $last = scalar @$list >= 5 ? 4 : scalar(@$list) -1;
+  return join(" ", @$list[0..$last]) . (scalar @$list >= 5 ? "..." : "");
 }
 
 # handle candidate list of keys with equal length
 # find the best char(s) to switch on
 # tries char ranges 8,4,2,1 if length allows it (quad*,long*,int*,short*,char*)
 sub _do_switch {
-  my ($ph, $FH, $cand, $indent) = @_;
+  my ($ph, $FH, $cand, $last, $indent) = @_;
   $indent = 1 unless $indent;
   my ($dict, $options) = ($ph->[0], $ph->[1]);
   # find the best char in @cand to switch on
@@ -234,10 +257,9 @@ sub _do_switch {
   my $h = $maxkeys->[2];
   my $space = 4 + (4 * $indent);
   my $maxc;
-  print $FH "\n"," " x $space,"switch ((unsigned char)s[$i]) {";
+  print $FH "\n"," " x $space,"switch (s[$i]) {";
   if ($options->{-debug}) {
-    $maxc = scalar @$cand >= 5 ? 4 : scalar(@$cand) -1;
-    printf("switch on $i in cand %s\n", join(",", @$cand[0..$maxc])) ;
+    printf("switch on $i in [%s]\n", _list_max5($cand));
   }
   print $FH " /* ",join(", ",@$cand)," */";
   # TODO: collect @cand into buckets for the selected char
@@ -246,32 +268,33 @@ sub _do_switch {
   my ($old_c, $new_case) = ('');
   for my $s (sort {substr($a,$i,1) cmp substr($b,$i,1) } @$cand) {
     my $c = substr($s, $i, 1);
+    my $ord = ord($c);
+    my $case = ($ord >= 40 and $ord < 127) ? "'$c':" : "$ord:";
     # if $h{$c} > 3 nest one more switch recursively
     my @cand_c;
     if ($h->{$c} > 3) {
       # check for recursive loop. XXX but still not good enough. maybe check for same $i also
       @cand_c = grep { substr($_,$i,1) eq $c ? $_ : undef } @$cand;
       if ($options->{-debug}) {
-        my $maxc_c = scalar(@cand_c) >= 5 ? 4 : $#cand_c;
-        printf("excess: %d cases on $i in cand %s => %s\n", $h->{$c},
-               join(",", @$cand[0..$maxc]), join(",", @cand_c[0..$maxc]))
+        printf("excess: %d cases on $i in [%s] => [%s]\n", $h->{$c},
+               _list_max5($cand), _list_max5(\@cand_c));
       }
     }
     if ($h->{$c} > 3 and @cand_c < @$cand) {
       my $len = scalar @cand_c;
       $indent++;
       print "recurse into $indent switch on $i with $len elements\n" if $options->{-debug};
-      _do_switch($ph, $FH, \@cand_c, $indent);
+      print $FH "\n  "," " x $space,"default: /* split into 2 switches */";
+      _do_switch($ph, $FH, \@cand_c, 0, $indent);
       # maybe: restart loop without cand_c? No, the return below is pretty good.
       my @rest = grep { substr($_,$i,1) ne $c ? $_ : undef } @$cand;
-      _do_switch($ph, $FH, \@rest, $indent);
-      print $FH "\n"," " x $space,"}\n",
-                " " x $space, "return -1;";
+      print $FH "\n  "," " x $space,"  /* fallthru to other half */";
+      _do_switch($ph, $FH, \@rest, $last & 1, $indent);
+      print $FH "\n"," " x $space,"}";
+      print $FH "\n"," " x $space, "return -1;" if $last;
       return;
     } else {
       my $v = $dict->{$s};
-      my $ord = ord($c);
-      my $case = ($ord >= 40 and $ord < 127) ? "'$c':" : "$ord: /* $c */";
       if ($new_case and $c ne $old_c) {
         print $FH "\n    "," " x $space,"break;";
       }
@@ -289,8 +312,10 @@ sub _do_switch {
       }
     }
   }
-  print $FH "\n"," " x $space,"}\n";
-  if ($indent == 1) {
+  print $FH "\n  "," " x $space,"default:\n    ",
+                 " " x $space,"return -1;" if $last;
+  print $FH "\n"," " x $space,"}";
+  if ($indent == 1 and $last) {
     print $FH "\n"," " x $space, "return -1;",
   }
 }

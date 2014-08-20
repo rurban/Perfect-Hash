@@ -18,6 +18,34 @@ open $d, "<", $dict or die; {
 }
 close $d;
 
+if (grep /^-(size|dict)$/, @$opts) {
+  for (0..scalar(@$opts)-1) {
+    if ($opts->[$_] eq '-size') {
+      my $s = $opts->[$_ + 1];
+      if ($s > 2 and $s <= $#dict) {
+        $#dict = $s - 1;
+        $size = scalar @dict;
+        # $custom_size++;
+      } else {
+        warn "Invalid -size $size\n";
+      }
+      splice(@$opts, $_, 2);
+      last;
+    }
+    if ($opts->[$_] eq '-dict') {
+      $dict = $opts->[$_ + 1];
+      open my $d, $dict or die; {
+        local $/;
+        @dict = split /\n/, <$d>;
+      }
+      close $d;
+      $size = scalar @dict;
+      splice(@$opts, $_, 2);
+      last;
+    }
+  }
+}
+
 # CMPH works fine here
 delete $Perfect::Hash::algo_todo{'-cmph-bdz_ph'};
 delete $Perfect::Hash::algo_todo{'-cmph-bdz'};
@@ -46,9 +74,12 @@ for my $m (@$methods) {
     next;
   }
   my ($nul) = grep {$_ eq '-nul'} @$opts;
-  test_wmain(0, $key, $ph->perfecthash($key), $suffix, $nul);
+  test_wmain_all(\@dict, $opts, $suffix);
   $i++;
   $ph->save_c("phash$suffix");
+  open my $FH, ">>", "phash$suffix.c";
+  print $FH "/*\nLocal variables:\n  mode: C\n  coding: utf-8-unix\nEnd:\n*/";
+  close $FH;
   if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {
     my $cmd = compile_cmd($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
@@ -60,7 +91,9 @@ for my $m (@$methods) {
         $retval = $?;
       TODO: {
         local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m};
-        like($retstr, qr/^ok - c lookup exists/m, "$m c lookup exists");
+        is($retval>>8, 0, "$m no c lookup errors");
+        diag($retstr) if $retval>>8 and $ENV{TEST_VERBOSE};
+        #like($retstr, qr/^ok - c lookup exists/m, "$m c lookup exists");
         }
       } else {
         ok(1, "SKIP !compile");

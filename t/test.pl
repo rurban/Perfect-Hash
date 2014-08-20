@@ -83,4 +83,59 @@ int main () {
   close $FH;
 }
 
+sub test_wmain_all {
+  my ($keys, $opt, $suffix) = @_;
+  use bytes;
+  $suffix = "" unless $suffix;
+  my $FH;
+  # and then we need a main also
+  open $FH, ">", "main$suffix.c";
+  if ($opt =~ /-nul/) {
+    print $FH '#include <string.h>';
+  }
+  print $FH "
+#include <stdio.h>
+#include \"phash$suffix.h\"
+
+static const char *testkeys[] = {
+  ";
+  my $size = int(scalar(@$keys));
+  for my $i (0..$size) {
+    print $FH B::cstring($keys->[$i]),", ";
+    print $FH "\n  " unless $i % 8;
+  }
+  print $FH '
+};
+
+int main () {
+  int err = 0;
+  int i;
+  for (i=0; i < ',$size,"; i++) {
+    long v = phash$suffix\_lookup(testkeys[i]";
+  if ($opt =~ /-nul/) {
+    print $FH ', strlen(testkeys[i])';
+  }
+  print $FH ');
+    /* if (v < 0) err++; */';
+  if ($opt =~ /-debug-c/) {
+      print $FH '
+    if (i != v) {
+      if (v>=0) err++;
+      printf("%d: %s[%d]=>%ld\n", err, testkeys[i], i, v);
+    }';
+    } else {
+      print $FH '
+    if (i != v) {
+      printf("not ok - c lookup %s at %d => %ld\n", testkeys[i], i, v); err++;
+    }';
+  }
+  print $FH "
+  }
+  return err;
+}
+";
+  close $FH;
+  return;
+}
+
 1;

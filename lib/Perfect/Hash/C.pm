@@ -74,10 +74,10 @@ sub c_funcdecl {
   my ($ph, $base) = @_;
   if ($ph->option('-nul')) {
     "
-long $base\_lookup(const char* s, int l)";
+long $base\_lookup(const unsigned char* s, int l)";
   } else {
     "
-long $base\_lookup(const char* s)";
+long $base\_lookup(const unsigned char* s)";
   }
 }
 

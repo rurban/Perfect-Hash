@@ -4,6 +4,7 @@ our $VERSION = '0.01';
 use strict;
 #use warnings;
 use Perfect::Hash;
+use Perfect::Hash::C;
 use integer;
 use bytes;
 
@@ -399,6 +400,7 @@ sub save_c {
       const char **ck = (const char **)Ck[h];
       int i = 0;
       for (; i < Cs[h]; i++) {";
+      # ck[i] is not known in advance
       print $FH "
         if (!memcmp(ck[i], key, l)) return Cv[h][i];";
       print $FH "
@@ -409,8 +411,9 @@ sub save_c {
     }";
   }
   if (!$ph->false_positives) { # check keys
+    # we cannot use memcmp_const_str nor memcmp_const_len because we don't know K[h] nor l
     print $FH "
-    if (memcmp(K[h], key, l)) h = -1;";
+       if (memcmp(K[h], key, l)) h = -1;";
   }
   print $FH "
     return h;

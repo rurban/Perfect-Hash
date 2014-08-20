@@ -5,7 +5,7 @@ use Perfect::Hash;
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args();
+my ($default, $methods, $opts) = opt_parse_args();
 $methods = [ grep(!/^-cmph/, @$methods) ];
 
 plan tests => scalar(@$methods);

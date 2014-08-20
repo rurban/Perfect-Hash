@@ -5,19 +5,12 @@ use Perfect::Hash;
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args();
+my ($default, $methods, $opts) = opt_parse_args();
 
 plan tests => 3 * scalar(@$methods);
 
-# as hashref and arrayref and file, without utf8 chars
-# TODO: use a real gperf compat keyfile here and _dict_init it
-my $dict = "examples/words20";
-my $d;
-open $d, $dict or die; {
-  local $/;
-  @dict = split /\n/, <$d>;
-}
-close $d;
+my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/words20");
+my @dict = @$dictarr;
 
 for my $m (@$methods) {
   my $ph = new Perfect::Hash \@dict, $m, @$opts;

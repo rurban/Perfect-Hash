@@ -6,27 +6,27 @@ use Perfect::Hash;
 use lib 't';
 require "test.pl";
 
-my ($default, $methods, $opts) = test_parse_args();
+my ($default, $methods, $opts) = opt_parse_args();
 
 plan tests => 5 * scalar(@$methods);
 
-#my $n = shift || 200;
-#my $dict = [ split/\n/,`head -n $n examples/words500` ];
-my $dict = "examples/words500";
+my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/words500");
 
 # CHM passes pure-perl, but not compiled yet
 $Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
 
 my $i = 0;
+my $small_dict;
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? "examples/words20" : $dict, $m, @$opts);
+  $small_dict = "examples/words20" if $m eq '-pearson8' and $size > 255;
+  my $ph = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m, @$opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;
     $i++;
     next;
   }
-  if ($m =~ /^-xxcmph/) {
+  if ($m =~ /^-cmph/) {
     ok(1, "SKIP nyi save_c for $m");
     ok(1) for 1..4;
     $i++;

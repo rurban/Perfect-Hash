@@ -108,8 +108,10 @@ WriteMakefile
      'Time::HiRes' => 0,
      #'coretypes' => 0,
    },
-   clean => { FILES => "Hash.c.gcov Hash.xs.gcov Hash.gcda Hash.gcno "
-                      ."cover_db perf.data script/phash" },
+   clean => { FILES => "*.gcov *.gcda *.gcno"
+                      ." cover_db perf.data script/phash"
+                      ." phash* main*"
+   },
    @extras
   );
 

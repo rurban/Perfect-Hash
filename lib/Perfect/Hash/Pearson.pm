@@ -290,11 +290,11 @@ sub save_c {
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
   print $FH "    /* collisions: keys and values */";
-  my $collisions = 0;
-  my $i = 0;
+  my ($maxcoll, $collisions, $i) = (0,0,0);
   for my $coll (@$C) {
     if ($coll) {
       if (scalar(@$coll) > 1) {
+        $maxcoll = scalar(@$coll) if $maxcoll < scalar(@$coll);
         $collisions++;
         print $FH "
     static const char *Ck_$i\[] = {";
@@ -313,6 +313,9 @@ sub save_c {
     }
     $i++;
   }
+  my $ctype = "char";
+  $ctype = "short" if $maxcoll > 256;
+  $ctype = "long" if $maxcoll > 65537;
   if ($collisions) {
     $i = 0;
     print $FH "
@@ -345,7 +348,7 @@ sub save_c {
     # XXX Cs should not be needed, but is
     print $FH "
     /* size of collisions */
-    static const unsigned char Cs[] = { ";
+    static const unsigned $ctype Cs[] = { ";
     $i = 0;
     for my $coll (@$C) {
       if ($coll and scalar(@$coll)) {

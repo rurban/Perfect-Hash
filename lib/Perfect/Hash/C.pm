@@ -68,7 +68,7 @@ sub save_h_header {
   use File::Basename 'basename';
   my $base = basename $fileprefix;
   open FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
-  print FH c_funcdecl($ph, $base).";\n";
+  print FH $ph->c_funcdecl($base).";\n";
   close FH;
   return ($fileprefix, $base);
 }

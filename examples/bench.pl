@@ -21,59 +21,6 @@ for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
 ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, $dict);
 @dict = @$dictarr;
 
-sub wmain {
-  my $dict = $_[0];
-  my $opt = $_[1];
-  my $FH;
-  # we need a main
-  open $FH, ">", "main.c";
-  if ($opt =~ /-nul/) {
-    print $FH '#include <string.h>';
-  }
-  print $FH '
-#include <stdio.h>
-#include "phash.h"
-
-static const char *testkeys[] = {
-  ';
-  my $size = int(scalar(@$dict));
-  for my $i (0..$size) {
-    print $FH B::cstring($dict->[$i]),", ";
-    print $FH "\n  " unless $i % 8;
-  }
-  print $FH '
-};
-
-int main () {
-  int i;
-  int err = 0;
-  for (i=0; i < ',$size,'; i++) {
-    long v = phash_lookup(testkeys[i]';
-  if ($opt =~ /-nul/) {
-    print $FH ', strlen(testkeys[i])';
-  }
-  print $FH ');
-    if (v < 0) err++;';
-  #if ($opt !~ /-false-positives/) {
-  if ($opt =~ /-debug-c/) {
-      print $FH '
-    if (i != v) {
-      if (v>=0) err++;
-      printf("%d: %s[%d]=>%ld\n", err, testkeys[i], i, v);
-    }';
-    } else {
-      print $FH '
-    if (i != v) err++;';
-  }
-  #}
-  print $FH '
-  }
-  return err;
-}
-';
-  close $FH;
-}
-
 # 0 1 => 0, 1, 0 1
 # 0 1 2 => 0, 1, 2, 0 1, 0 2, 1 2, 0 1 2
 # 0 1 2 3 => 0, 1, 2, 3, 0 1, 0 2, 1 2, ...
@@ -109,7 +56,7 @@ for my $opt (@opts) {
       next;
     }
     # use size/5 random entries
-    wmain(\@dict, $opt);
+    test_wmain_all($m, \@dict, $opt);
     $i++;
     my $cmd = compile_cmd($ph);
     my $out = "phash.c";

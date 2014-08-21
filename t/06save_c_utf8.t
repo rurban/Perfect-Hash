@@ -27,15 +27,19 @@ my $i = 0;
 my $suffix = "_utf8";
 
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? \@small_dict : \@dict,
-                             $m, @$opts);
+  my $used_dict = $m eq '-pearson8'
+    ? \@small_dict
+    : $m eq '-gperf'
+      ? $dictarr
+      : $dict;
+  my $ph = new Perfect::Hash($used_dict, $m, @$opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m") for 1..4;
     $i++;
     next;
   }
   my ($nul) = grep {$_ eq '-nul'} @$opts;
-  test_wmain_all(\@dict, $opts, $suffix);
+  test_wmain_all($m, \@dict, $opts, $suffix);
   $i++;
   $ph->save_c("phash$suffix");
   # utf8 seqs being split on word boundaries with -switch in comments caused
@@ -47,23 +51,20 @@ for my $m (@$methods) {
     my $cmd = compile_cmd($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
-    TODO: {
-      local $TODO = "$m not yet" if $m eq '-gperf';
-      if (ok(!($retval>>8), "could compile $m")) {
-        my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
-        $retval = $?;
-        TODO: {
-          local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m};
-          is($retval>>8, 0, "no c lookup errors $m");
-          diag($retstr) if $retval>>8 and $ENV{TEST_VERBOSE};
-        }
-      } else {
-        ok(1, "SKIP !compile");
+    if (ok(!($retval>>8), "could compile $m")) {
+      my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
+      $retval = $?;
+      TODO: {
+        local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m};
+        is($retval>>8, 0, "no c lookup errors $m");
+        diag($retstr) if $retval>>8 and $ENV{TEST_VERBOSE};
       }
-    TODO: {
-      local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
-      ok(!($retval>>8), "could run $m");
-      }
+    } else {
+      ok(1, "SKIP !compile");
+    }
+  TODO: {
+    local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m}; # will return errcodes
+    ok(!($retval>>8), "could run $m");
     }
   } else {
     ok(1, "SKIP !save_c") for 1..3;

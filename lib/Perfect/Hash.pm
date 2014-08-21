@@ -18,7 +18,7 @@ our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
                 Switch Gperf);
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-gperf -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
+  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
      -cmph-chd -cmph-bmz8 -cmph-brz);
 
 =head1 NAME

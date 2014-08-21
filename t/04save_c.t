@@ -18,7 +18,12 @@ $Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
 
 my $i = 0;
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m, @$opts);
+  my $used_dict = $m eq '-pearson8'
+    ? $small_dict
+    : $m eq '-gperf'
+      ? $dictarr
+      : $dict;
+  my $ph = new Perfect::Hash($used_dict, $m, @$opts);
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;
@@ -32,7 +37,7 @@ for my $m (@$methods) {
     next;
   }
   my ($nul) = grep {$_ eq '-nul'} @$opts;
-  test_wmain(1, 'AOL', $ph->perfecthash('AOL'), $nul);
+  test_wmain($m, 1, 'AOL', $ph->perfecthash('AOL'), $nul);
   $i++;
   $ph->save_c("phash");
   if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {

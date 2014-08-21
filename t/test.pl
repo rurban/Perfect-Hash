@@ -97,10 +97,17 @@ sub compile_cmd {
 }
 
 sub test_wmain {
-  my ($fp, $key, $value, $suffix, $nul) = @_;
+  my ($m, $fp, $key, $value, $suffix, $nul) = @_;
   use bytes;
   $value = 0 unless $value;
   $suffix = "" unless $suffix;
+  my ($decl, $result, $post_lookup) = ('','v','');
+  if ($m eq "-gperf") {
+    $decl = "struct phash_table *res;";
+    $result = "res";
+    $post_lookup = "v = res ? res->value : -1;";
+    $nul = 1;
+  }
   my $FH;
   # and then we need a main also
   open $FH, ">", "main$suffix.c";
@@ -109,8 +116,11 @@ sub test_wmain {
 #include \"phash$suffix.h\"
 
 int main () {
+  long v;
   int err = 0;
-  long v = phash$suffix\_lookup(", B::cstring($key) . ($nul ? ', '.length($key) : "") . ");
+  $decl
+  $result = phash$suffix\_lookup(", B::cstring($key) . ($nul ? ', '.length($key) : "") . ");
+  $post_lookup
   if (v == $value) {
     printf(\"ok - c lookup exists %ld\\n\", v);
   } else {
@@ -125,7 +135,9 @@ int main () {
     return;
   }
   print $FH "
-  if ((v = phash$suffix\_lookup(\"notexist\"" . ($nul ? ", 8" : "") . ")) == -1) {
+  $result = phash$suffix\_lookup(\"notexist\"" . ($nul ? ", 8" : "") . ");
+  $post_lookup
+  if (v == -1) {
     printf(\"ok - c lookup notexists %ld\\n\", v);
   } else {
     printf(\"not ok - c lookup notexists %ld\\n\", v); err++;
@@ -137,13 +149,22 @@ int main () {
 }
 
 sub test_wmain_all {
-  my ($keys, $opt, $suffix) = @_;
+  my ($m, $keys, $opts, $suffix) = @_;
   use bytes;
   $suffix = "" unless $suffix;
+  my ($decl, $result, $post_lookup) = ('','v','');
+  $opts = join(" ", @$opts) if ref $opts eq 'ARRAY';
+  my ($nul) = $opts =~ /-nul/;
+  if ($m eq "-gperf") {
+    $decl = "struct phash_table *res;";
+    $result = "res";
+    $post_lookup = "v = res ? res->value : -1;";
+    $nul = 1;
+  }
   my $FH;
   # and then we need a main also
   open $FH, ">", "main$suffix.c";
-  if ($opt =~ /-nul/) {
+  if ($nul) {
     print $FH '#include <string.h>';
   }
   print $FH "
@@ -157,21 +178,22 @@ static const char *testkeys[] = {
     print $FH B::cstring($keys->[$i]),", ";
     print $FH "\n  " unless $i % 8;
   }
-  print $FH '
+  print $FH "
 };
 
 int main () {
-  int err = 0;
+  long v;
   int i;
-  for (i=0; i < ',$size,"; i++) {
-    long v = phash$suffix\_lookup(testkeys[i]";
-  if ($opt =~ /-nul/) {
-    print $FH ', strlen(testkeys[i])';
-  }
+  int err = 0;
+  $decl
+  for (i=0; i < $size; i++) {
+    $result = phash$suffix\_lookup(testkeys[i]",
+                $nul ? ', strlen(testkeys[i]));' : ');';
   # skip the last key if empty
-  print $FH ');
-    if (i == ',$size-1,' && testkeys[i]==NULL) continue;';
-  if ($opt =~ /-debug-c/) {
+  print $FH "
+    $post_lookup
+    if (i == ",$size-1,' && testkeys[i]==NULL) continue;';
+  if ($opts =~ /-debug-c/) {
       print $FH '
     if (i != v) {
       if (v>=0) err++;

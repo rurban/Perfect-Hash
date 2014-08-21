@@ -30,7 +30,7 @@ sub new {
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
   my %options = map { $_ => 1 } @_;
-
+  $options{-nul} = 1;
   # see if we can use the gperf executable, return undef if not
   # no PP fallback variant yet
   my $retval = system("gperf --version".($^O eq 'MSWin32' ? "" : " >/dev/null"));
@@ -43,11 +43,11 @@ sub new {
   if (ref $dict eq 'ARRAY') {
     unlink $fn;
     open my $F, ">", $fn;
-    print $F "%%\n";
+    print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     my $i = 0;
     my %dict;
     for (@$dict) {
-      print $F $_."\n" if length($_);
+      print $F "$_,\t$i\n" if length($_);
       $dict{$_} = $i++;
     }
     print $F "%%";
@@ -56,8 +56,9 @@ sub new {
   }
   elsif (ref $dict eq 'HASH') {
     open my $F, ">", $fn;
+    print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     for (sort keys %$dict) {
-      print $F $_,"\t",$dict->{$_},"\n" if length($_);
+      print $F "$_,\t",$dict->{$_},"\n" if length($_);
     }
     print $F "%%";
     close $F;
@@ -142,6 +143,24 @@ empty as Switch needs no external dependencies.
 sub c_include { "" }
 
 sub c_lib { "" }
+
+
+sub c_funcdecl {
+  my ($ph, $base) = @_;
+  my $struct = "struct phash_table";
+  my $decl = "$struct {char *name; const int value; };";
+  if ($ph->option('-nul')) {
+    "
+$decl
+$struct * $base\_lookup(const unsigned char* s, int l)";
+  } else {
+    "
+$decl
+$struct * $base\_lookup(const unsigned char* s)";
+  }
+}
+
+
 
 =back
 

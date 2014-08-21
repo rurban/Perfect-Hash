@@ -19,8 +19,12 @@ my $key = "AOL";
 my $suffix = "_nul";
 
 for my $m (@$methods) {
-  my $ph = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m,
-                             @$opts, "-nul");
+  my $used_dict = $m eq '-pearson8'
+    ? $small_dict
+    : $m eq '-gperf'
+      ? $dictarr
+      : $dict;
+  my $ph = new Perfect::Hash($used_dict, $m, @$opts, "-nul");
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
     ok(1) for 1..4;
@@ -33,7 +37,7 @@ for my $m (@$methods) {
     $i++;
     next;
   }
-  test_wmain(1, $key, $ph->perfecthash($key), $suffix, 1);
+  test_wmain($m, 1, $key, $ph->perfecthash($key), $suffix, 1);
   $i++;
   $ph->save_c("phash$suffix");
   if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {

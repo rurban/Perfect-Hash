@@ -34,12 +34,14 @@ Honored options are: I<-nul>
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
+  my $size;
   # enforce KEYFILE
   my $fn = "phash_keys.tmp";
   if (ref $dict eq 'ARRAY') {
     open my $F, ">", $fn;
     my $i = 0;
     my %dict;
+    $size = scalar @$dict;
     for (@$dict) {
       print $F "$_\n";
       $dict{$_} = $i++;
@@ -54,6 +56,7 @@ sub new {
     }
     #print $F "%%";
     close $F;
+    $size = scalar keys %$dict;
   } elsif (!ref $dict and ! -e $dict) {
     die "wrong dict argument. arrayref, hashref or filename expected";
   } else {
@@ -67,11 +70,13 @@ sub new {
     }
     close $d;
     $dict = \%hash;
+    $size = scalar keys %hash;
   }
   my $ph = _new($class, $fn, @_);
   if (grep /^-false-positives/, @_) {
-    push @$ph, $dict;
+    push @$ph, $dict; # at [3]
   }
+  $ph->[2]->{size} = $size;
   return $ph;
 }
 
@@ -101,6 +106,7 @@ For all CMPH variants.
 
 sub save_c {
   my $ph = shift;
+  my $size = $ph->[2]->{size};
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
 
@@ -119,7 +125,7 @@ sub save_c {
   } else {
     print $FH "strlen(s)";
   }
-  print $FH ");
+  print $FH ") % $size;
 }
 ";
 }

@@ -82,7 +82,7 @@ for my $opt (@opts) {
     }
     printf "%-12s %.06f % .06f %.06f %8d %8d  %s\n",
        $m?substr($m,1):"", $t2, $t0, $t1, $s, $so, $opt;
-    if ($retval>>8) {
+    if ($retval) {
       print "\t\t\twith ", $retval, " errors.\n";
     }
   }

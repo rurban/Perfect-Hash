@@ -99,7 +99,7 @@ Generates a $fileprefix.c file.
 
 =cut
 
-our $proc; # global for the sig alrm handler
+#our $proc; # global for the sig alrm handler
 
 sub save_c {
   my $ph = shift;
@@ -119,11 +119,32 @@ sub save_c {
   my @cmd = ("gperf", @opts, $fn, ">$fileprefix.c");
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
   if ($options->{'-max-time'} and $^O =~ /linux|bsd|solaris|cygwin/) { # timeout
-    local $SIG{'ALRM'} = \&_sigalrm_handler;
-    alarm($options->{'-max-time'});
-    $proc = _spawn($Config{sh}, ($^O eq 'MSWin32' ? "/c" : "-c"), @cmd);
-    wait;
-    alarm(0);
+    use POSIX ":sys_wait_h";
+    my $pid = fork;
+    die "fork" if !defined $pid;
+    if ($pid > 0) {
+      eval {
+        my $secs = 0; my $res;
+        do {
+          sleep ( 1 ); $secs++;
+          $res = waitpid($pid, WNOHANG); # the forked perl
+          warn "pid=$pid, res=$res, err=",$?,"\n" if $options->{'-debug'};
+          $res = -1 if $secs >= $options->{'-max-time'};
+        } while ($res == 0); # check if pid is still running or timed out
+        $res = waitpid($pid, WNOHANG);
+        warn "res=$res, err=",$?,"\n" if $options->{'-debug'};
+        if ($res == 0) { # check if pid is still running. with exec it is not.
+          kill 9, -$pid; # the group
+          warn "timeout: gperf killed\n";
+        }
+      }
+    } elsif ($pid == 0) {
+      setpgrp(0, 0); # with exec sets the process status to T for stopped and traced.
+      # undetectable to waitpid.
+      # however with system it creates a proper detectable and killable child hierarchy.
+      system(join " ", @cmd);
+      exit(0);
+    }
   } else {
     system(join(" ",@cmd));
   }
@@ -131,21 +152,24 @@ sub save_c {
   return $? >> 8;
 }
 
-sub _sigalrm_handler {
-  if ($proc) {
-    # XXX cygwin probably needs /bin/kill
-    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
-    kill 'KILL' => $proc;     # and then the shell
-    warn "timeout: gperf killed\n";
-  }
-}
-
-sub _spawn {
-  my $pid = fork;
-  die "fork" if !defined $pid;
-  exec(@_) if $pid == 0;
-  return $pid;
-}
+#sub _sigalrm_handler {
+#  if ($proc) {
+#    # XXX cygwin probably needs /bin/kill
+#    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
+#    kill 'KILL' => $proc;     # and then the shell
+#    warn "timeout: gperf killed\n";
+#  }
+#}
+#
+#sub _spawn {
+#  my $pid = fork;
+#  die "fork" if !defined $pid;
+#  if ($pid == 0) {
+#    setpgrp(0,0);
+#    exec(@_); exit(0);
+#  }
+#  return $pid;
+#}
 
 =item perfecthash $ph, $key
 

@@ -56,7 +56,10 @@ for my $opt (@opts) {
     }
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
-    my $ph = new Perfect::Hash($custom_size ? \@dict : $dict, $m, split(/ /,$opt), qw(-max-time 60));
+    my $ph = new Perfect::Hash(
+      $custom_size ? \@dict : $dict, $m,
+      split(/ /,$opt),
+      ($opt =~ /-max-time/ ? () : qw(-max-time 20)));
     $t0 = tv_interval($t0);
     unless ($ph) {
       $i++;

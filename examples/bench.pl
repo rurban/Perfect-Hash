@@ -44,7 +44,6 @@ my @opts = @{&powerset(@$opts)};
 @opts = (join " ",@$opts) if grep /-1opt/, @$opts;
 for my $opt (@opts) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
-  # $opt = "-max-time 20 ".$opt;
   my @try_methods = @$methods;
   for my $m (@try_methods) {
     my $old_custom_size;
@@ -57,7 +56,7 @@ for my $opt (@opts) {
     }
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
-    my $ph = new Perfect::Hash($custom_size ? \@dict : $dict, $m, split(/ /,$opt));
+    my $ph = new Perfect::Hash($custom_size ? \@dict : $dict, $m, split(/ /,$opt), qw(-max-time 60));
     $t0 = tv_interval($t0);
     unless ($ph) {
       $i++;

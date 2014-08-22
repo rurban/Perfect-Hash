@@ -99,7 +99,7 @@ Generates a $fileprefix.c file.
 
 =cut
 
-#our $proc; # global for the sig alrm handler
+our $proc; # global for the sig alrm handler
 
 sub save_c {
   my $ph = shift;
@@ -118,33 +118,34 @@ sub save_c {
   # but if we got a shell we need to kill gperf and the shell
   my @cmd = ("gperf", @opts, $fn, ">$fileprefix.c");
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
-  #if ($options->{'-max-time'}) { # timeout
-  #  local $SIG{'ALRM'} = \&_sigalrm_handler;
-  #  alarm($options->{'-max-time'});
-  #  $proc = _spawn($Config{sh}, ($^O eq 'MSWin32' ? "/c" : "-c"), @cmd);
-  #  wait;
-  #  alarm(0);
-  #} else {
+  if ($options->{'-max-time'} and $^O =~ /linux|bsd|solaris|cygwin/) { # timeout
+    local $SIG{'ALRM'} = \&_sigalrm_handler;
+    alarm($options->{'-max-time'});
+    $proc = _spawn($Config{sh}, ($^O eq 'MSWin32' ? "/c" : "-c"), @cmd);
+    wait;
+    alarm(0);
+  } else {
     system(join(" ",@cmd));
-  #}
+  }
   unlink $fn unless $? >> 8;
   return $? >> 8;
 }
 
-#sub _sigalrm_handler {
-#  if ($proc) {
-#    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
-#    kill 'KILL' => $proc;     # and then the shell
-#    warn "timeout: gperf killed\n";
-#  }
-#}
-#
-#sub _spawn {
-#  my $pid = fork;
-#  die "fork" if !defined $pid;
-#  exec(@_) if $pid == 0;
-#  return $pid;
-#}
+sub _sigalrm_handler {
+  if ($proc) {
+    # XXX cygwin probably needs /bin/kill
+    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
+    kill 'KILL' => $proc;     # and then the shell
+    warn "timeout: gperf killed\n";
+  }
+}
+
+sub _spawn {
+  my $pid = fork;
+  die "fork" if !defined $pid;
+  exec(@_) if $pid == 0;
+  return $pid;
+}
 
 =item perfecthash $ph, $key
 

@@ -241,22 +241,6 @@ CODE:
 OUTPUT:
     RETVAL
 
-UV
-_old_hash(key, seed=0)
-  SV* key
-  UV  seed;
-CODE:
-    if (items < 2) {
-      if (SvPOK(key))
-        RETVAL = crc32(0, CRCSTR(key), SvCUR(key));
-      else
-        RETVAL = crc32(0, NULL, 0);
-    }
-	else
-	  RETVAL = crc32(seed, CRCSTR(key), SvCUR(key));
-OUTPUT:
-    RETVAL
-
 IV
 nvecget(v, index, bits)
   SV* v
@@ -352,10 +336,10 @@ CODE:
       XSRETURN_UV(0);
     }
     for (i = 0; i < (len % 2 ? len -1 : len); i++) {
-      d = SvIVX(AvARRAY(H)[ d ^ *(short*)s++ ]);
+      d = SvIVX(AvARRAY(H)[ (unsigned short)(d ^ *(unsigned short*)s++) ]);
     }
     if (len % 2)
-      d = SvIVX(AvARRAY(H)[ d ^ SvPVX(key)[len-1] ]);
+      d = SvIVX(AvARRAY(H)[ (unsigned short)(d ^ SvPVX(key)[len-1]) ]);
     RETVAL = d % size;
 OUTPUT:
     RETVAL
@@ -375,7 +359,7 @@ CODE:
     unsigned char *s = SvPVX(key);
     const int len = SvCUR(key);
     unsigned char h[256];
-    unsigned int *hp = (unsigned int *)h;
+    unsigned int *hi = (unsigned int *)h;
     int limit;
     register int i = 0;
     register long d = 0;
@@ -386,10 +370,10 @@ CODE:
       h[i] = SvIVX(AvARRAY(H)[i]);
     }
     for (i=0; i < len/4; i += 4, s += 4) {
-      d = hp[ ((unsigned int)d ^ *(unsigned int*)s) % 64];
+      d = hi[ ((unsigned int)d ^ *(unsigned int*)s) % 64 ];
     }
     for (; i < len; i++, s++) {
-      d = h[ (d % 256) ^ *s ];
+      d = h[ (unsigned char)((d % 256) ^ *s) ];
     }
     RETVAL = d % size;
 OUTPUT:

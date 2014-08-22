@@ -81,7 +81,38 @@ sub opt_dict_size {
   return ($dict, \@dict, $size, $custom_size);
 }
 
-sub compile_cmd {
+sub compile_shared {
+  my $ph = shift;
+  my $suffix = shift || "";
+  my $opt = $Config{optimize};
+  $opt =~ s/-O[xs12]/-O3/;
+  my $dlext = $Config{dlext};
+  my $cmd = $Config{cc}." -shared ".$ph->c_include()." -I. $opt ".ccflags
+           ." -o phash$suffix$dlext phash$suffix.c";
+  #if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
+  #  $cmd =~ s/-o phash$suffix$dlext/-nologo -Fo phash$suffix.dll/;
+  #}
+  return $cmd;
+}
+
+sub link_shared {
+  my $ph = shift;
+  my $suffix = shift || "";
+  my $opt = $Config{optimize};
+  $opt =~ s/-O[xs12]/-O3/;
+  my $dlext = $Config{dlext};
+  my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
+           ." -o phash$suffix main$suffix.c phash$suffix$dlext ".ldopts;
+  chomp $cmd; # oh yes! ldopts contains an ending \n
+  if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
+    $cmd =~ s/-o phash$suffix/-nologo -Fe phash$suffix.exe/;
+  }
+  $cmd .= $ph->c_lib();
+  return $cmd;
+}
+
+
+sub compile_static {
   my $ph = shift;
   my $suffix = shift || "";
   my $opt = $Config{optimize};

@@ -41,7 +41,7 @@ for my $m (@$methods) {
   $i++;
   $ph->save_c("phash");
   if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
-    my $cmd = compile_cmd($ph);
+    my $cmd = compile_static($ph);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {

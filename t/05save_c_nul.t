@@ -41,7 +41,7 @@ for my $m (@$methods) {
   $i++;
   $ph->save_c("phash$suffix");
   if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {
-    my $cmd = compile_cmd($ph, $suffix);
+    my $cmd = compile_static($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {

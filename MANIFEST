@@ -29,6 +29,8 @@ lib/Perfect/Hash/HanovPP.pm
 lib/Perfect/Hash/MoreHashes.pm
 lib/Perfect/Hash/Pearson.pm
 lib/Perfect/Hash/PearsonNP.pm
+lib/Perfect/Hash/Pearson16.pm
+lib/Perfect/Hash/Pearson32.pm
 lib/Perfect/Hash/Pearson8.pm
 lib/Perfect/Hash/Switch.pm
 lib/Perfect/Hash/Urban.pm

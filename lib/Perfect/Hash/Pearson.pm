@@ -380,13 +380,13 @@ sub save_c {
   }
   elsif (ref $ph eq 'Perfect::Hash::Pearson16') {
     print $FH "
-    short hs;
+    unsigned short hs;
     int i;
     for (i = 0; i < (l % 2 ? l -1 : l); i++) {
-      hs = $base\[ hs ^ *(short*)s++ ];
+      hs = $base\[ (unsigned short)(hs ^ *(unsigned short*)s++) ];
     }
     if (l % 2)
-      hs = $base\[ hs ^ key[l-1] ];
+      hs = $base\[ (unsigned short)(hs ^ key[l-1]) ];
     h = hs;";
   } elsif ($ph->option('-nul')) {
     print $FH "

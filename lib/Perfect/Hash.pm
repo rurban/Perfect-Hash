@@ -10,9 +10,12 @@ use Time::HiRes qw(gettimeofday tv_interval);
 use Exporter 'import';
 our @EXPORT = qw(_dict_init gettimeofday tv_interval);
 
-# Not yet:      Bob
-#               CMPH::BMZ8 CMPH::BRZ Cuckoo RobinHood HAMT
-our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP Pearson16 Pearson32
+# Not all these methods are for perfect hashes. we generate a bunch of fast static
+# lookup methods and check which is the best.
+# Not yet:      Bob CMPH::BMZ8 CMPH::BRZ
+#               Double Cuckoo RobinHood HAMT
+our @algos = qw(HanovPP Hanov Urban
+                Pearson PearsonNP Pearson8 Pearson32 Pearson16
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
                 Switch Gperf);
@@ -50,21 +53,23 @@ Perfect::Hash - generate perfect hashes, library backend for phash
 =head1 DESCRIPTION
 
 Perfect hashing is a technique for building a static hash table with no
-collisions. Which means guaranteed constant O(1) access time, and for minimal
-perfect hashes even guaranteed minimal size. It is only possible to build one
-when we know all of the keys in advance. Minimal perfect hashing implies that
-the resulting table contains one entry for each key, and no empty slots.
+collisions, only lookup, no insert and delete methods. Which means guaranteed
+constant O(1) access time, and for minimal perfect hashes even guaranteed
+minimal size. It is only possible to build one when we know all of the keys in
+advance. Minimal perfect hashing implies that the resulting table contains one
+entry for each key, and no empty slots.
 
 As input we need to provide a set of unique keys, either as arrayref or
 hashref or as keyfile. The keys can so far only be strings (will be extended
 to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
-As generation algorithm there exist various hashing and other fast lookup methods:
-Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
-Not all generated lookup methods are perfect hashes per se. We also implemented
-traditional methods which might be faster for smaller key sets, like nested switches,
-hash array mapped tries or ordinary linear addressing hash tables.
+As generation algorithm there exist various perfect hashing and other fast
+lookup methods: Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo,
+Switch, RobinHood, ...  Not all generated lookup methods are perfect hashes
+per se. We also implemented traditional methods which might be faster for
+smaller key sets, like nested switches, hash array mapped tries or ordinary
+linear addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -76,8 +81,10 @@ The best algorithm used in Hanov and various others is derived from
 Fabiano C. Botelho, and Martin Dietzfelbinger
 L<http://cmph.sourceforge.net/papers/esa09.pdf>
 
-There exist various C and a simple python script to generate code to
-access perfect hashes and minimal versions thereof, but nothing to use
+Prior art to phash:
+
+There exist some executables, a library and a simple python script to generate
+code to access perfect hashes and minimal versions thereof, but nothing to use
 easily. C<gperf> is not very well suited to create big maps and cannot deal
 with certain anagrams, but creates fast C code for small dictionaries.
 C<Pearson> hashes are simplier and fast for small machines, but not guaranteed
@@ -468,8 +475,11 @@ L<Perfect::Hash::Urban>,
 L<Perfect::Hash::Pearson>,
 L<Perfect::Hash::Pearson8>,
 L<Perfect::Hash::PearsonNP>,
+L<Perfect::Hash::Pearson32>,
+L<Perfect::Hash::Pearson16>,
 L<Perfect::Hash::Bob> I<(not yet)>,
-L<Perfect::Hash::Gperf> I<(not yet)>,
+L<Perfect::Hash::Gperf>,
+L<Perfect::Hash::Switch>,
 L<Perfect::Hash::CMPH::CHM>,
 L<Perfect::Hash::CMPH::BMZ>,
 L<Perfect::Hash::CMPH::BMZ8> I<(not yet)>,

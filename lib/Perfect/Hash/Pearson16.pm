@@ -12,8 +12,9 @@ use bytes;
 
 =head1 DESCRIPTION
 
-Generate non-perfect pearson hash with an optimized 16bit hash function,
-a big 16 bit table, and static binary tree collision resolution.
+Generate non-perfect pearson hash with an optimized 16bit hash
+function, a big 16bit table (size: 65536 shorts), and static binary
+tree collision resolution.
 
 =head1 METHODS
 
@@ -47,9 +48,9 @@ sub new {
 #  my $size = $ph->[0];
 #  my $H = $ph->[1];
 #  my $d = 0;
-#  # process in 32bit chunks
-#  for my $c (split "", $key) {
-#    $d = $H->[$d ^ ord($c)];
+#  # process in 16bit chunks
+#  for my $c (unpack("S*", $key) {
+#    $d = $H->[$d ^ $c];
 #  }
 #  return $d % $size;
 #}
@@ -78,7 +79,7 @@ C<-false-positives>.
 
 =cut
 
-# local testing: pb -d lib/Perfect/Hash/Pearson16.pm examples/words20
+# local testing: pb -d lib/Perfect/Hash/Pearson16.pm examples/words500
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearsonpp")'
 unless (caller) {
   &Perfect::Hash::_test(shift @ARGV, "-pearson16", @ARGV)

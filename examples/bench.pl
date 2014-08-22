@@ -9,9 +9,6 @@ use lib 't';
 require "test.pl";
 
 my ($default, $methods, $opts) = opt_parse_args();
-if ($default) { # -urban fixed with 6b1a94e46f893b
-  push @$methods, "-switch";
-}
 # do not compile files larger than this (in bytes)
 # 147.700.000 was generated in 25secs and compiled in 20sec with a run-time of 0.005429
 # but 153.000.000 takes extremely long with -O3. -O0 is fine though.
@@ -53,7 +50,7 @@ for my $opt (@opts) {
     next if $m eq '';
     next if $m eq '-pearson8' and $size > 255;
     next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
-    if ($m eq '-gperf') {
+    if ($m eq '-gperf') { # hack to pass an arrayref to -gperf, no file.
       $old_custom_size = $custom_size;
       $custom_size = 1;
     }
@@ -71,7 +68,7 @@ for my $opt (@opts) {
     # use size/5 random entries
     test_wmain_all($m, \@dict, $opt);
     $i++;
-    my $cmd = compile_cmd($ph);
+    my $cmd = compile_static($ph);
     my $out = "phash.c";
     unlink $out;
     $t1 = [gettimeofday];
@@ -79,12 +76,12 @@ for my $opt (@opts) {
     my $retval;
     if (-f $out and -s $out) {
       if (-s $out > $max_c_size) {
-        warn "Error: $out too large to be compiled under a minute: ",-s $out,"\n";
-        $retval = -1;
-      } else {
-        print "$cmd\n" if $ENV{TEST_VERBOSE};
-        $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+        warn "Warning: disabling -O3, $out too large: ",-s $out,"\n";
+        $cmd =~ s/-O[23sx]/-O0/g;
+        #$retval = -1;
       }
+      print "$cmd\n" if $ENV{TEST_VERBOSE};
+      $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
     } else {
       $retval = -1;
     }

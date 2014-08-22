@@ -13,7 +13,7 @@ use bytes;
 =head1 DESCRIPTION
 
 Generate non-perfect pearson hash with an optimized 32bit hash function,
-and static binary tree collision resolution.
+a pearson table of size 256 and static binary tree collision resolution.
 
 =head1 METHODS
 

@@ -86,8 +86,9 @@ sub compile_shared {
   my $suffix = shift || "";
   my $opt = $Config{optimize};
   $opt =~ s/-O[xs12]/-O3/;
-  my $dlext = $Config{dlext};
+  my $dlext = ".".$Config{dlext};
   my $cmd = $Config{cc}." -shared ".$ph->c_include()." -I. $opt ".ccflags
+           ." ".$Config{cccdlflags}
            ." -o phash$suffix$dlext phash$suffix.c";
   #if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
   #  $cmd =~ s/-o phash$suffix$dlext/-nologo -Fo phash$suffix.dll/;
@@ -100,8 +101,9 @@ sub link_shared {
   my $suffix = shift || "";
   my $opt = $Config{optimize};
   $opt =~ s/-O[xs12]/-O3/;
-  my $dlext = $Config{dlext};
+  my $dlext = ".".$Config{dlext};
   my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
+           ." ".$Config{cccdlflags}
            ." -o phash$suffix main$suffix.c phash$suffix$dlext ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
   if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
@@ -189,15 +191,14 @@ sub test_wmain_all {
   if ($m eq "-gperf") {
     $decl = "struct phash_table *res;";
     $result = "res";
-    $post_lookup = "v = res ? res->value : -1;";
+    $post_lookup = "
+    v = res ? res->value : -1;";
     $nul = 1;
   }
   my $FH;
   # and then we need a main also
   open $FH, ">", "main$suffix.c";
-  if ($nul) {
-    print $FH '#include <string.h>';
-  }
+  print $FH '#include <string.h>';
   print $FH "
 #include <stdio.h>
 #include \"phash$suffix.h\"
@@ -221,9 +222,8 @@ int main () {
     $result = phash$suffix\_lookup(testkeys[i]",
                 $nul ? ', strlen(testkeys[i]));' : ');';
   # skip the last key if empty
-  print $FH "
-    $post_lookup
-    if (i == ",$size-1,' && testkeys[i]==NULL) continue;';
+  print $FH "$post_lookup
+    if (i == ",$size-1,' && (testkeys[i]==NULL || !strlen(testkeys[i]))) continue;';
   if ($opts =~ /-debug-c/) {
       print $FH '
     if (i != v) {

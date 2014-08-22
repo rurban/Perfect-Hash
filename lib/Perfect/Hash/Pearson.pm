@@ -436,7 +436,7 @@ sub save_c {
   if (!$ph->false_positives) { # check keys
     # we cannot use memcmp_const_str nor memcmp_const_len because we don't know K[h] nor l
     print $FH "
-    if (memcmp(K[h], key, l)) h = -1;";
+    if (l == 0 || memcmp(K[h], key, l)) h = -1;";
   }
   print $FH "
     return h;

@@ -321,9 +321,9 @@ our %algo_methods = map {
 sub _dict_init {
   my $dict = shift;
   if (ref $dict eq 'ARRAY') {
-    #if (sprintf("%b", scalar @$dict) =~ /000+$/) {
-    #  push @$dict, "";
-    #}
+    if (sprintf("%b", scalar @$dict) =~ /000+$/) {
+      push @$dict, "";
+    }
     return ($dict, []);
   }
   elsif (ref $dict ne 'HASH') {
@@ -333,7 +333,7 @@ sub _dict_init {
         local $/;
         @keys = split /\n/, <$d>;
         #TODO: check for key<ws>value or just lineno
-        #push @keys, "" if sprintf("%b", scalar @keys) =~ /000+$/;
+        push @keys, "" if sprintf("%b", scalar @keys) =~ /000+$/;
       }
       close $d;
       return (\@keys, []);
@@ -356,10 +356,10 @@ sub _dict_init {
   }
   # XXX some hash funcs are sensitive to collisions with a bad modulo, crc32 e.g.
   # searching for such an empty key will not work.
-  #if (sprintf("%b", $size) =~ /000+$/) {
-  #  push @keys, "";
-  #  push @values, -1;
-  #}
+  if (sprintf("%b", $size) =~ /000+$/) {
+    push @keys, "";
+    push @values, -1;
+  }
   return (\@keys, \@values);
 }
 

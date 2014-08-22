@@ -4,6 +4,7 @@
 use strict;
 use Perfect::Hash;
 use B ();
+use Config;
 
 use lib 't';
 require "test.pl";
@@ -68,9 +69,15 @@ for my $opt (@opts) {
     # use size/5 random entries
     test_wmain_all($m, \@dict, $opt);
     $i++;
-    my $cmd = compile_static($ph);
     my $out = "phash.c";
     unlink $out;
+    my ($cmd, $cmd1);
+    if ($opt =~ /-shared/) {
+      $cmd = compile_shared($ph);
+      $cmd1 = link_shared($ph);
+    } else {
+      $cmd = compile_static($ph);
+    }
     $t1 = [gettimeofday];
     $ph->save_c("phash");
     my $retval;
@@ -82,6 +89,10 @@ for my $opt (@opts) {
       }
       print "$cmd\n" if $ENV{TEST_VERBOSE};
       $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+      if ($cmd1) {
+        print "$cmd1\n" if $ENV{TEST_VERBOSE};
+        $retval = system($cmd1); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+      }
     } else {
       $retval = -1;
     }
@@ -89,9 +100,12 @@ for my $opt (@opts) {
     my $s = -s $out;
     my $so = 0;
     if ($retval == 0) {
-      $so = -s "phash";
+      $so = $cmd1 ? -s "phash.".$Config{dlext} : -s "phash";
       $t2 = [gettimeofday];
-      my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
+      my $callprefix = $^O eq 'MSWin32' ? ""
+        : $^O eq 'darwin' ? "DYLD_LIBRARY_PATH=. ./"
+        : "LD_LIBRARY_PATH=. ./";
+      my $retstr = `${callprefix}phash`;
       $t2 = tv_interval($t2);
       $retval = $? >> 8;
       $t2 = 0 if $retval and $t2 == 0.0;

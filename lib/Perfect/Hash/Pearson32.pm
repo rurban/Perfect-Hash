@@ -35,7 +35,7 @@ pearson lookup table of size 255.
 =cut
 
 sub new {
-  return Perfect::Hash::PearsonNP::new(@_);
+  goto &Perfect::Hash::PearsonNP::new;
 }
 
 =head2 hash obj, $key

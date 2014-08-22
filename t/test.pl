@@ -222,17 +222,18 @@ int main () {
     $result = phash$suffix\_lookup(testkeys[i]",
                 $nul ? ', strlen(testkeys[i]));' : ');';
   # skip the last key if empty
-  print $FH "$post_lookup
-    if (i == ",$size-1,' && (testkeys[i]==NULL || !strlen(testkeys[i]))) continue;';
+  print $FH $post_lookup;
   if ($opts =~ /-debug-c/) {
       print $FH '
     if (i != v) {
+      if (i == ',$size-1,' && (testkeys[i]==NULL || !strlen(testkeys[i]))) continue;
       if (v>=0) err++;
       printf("%d: %s[%d]=>%ld\n", err, testkeys[i], i, v);
     }';
     } else {
       print $FH '
     if (i != v) {
+      if (i == ',$size-1,' && (testkeys[i]==NULL || !strlen(testkeys[i]))) continue;
       printf("not ok - c lookup %s at %d => %ld\n", testkeys[i], i, v); err++;
     }';
   }

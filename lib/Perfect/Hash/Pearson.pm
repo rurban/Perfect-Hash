@@ -60,11 +60,11 @@ sub new {
   # round up to 2 complements, with ending 1111's
   my $i = 8; # start with 255 to avoid % $hsize in hash
   while (2**$i++ < $size) {}
-  my $hsize = 2**($i-1) - 1;
+  my $hsize = 2**($i-1);
   print "size=$size hsize=$hsize\n" if $options->{'-debug'};
-  my @H; $#H = $hsize;
+  my @H; $#H = $hsize-1;
   $i = 0;
-  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
+  $H[$_] = $i++ for 0 .. $hsize-1; # init with ordered sequence
   my $H = \@H;
   my $ph = bless [$size, $H], $class;
 
@@ -121,14 +121,17 @@ sub shuffle {
   # the "Knuth Shuffle", a random shuffle to create good permutations
   my $ph = $_[0];
   my $H = $ph->[1];
-  my $last = scalar(@$H);
+  my $last = scalar(@$H)-1;
+  #warn $last if $last != 255;
   for my $i (0 .. $last) {
     my $tmp = $H->[$i];
-    my $j = $i + int rand($last-$i);
+    my $j = $i + int rand($last-$i); #warn $j if $j > $last;
     $H->[$i]= $H->[$j];
     $H->[$j] = $tmp;
   }
-  delete $H->[$last];
+  #warn $last," ",$H->[$last-1]," ",$H->[$last],"\n";
+  #warn $H->[$last+1], $last if scalar(@$H) != 256;
+  #delete $H->[$last+1];
 }
 
 =head2 cost
@@ -375,7 +378,7 @@ sub save_c {
       h = hi[ ((unsigned int)h ^ *(unsigned int*)s) % 64];
     }
     for (; i < l; i++, s++) {
-      h = $base\[ (h % 256) ^ *s ];
+      h = $base\[ (($htype)h ^ *s) % 256 ];
     }";
   }
   elsif (ref $ph eq 'Perfect::Hash::Pearson16') {
@@ -394,10 +397,10 @@ sub save_c {
     for (i=0; i<l; i++) {";
       if (ref $ph eq 'Perfect::Hash::Pearson') {
         print $FH "
-        h = $base\[(h ^ s[i]) % $hsize];";
+        h = $base\[(($htype)h ^ s[i]) % $hsize];";
       } else {
         print $FH "
-        h = $base\[h ^ s[i]];";
+        h = $base\[($htype)h ^ s[i]];";
       }
       print $FH "
     }";

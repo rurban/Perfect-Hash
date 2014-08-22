@@ -59,12 +59,11 @@ sub new {
 
   # Step 1: Generate @H
   # round up to ending 1111's
-  my $hsize = 255;
+  my $hsize = 256;
   #print "size=$size hsize=$hsize\n";
-  # TODO: bitvector string with vec
-  my @H; $#H = $hsize;
+  my @H; $#H = $hsize-1;
   my $i = 0;
-  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
+  $H[$_] = $i++ for 0 .. $hsize-1; # init with ordered sequence
   my $H = \@H;
   my $ph = bless [$size, $H], $class;
 

@@ -51,10 +51,10 @@ sub new {
   my $last = $size-1;
 
   # Step 1: Generate @H
-  my $hsize = ($class =~ /::Pearson16$/ ? 65536 : 255);
-  my @H; $#H = $hsize;
+  my $hsize = ($class =~ /::Pearson16$/ ? 65536 : 256);
+  my @H; $#H = $hsize-1;
   my $i = 0;
-  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
+  $H[$_] = $i++ for 0 .. $hsize-1; # init with ordered sequence
   my $H = \@H;
   my $ph = bless [$size, $H], $class;
 

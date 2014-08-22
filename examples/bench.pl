@@ -12,6 +12,10 @@ my ($default, $methods, $opts) = opt_parse_args();
 if ($default) { # -urban fixed with 6b1a94e46f893b
   push @$methods, "-switch";
 }
+# do not compile files larger than this (in bytes)
+# 147.700.000 was generated in 25secs and compiled in 20sec with a run-time of 0.005429
+# but 153.000.000 takes extremely long with -O3. -O0 is fine though.
+my $max_c_size = 150_000_000;
 
 my ($dict, @dict, $dictarr, $size, $custom_size);
 for (qw(examples/words /usr/share/dict/words /usr/dict/words)) {
@@ -42,11 +46,17 @@ my @opts = @{&powerset(@$opts)};
 @opts = (join " ",@$opts) if grep /-1opt/, @$opts;
 for my $opt (@opts) {
   $opt = join(" ", @$opt) if ref $opt eq 'ARRAY';
+  # $opt = "-max-time 20 ".$opt;
   my @try_methods = @$methods;
   for my $m (@try_methods) {
+    my $old_custom_size;
     next if $m eq '';
     next if $m eq '-pearson8' and $size > 255;
     next if $m =~ /^-cmph/ and $opt =~ /-false-positives/;
+    if ($m eq '-gperf') {
+      $old_custom_size = $custom_size;
+      $custom_size = 1;
+    }
     my ($t0, $t1, $t2) = (0.0, 0.0, 0.0);
     $t0 = [gettimeofday];
     my $ph = new Perfect::Hash($custom_size ? \@dict : $dict, $m, split(/ /,$opt));
@@ -54,6 +64,9 @@ for my $opt (@opts) {
     unless ($ph) {
       $i++;
       next;
+    }
+    if ($m eq '-gperf') {
+       $custom_size = $old_custom_size;
     }
     # use size/5 random entries
     test_wmain_all($m, \@dict, $opt);
@@ -65,8 +78,13 @@ for my $opt (@opts) {
     $ph->save_c("phash");
     my $retval;
     if (-f $out and -s $out) {
-      print "$cmd\n" if $ENV{TEST_VERBOSE};
-      $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+      if (-s $out > $max_c_size) {
+        warn "Error: $out too large to be compiled under a minute: ",-s $out,"\n";
+        $retval = -1;
+      } else {
+        print "$cmd\n" if $ENV{TEST_VERBOSE};
+        $retval = system($cmd); # ($^O eq 'MSWin32' ? "" : " 2>/dev/null"));
+      }
     } else {
       $retval = -1;
     }
@@ -79,6 +97,7 @@ for my $opt (@opts) {
       my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
       $t2 = tv_interval($t2);
       $retval = $? >> 8;
+      $t2 = 0 if $retval and $t2 == 0.0;
     }
     printf "%-12s %.06f % .06f %.06f %8d %8d  %s\n",
        $m?substr($m,1):"", $t2, $t0, $t1, $s, $so, $opt;

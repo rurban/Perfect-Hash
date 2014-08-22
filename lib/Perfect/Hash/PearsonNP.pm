@@ -43,52 +43,52 @@ pearson lookup table of size 255.
 sub new {
   my $class = shift or die;
   my $dict = shift; # hashref or arrayref or filename
-  my $max_time = grep { $_ eq '-max-time' and shift } @_;
-  $max_time = 60 unless $max_time;
-  my %options = map {$_ => 1 } @_;
-  $options{'-max-time'} = $max_time;
+  my $options = Perfect::Hash::_handle_opts(@_);
+  $options->{'-max-time'} = 60 unless exists $options->{'-max-time'};
+  my $max_time = $options->{'-max-time'};
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size-1;
 
   # Step 1: Generate @H
-  # TODO: bitvector string with vec
-  my @H; $#H = 255;
+  my $hsize = ($class =~ /::Pearson16$/ ? 65536 : 255);
+  my @H; $#H = $hsize;
   my $i = 0;
-  $H[$_] = $i++ for 0 .. 255; # init with ordered sequence
+  $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
+  my $ph = bless [$size, $H], $class;
+
   # expected max: birthday paradoxon
-  my ($C, @best, $sum, $maxsum, $max, $counter, $maxcount);
+  my ($C, $best, $sum, $maxsum, $max, $counter, $maxcount);
   $maxcount = 30; # when to stop the search. exhaustive is 255!
   # Step 2: shuffle @H until we get a good max, only 0 or 1
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
-    shuffle($H);
-    ($sum, $max) = cost($H, $keys);
+    $ph->shuffle();
+    ($sum, $max) = $ph->cost($keys);
     $counter++;
     #print "$counter sum=$sum, max=$max\n";
-    if (!defined($maxsum) or $sum < $maxsum or $max == 1) {
+    if (!defined($maxsum) or ($sum < $maxsum) or ($max == 1)) {
       $maxsum = $sum;
-      @best = @$H;
+      $best = $ph;
     }
   } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
 
   if ($max > 1) {
-    @H = @best;
-    $H = \@H;
-    ($sum, $max) = cost($H, $keys);
+    $ph = $best;
+    ($sum, $max) = $ph->cost($keys);
     # Step 3: Store collisions as no perfect hash was found
     print "list of collisions: sum=$sum, maxdepth=$max\n"
-      if $options{'-debug'};
-    $C = collisions($H, $keys, $values);
+      if $options->{'-debug'};
+    $C = $ph->collisions($keys, $values);
   }
 
-  if (!exists $options{'-false-positives'}) {
-    return bless [$size, $H, $C, \%options, $keys], $class;
+  if (!exists $options->{'-false-positives'}) {
+    return bless [$size, $H, $C, $options, $keys], $class;
   } else {
-    return bless [$size, $H, $C, \%options], $class;
+    return bless [$size, $H, $C, $options], $class;
   }
 }
 
@@ -109,9 +109,8 @@ the given dictionary. If not, a wrong index will be returned.
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $H = $ph->[1];
+  my $v = $ph->hash($key);
   my $C = $ph->[2];
-  my $v = hash($H, $key, $ph->[0]);
   # check collisions. todo: binary search
   if ($C and $C->[$v]) {
     if (@{$C->[$v]} > 1) {

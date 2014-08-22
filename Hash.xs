@@ -292,3 +292,105 @@ CODE:
   else if (bits == 64)
     *(long long*)((long long*)V + index) = (long long)value;
 #endif
+
+MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Pearson
+
+PROTOTYPES: DISABLE
+
+UV
+xs_hash(ph, key)
+  SV* ph
+  SV* key
+CODE:
+    AV *ref = (AV*)SvRV(ph);
+    int size = SvIVX(AvARRAY(ref)[0]);
+    AV *H = (AV*)SvRV(AvARRAY(ref)[1]);
+    long d = 0;
+    int hsize = AvFILL(H);
+    register int i = 0;
+    assert(SvTYPE(H) == SVt_PVAV);
+    if (!SvPOK(key)) {
+      XSRETURN_UV(0);
+    }
+    if (hsize == 256) {
+      unsigned char *s = SvPVX(key);
+      unsigned char h[256];
+      for (; i < 256; i++) {
+        h[i] = SvIVX(AvARRAY(H)[i]);
+      }
+      for (i=0; i < SvCUR(key); i++) {
+        d = h[ d ^ *s++ ];
+      }
+    }
+    else {
+      unsigned char *s = SvPVX(key);
+      for (; i < SvCUR(key); i++) {
+        d = SvIVX(AvARRAY(H)[(d ^ *s++) % hsize]);
+      }
+    }
+    RETVAL = d % size;
+OUTPUT:
+    RETVAL
+
+MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Pearson16
+
+PROTOTYPES: DISABLE
+
+UV
+hash(ph, key)
+  SV* ph
+  SV* key
+CODE:
+    AV *ref = (AV*)SvRV(ph);
+    int size = SvIVX(AvARRAY(ref)[0]);
+    AV *H = (AV*)SvRV(AvARRAY(ref)[1]);
+    unsigned char *s = SvPVX(key);
+    const int len = SvCUR(key);
+    register int i;
+    register unsigned short d = 0;
+    if (!SvPOK(key) || !SvCUR(key)) {
+      XSRETURN_UV(0);
+    }
+    for (i = 0; i < (len % 2 ? len -1 : len); i++) {
+      d = SvIVX(AvARRAY(H)[ d ^ *(short*)s++ ]);
+    }
+    if (len % 2)
+      d = SvIVX(AvARRAY(H)[ d ^ SvPVX(key)[len-1] ]);
+    RETVAL = d % size;
+OUTPUT:
+    RETVAL
+
+MODULE = Perfect::Hash	PACKAGE = Perfect::Hash::Pearson32
+
+PROTOTYPES: DISABLE
+
+UV
+hash(ph, key)
+  SV* ph
+  SV* key
+CODE:
+    AV *ref = (AV*)SvRV(ph);
+    int size = SvIVX(AvARRAY(ref)[0]);
+    AV *H = (AV*)SvRV(AvARRAY(ref)[1]);
+    unsigned char *s = SvPVX(key);
+    const int len = SvCUR(key);
+    unsigned char h[256];
+    unsigned int *hp = (unsigned int *)h;
+    int limit;
+    register int i = 0;
+    register long d = 0;
+    if (!SvPOK(key) || !SvCUR(key)) {
+      XSRETURN_UV(0);
+    }
+    for (; i < 256; i++) {
+      h[i] = SvIVX(AvARRAY(H)[i]);
+    }
+    for (i=0; i < len/4; i += 4, s += 4) {
+      d = hp[ ((unsigned int)d ^ *(unsigned int*)s) % 64];
+    }
+    for (; i < len; i++, s++) {
+      d = h[ (d % 256) ^ *s ];
+    }
+    RETVAL = d % size;
+OUTPUT:
+    RETVAL

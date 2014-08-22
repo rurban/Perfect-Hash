@@ -5,13 +5,12 @@ use strict;
 #use warnings;
 use Perfect::Hash;
 use Perfect::Hash::HanovPP;
+use Perfect::Hash::C;
+use Perfect::Hash::XS;
 use integer;
 use bytes;
 our @ISA = qw(Perfect::Hash::HanovPP Perfect::Hash::C);
 our $VERSION = '0.01';
-
-use XSLoader;
-XSLoader::load('Perfect::Hash', $VERSION);
 
 =head1 DESCRIPTION
 

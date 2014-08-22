@@ -45,10 +45,9 @@ pearson lookup table or undef if none was found.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref, file later
-  my $max_time = grep { $_ eq '-max-time' and shift } @_;
-  $max_time = 60 unless $max_time;
-  my %options = map {$_ => 1 } @_;
-  $options{'-max-time'} = $max_time;
+  my $options = Perfect::Hash::_handle_opts(@_);
+  $options->{'-max-time'} = 60 unless exists $options->{'-max-time'};
+  my $max_time = $options->{'-max-time'};
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size-1;
@@ -67,6 +66,8 @@ sub new {
   my $i = 0;
   $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
+  my $ph = bless [$size, $H], $class;
+
   my $maxcount = 3 * $last; # when to stop the search. could be n!
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
@@ -74,16 +75,16 @@ sub new {
   my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
-    shuffle($H);
-    (undef, $max) = cost($H, $keys);
+    $ph->shuffle();
+    (undef, $max) = $ph->cost($keys);
     $counter++;
   } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
   return if $max != 1;
 
-  if (!exists $options{'-false-positives'}) {
-    return bless [$size, $H, \%options, $keys], $class;
+  if (!exists $options->{'-false-positives'}) {
+    return bless [$size, $H, $options, $keys], $class;
   } else {
-    return bless [$size, $H, \%options], $class;
+    return bless [$size, $H, $options], $class;
   }
 }
 
@@ -132,31 +133,31 @@ Generates a $fileprefix.c and $fileprefix.h file.
 
 =cut
 
-sub _old_save_c {
-  my $ph = shift;
-  require Perfect::Hash::C;
-  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
-  my $H;
-  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
-  print $H "
-static unsigned char $base\[] = {
-";
-  Perfect::Hash::C::_save_c_array(4, $H, $ph->[1]);
-  print $H "};\n";
-  close $H;
-
-  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
-  # non-binary only so far:
-  print $FH "
-    unsigned h = 0;
-    for (int c = *s++; c; c = *s++) {
-        h = $base\[h ^ c];
-    }
-    return h;
-}
-";
-  close $FH;
-}
+#sub _old_save_c {
+#  my $ph = shift;
+#  require Perfect::Hash::C;
+#  my ($fileprefix, $base) = Perfect::Hash::C::_save_c_header($ph, @_);
+#  my $H;
+#  open $H, ">>", $fileprefix.".h" or die "> $fileprefix.h @!";
+#  print $H "
+#static unsigned char $base\[] = {
+#";
+#  Perfect::Hash::C::_save_c_array(4, $H, $ph->[1]);
+#  print $H "};\n";
+#  close $H;
+#
+#  my $FH = Perfect::Hash::C::_save_c_funcdecl($ph, $fileprefix, $base);
+#  # non-binary only so far:
+#  print $FH "
+#    unsigned h = 0;
+#    for (int c = *s++; c; c = *s++) {
+#        h = $base\[h ^ c];
+#    }
+#    return h;
+#}
+#";
+#  close $FH;
+#}
 
 # local testing: pb -d lib/Perfect/Hash/Pearson8.pm examples/words20
 # or just: pb -d -MPerfect::Hash -e'new Perfect::Hash([split/\n/,`cat "examples/words20"`], "-pearson8")'

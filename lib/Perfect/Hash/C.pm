@@ -4,7 +4,7 @@ our $VERSION = '0.01';
 our @ISA = qw(Perfect::Hash Exporter);
 
 use Exporter 'import';
-our @EXPORT = qw(memcmp_const_str memcmp_const_len _save_c_array);
+our @EXPORT = qw(memcmp_const_str _save_c_array u_csize s_csize);
 use B ();
 use Config;
 
@@ -349,6 +349,39 @@ sub strcmp_len {
     return "*($ptr) == *($s)";
   } else {
     return "!memcmp($ptr, ".B::cstring($s).", $l)";
+  }
+}
+
+=item u_csize($size)
+=item s_csize($size)
+
+Returns c-type to hold the unsigned or signed size elements.
+
+=cut
+
+sub u_csize {
+  my $size = shift;
+  if ($size > 4294967296) {
+    return "unsigned long";
+  } elsif ($size > 65536) {
+    return "unsigned int";
+  } elsif ($size > 256) {
+    return "unsigned short";
+  } else {
+    return "unsigned char";
+  }
+}
+
+sub s_csize {
+  my $size = shift;
+  if ($size > 2147483648) {
+    return "long";
+  } elsif ($size > 32768) {
+    return "int";
+  } elsif ($size > 128) {
+    return "short";
+  } else {
+    return "signed char";
   }
 }
 

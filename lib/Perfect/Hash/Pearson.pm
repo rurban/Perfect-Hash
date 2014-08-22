@@ -9,7 +9,7 @@ use integer;
 use bytes;
 
 use Exporter 'import';
-our @ISA = qw(Perfect::Hash Perfect::Hash::C Exporter);
+our @ISA = qw(Perfect::Hash Exporter Perfect::Hash::C);
 our @EXPORT = qw(hash shuffle cost collisions);
 
 =head1 DESCRIPTION
@@ -49,10 +49,9 @@ pearson lookup table.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref or arrayref or filename
-  my $max_time = grep { $_ eq '-max-time' and shift } @_;
-  $max_time = 60 unless $max_time;
-  my %options = map {$_ => 1 } @_;
-  $options{'-max-time'} = $max_time;
+  my $options = Perfect::Hash::_handle_opts(@_);
+  $options->{'-max-time'} = 60 unless exists $options->{'-max-time'};
+  my $max_time = $options->{'-max-time'};
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size-1;
@@ -62,45 +61,45 @@ sub new {
   my $i = 8; # start with 255 to avoid % $hsize in hash
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1) - 1;
-  print "size=$size hsize=$hsize\n" if $options{'-debug'};
+  print "size=$size hsize=$hsize\n" if $options->{'-debug'};
   my @H; $#H = $hsize;
   $i = 0;
   $H[$_] = $i++ for 0 .. $hsize; # init with ordered sequence
   my $H = \@H;
+  my $ph = bless [$size, $H], $class;
 
   # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
   # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
   # expected max: birthday paradoxon
-  my ($C, @best, $sum, $maxsum, $max, $maxdepth, $counter, $maxcount);
+  my ($C, $best, $sum, $maxsum, $max, $maxdepth, $counter, $maxcount);
   $maxcount = $last; # when to stop the search. should be $last !
   # we should rather set a time-limit like 1 min.
   my $t0 = [gettimeofday];
   do {
     # this is not good. we should non-randomly iterate over all permutations
-    shuffle($H);
-    ($sum, $max) = cost($H, $keys);
+    $ph->shuffle();
+    ($sum, $max) = $ph->cost($keys);
     $counter++;
-    print "$counter sum=$sum, max=$max\n" if $options{'-debug'};
+    print "$counter sum=$sum, max=$max\n" if $options->{'-debug'};
     if (!defined($maxsum) or $sum < $maxsum or $max == 1 or ($sum == $maxsum and $max < $maxdepth)) {
       $maxsum = $sum;
       $maxdepth = $max;
-      @best = @$H;
+      $best = $ph;
     }
   } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time);
 
   if ($max > 1) {
-    @H = @best;
-    $H = \@H;
     #($sum, $max) = cost($H, $keys);
     # Step 3: Store collisions as no perfect hash was found
-    print "list of collisions: sum=$maxsum, maxdepth=$maxdepth\n" if $options{'-debug'};
-    $C = collisions($H, $keys, $values);
+    print "list of collisions: sum=$maxsum, maxdepth=$maxdepth\n" if $options->{'-debug'};
+    $ph = $best;
+    $C = $ph->collisions($keys, $values);
   }
 
-  if (!exists $options{'-false-positives'}) {
-    return bless [$size, $H, $C, \%options, $keys], $class;
+  if (!exists $options->{'-false-positives'}) {
+    return bless [$size, $H, $C, $options, $keys], $class;
   } else {
-    return bless [$size, $H, $C, \%options], $class;
+    return bless [$size, $H, $C, $options], $class;
   }
 }
 
@@ -120,13 +119,14 @@ Helper method to calculate a pearson permutation table via Knuth Random Shuffle.
 
 sub shuffle {
   # the "Knuth Shuffle", a random shuffle to create good permutations
-  my $H = $_[0];
+  my $ph = $_[0];
+  my $H = $ph->[1];
   my $last = scalar(@$H);
   for my $i (0 .. $last) {
-    my $tmp = $_[0]->[$i];
+    my $tmp = $H->[$i];
     my $j = $i + int rand($last-$i);
-    $_[0]->[$i]= $_[0]->[$j];
-    $_[0]->[$j] = $tmp;
+    $H->[$i]= $H->[$j];
+    $H->[$j] = $tmp;
   }
   delete $H->[$last];
 }
@@ -138,13 +138,14 @@ Helper method to calculate the cost for the current pearson permutation table.
 =cut
 
 sub cost {
-  my ($H, $keys) = @_;
+  my ($ph, $keys) = @_;
+  my $size = $ph->[0];
+  my $H = $ph->[1];
   my @N = (); $#N = scalar(@$H) - 1;
   $N[$_] = 0 for 0..$#N;
   my ($sum, $max) = (0, 0);
-  my $size = scalar @$keys;
   for (@$keys) {
-    my $h = hash($H, $_, $size);
+    my $h = $ph->hash($_);
     $N[$h]++;
     $sum++ if $N[$h] > 1;
     $max = $N[$h] if $max < $N[$h];
@@ -159,14 +160,15 @@ Helper method to gather arrayref of arrayrefs of all collisions.
 =cut
 
 sub collisions {
-  my ($H, $keys, $values) = @_;
-  my $size = scalar(@$keys);
+  my ($ph, $keys, $values) = @_;
+  my $size = $ph->[0];
+  my $H = $ph->[1];
   my @C = (); $#C = $size - 1;
   $C[$_] = [] for 0..$#C;
   unless (@$values) { $values = [0 .. $size-1]; }
   my $i = 0;
   for (@$keys) {
-    my $h = hash($H, $_, $size); # e.g. a=>1 b=>11 c=>111
+    my $h = $ph->hash($_); # e.g. a=>1 b=>11 c=>111
     push @{$C[$h]}, [$_, $values->[$i]];
     $i++;
   }
@@ -178,12 +180,14 @@ sub collisions {
   return \@C;
 }
 
-=head2 hash \@H, salt, string
+=head2 hash salt, string
 
 =cut
 
 sub hash {
-  my ($H, $key, $size ) = @_;
+  my ($ph, $key ) = @_;
+  my $size = $ph->[0];
+  my $H = $ph->[1];
   my $d = 0;
   my $hsize = scalar @$H;
   if ($hsize == 256) {
@@ -214,9 +218,8 @@ the given dictionary. If not, a wrong index will be returned.
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $H = $ph->[1];
   my $C = $ph->[2];
-  my $h = hash($H, $key, $ph->[0]);
+  my $h = $ph->hash($key);
   my $v;
   if (defined $C->[$h]) {
     if (@{$C->[$h]} > 1) {
@@ -268,25 +271,23 @@ Generate C code for all 3 Pearson classes
 sub save_c {
   my $ph = shift;
   my $C = $ph->[2];
-  require Perfect::Hash::C;
-  Perfect::Hash::C->import();
+  #require Perfect::Hash::C;
+  #Perfect::Hash::C->import();
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
-  print $FH "#include <string.h>\n" if @$C;
+  print $FH "#include <string.h>\n" if @$C or !$ph->option('-nul');
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
   my $size = $ph->[0];
   my $H = $ph->[1];
   my $hsize = scalar @$H;
-  my $htype = "char";
-  $htype = "short" if $hsize > 256;
-  $htype = "long" if $hsize > 65537;
+  my $htype = u_csize($hsize);
   print $FH "
     int l = strlen(s);" unless $ph->option('-nul');
   print $FH "
     long h = 0;
     const char *key = s;
-    static unsigned $htype $base\[] = {\n";
+    static $htype $base\[] = {\n";
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
   print $FH "    /* collisions: keys and values */";
@@ -313,9 +314,7 @@ sub save_c {
     }
     $i++;
   }
-  my $ctype = "char";
-  $ctype = "short" if $maxcoll > 256;
-  $ctype = "long" if $maxcoll > 65537;
+  my $ctype = u_csize($maxcoll);
   if ($collisions) {
     $i = 0;
     print $FH "
@@ -348,7 +347,7 @@ sub save_c {
     # XXX Cs should not be needed, but is
     print $FH "
     /* size of collisions */
-    static const unsigned $ctype Cs[] = { ";
+    static const $ctype Cs[] = { ";
     $i = 0;
     for my $coll (@$C) {
       if ($coll and scalar(@$coll)) {
@@ -368,18 +367,39 @@ sub save_c {
     _save_c_array(8, $FH, $keys, "\"%s\"");
     print $FH "    };";
   }
-  if ($ph->option('-nul')) {
+  if (ref $ph eq 'Perfect::Hash::Pearson32') {
+    print $FH "
+    unsigned int *hi = (unsigned int *)&",$base,"[0];
+    int i;
+    for (i=0; i < l/4; i += 4, s += 4) {
+      h = hi[ ((unsigned int)h ^ *(unsigned int*)s) % 64];
+    }
+    for (; i < l; i++, s++) {
+      h = $base\[ (h % 256) ^ *s ];
+    }";
+  }
+  elsif (ref $ph eq 'Perfect::Hash::Pearson16') {
+    print $FH "
+    short hs;
+    int i;
+    for (i = 0; i < (l % 2 ? l -1 : l); i++) {
+      hs = $base\[ hs ^ *(short*)s++ ];
+    }
+    if (l % 2)
+      hs = $base\[ hs ^ key[l-1] ];
+    h = hs;";
+  } elsif ($ph->option('-nul')) {
     print $FH "
     int i;
     for (i=0; i<l; i++) {";
-    if (ref $ph eq 'Perfect::Hash::Pearson') {
-      print $FH "
+      if (ref $ph eq 'Perfect::Hash::Pearson') {
+        print $FH "
         h = $base\[(h ^ s[i]) % $hsize];";
-    } else {
-      print $FH "
+      } else {
+        print $FH "
         h = $base\[h ^ s[i]];";
-    }
-    print $FH "
+      }
+      print $FH "
     }";
   } else {
     print $FH "
@@ -416,7 +436,7 @@ sub save_c {
   if (!$ph->false_positives) { # check keys
     # we cannot use memcmp_const_str nor memcmp_const_len because we don't know K[h] nor l
     print $FH "
-       if (memcmp(K[h], key, l)) h = -1;";
+    if (memcmp(K[h], key, l)) h = -1;";
   }
   print $FH "
     return h;

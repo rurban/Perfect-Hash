@@ -4,9 +4,10 @@ BEGIN {$int::x = $num::x = $str::x} # for B::CC type optimizations
 use strict;
 #use warnings;
 use Perfect::Hash;
+#use Perfect::Hash::C;
 use integer;
 use bytes;
-our @ISA = qw(Perfect::Hash Perfect::Hash::C);
+our @ISA = qw(Perfect::Hash);
 our $VERSION = '0.01';
 
 =head1 DESCRIPTION
@@ -43,7 +44,8 @@ index of the value in @V.  @V contains the values of the dictionary.
 sub new {
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
-  my %options = map { $_ => 1 } @_;
+  my $options = Perfect::Hash::_handle_opts(@_);
+  # $options->{'-max-time'} = 60 unless exists $options->{'-max-time'};
   my ($keys, $values) = Perfect::Hash::_dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size - 1;
@@ -75,7 +77,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options{-debug};
+    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options->{-debug};
     my int $d = 1;
     my int $item = 0;
     my %slots;
@@ -86,19 +88,19 @@ sub new {
       my $slot = $class->hash($bucket[$item], $d) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
-        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=%d\n",$d+1 if $options{-debug};
+        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=%d\n",$d+1 if $options->{-debug};
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options{-debug};
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options->{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
     $G[$class->hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
-    print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options{-debug};
+    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options->{-debug};
+    print "buckets[$i]:",scalar(@bucket)," d=$d\n" if $options->{-debug};
 #      unless $b % 1000;
     $i++;
   }
@@ -110,9 +112,9 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $V[$i];
   }
-  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options{-debug};
+  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options->{-debug};
 
-  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
+  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options->{-debug};
   while (@sorted) {
     $i = $sorted[0];
     my @bucket = @{$buckets->[$i]};
@@ -124,12 +126,12 @@ sub new {
     $G[$class->hash($bucket[0], 0) % $size] = - $slot-1;
     $V[$slot] = $dict->{$bucket[0]};
   }
-  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
+  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options->{-debug};
 
-  if (!exists $options{'-false-positives'}) {
-    return bless [\@G, \@V, \%options, $keys], $class;
+  if (!exists $options->{'-false-positives'}) {
+    return bless [\@G, \@V, $options, $keys], $class;
   } else {
-    return bless [\@G, \@V, \%options], $class;
+    return bless [\@G, \@V, $options], $class;
   }
 }
 
@@ -235,6 +237,7 @@ sub save_c {
   my $ph = shift;
   require Perfect::Hash::C;
   Perfect::Hash::C->import();
+  push @ISA, 'Perfect::Hash::C';
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
   print $FH $ph->c_hash_impl($base);
@@ -273,17 +276,11 @@ sub save_c {
   } else {
     $size = scalar(@$G);
   }
-  my $gtype = "signed char";
-  $gtype = "short" if $size > 127;
-  $gtype = "int" if $size > 32767;
-  $gtype = "long" if $size > 2147483647;
+  my $gtype = s_csize($size);
   my $ugtype = $gtype eq "signed char" ? "un".$gtype : "unsigned ".$gtype;
 
   # TODO: which types of V. XXX also allow strings
-  my $vtype = "unsigned char";
-  $vtype = "unsigned short" if @$V > 255;
-  $vtype = "unsigned int" if @$V > 65535;
-  $vtype = "unsigned long" if @$V > 4294967295;
+  my $vtype = u_csize(scalar @$V);
   my $svtype = $vtype;
   $svtype =~ s/unsigned //;
 
@@ -337,7 +334,6 @@ sub save_c {
 =item c_hash_impl $ph, $base
 
 String for C code for the FNV-1 hash function, depending on C<-nul>.
-I<(Broken for utf8)>
 
 =cut
 
@@ -354,7 +350,7 @@ sub c_hash_impl {
 static INLINE
 unsigned $base\_hash(unsigned d, const unsigned char *s, const int l) {
     int i = 0;
-    if (!d) d = 0x01000193;
+    if (!d) d = 0x01000193; /* 16777619 */
     for (; i < l; i++) {
         d = (d * 0x01000193) ^ *s++;
     }

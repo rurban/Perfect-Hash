@@ -4,7 +4,7 @@ use strict;
 our $VERSION = '0.01';
 #use warnings;
 use Perfect::Hash;
-use Perfect::Hash::C qw(memcmp_const_str memcmp_const_len);
+use Perfect::Hash::C;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 use Config;
 use integer;

@@ -4,6 +4,9 @@ our $VERSION = '0.01';
 use Perfect::Hash::C;
 our @ISA = qw(Perfect::Hash::C Perfect::Hash);
 
+use XSLoader;
+XSLoader::load('Perfect::Hash', $VERSION);
+
 =head1 NAME
 
 Perfect::Hash::XS - Perfect Hash output formatter for XS - compiled perl extensions

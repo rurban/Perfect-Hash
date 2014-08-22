@@ -12,7 +12,7 @@ our @EXPORT = qw(_dict_init gettimeofday tv_interval);
 
 # Not yet:      Bob
 #               CMPH::BMZ8 CMPH::BRZ Cuckoo RobinHood HAMT
-our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP
+our @algos = qw(HanovPP Hanov Urban Pearson8 Pearson PearsonNP Pearson16 Pearson32
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
                 Switch Gperf);
@@ -387,7 +387,23 @@ sub analyze_data {
   # and if we have the compiled methods, fast iSCSI CRC32 or only
   # pure-perl available.
   my $method = "Perfect::Hash::HanovPP"; # for now only pure-perl
+
   return $method;
+}
+
+# converts @_ to hash, with options taking args or not
+sub _handle_opts {
+  my %args = (
+     '-max-time' => 60,
+     '-size'     => undef,
+     '-dict'     => undef,
+    );
+  my $options;
+  while (@_) {
+    $_ = shift @_;
+    $options->{$_} =  exists $args{$_} ? shift @_ : 1;
+  }
+  return $options;
 }
 
 =item perfecthash $key
@@ -436,28 +452,6 @@ sub save_c {
 sub save_xs {
   require Perfect::Hash::XS;
   Perfect::Hash::XS->save_xs(@_);
-}
-
-=item hash_murmur3 string, [seed]
-
-pure-perl murmur3 int32 finalizer
-
-=cut
-
-sub hash_murmur3 {
-  use bytes;
-  my $ph = shift;
-  my str $str = shift;
-  my int $h = shift || 0;
-  for my $c (split "", $str) {
-    $h = $h ^ ord($c); # XXX better slice strings into 4 bytes
-    $h ^= $h >> 16;
-    $h *= 0x85ebca6b;
-    $h ^= $h >> 13;
-    $h *= 0xc2b2ae35;
-    $h ^= $h >> 16;
-  }
-  return $h
 }
 
 =back

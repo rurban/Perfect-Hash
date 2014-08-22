@@ -8,8 +8,7 @@ use Perfect::Hash::C;
 #use integer;
 #use bytes;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
-#use B ();
-#use Config;
+use Config;
 
 =head1 DESCRIPTION
 
@@ -22,15 +21,28 @@ table in C<C>.
 
 =item new $filename, @options
 
-All options are just passed through.
+Honored options are:
+
+-max-time  default: 60, disable with 0
+-nul is always set.
+-pic
+-7bit
+-switches => --switch=2
+
+All other options are just passed through.
 
 =cut
 
 sub new { 
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
-  my %options = map { $_ => 1 } @_;
-  $options{-nul} = 1;
+  my $options = Perfect::Hash::_handle_opts(@_);
+  $options->{'-nul'} = 1;
+  if (!exists $options->{'-max-time'}) {
+    $options->{'-max-time'} = 60;
+  } elsif (!$options->{'-max-time'}) {
+    delete $options->{'-max-time'};
+  }
   # see if we can use the gperf executable, return undef if not
   # no PP fallback variant yet
   my $retval = system("gperf --version".($^O eq 'MSWin32' ? "" : " >/dev/null"));
@@ -78,7 +90,7 @@ sub new {
   if (!-f $fn or !-s $fn) {
     return undef;
   }
-  return bless [$fn, \%options, $dict], $class;
+  return bless [$fn, $options, $dict], $class;
 }
 
 =item save_c fileprefix, options
@@ -86,6 +98,8 @@ sub new {
 Generates a $fileprefix.c file.
 
 =cut
+
+#our $proc; # global for the sig alrm handler
 
 sub save_c {
   my $ph = shift;
@@ -100,10 +114,37 @@ sub save_c {
   for (keys %$options) {
     push @opts, $opts{$_} if exists $opts{$_}; 
   }
+  # since we need to redirect we need a shell
+  # but if we got a shell we need to kill gperf and the shell
   my @cmd = ("gperf", @opts, $fn, ">$fileprefix.c");
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
-  system(join(" ",@cmd));
+  #if ($options->{'-max-time'}) { # timeout
+  #  local $SIG{'ALRM'} = \&_sigalrm_handler;
+  #  alarm($options->{'-max-time'});
+  #  $proc = _spawn($Config{sh}, ($^O eq 'MSWin32' ? "/c" : "-c"), @cmd);
+  #  wait;
+  #  alarm(0);
+  #} else {
+    system(join(" ",@cmd));
+  #}
+  unlink $fn unless $? >> 8;
+  return $? >> 8;
 }
+
+#sub _sigalrm_handler {
+#  if ($proc) {
+#    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
+#    kill 'KILL' => $proc;     # and then the shell
+#    warn "timeout: gperf killed\n";
+#  }
+#}
+#
+#sub _spawn {
+#  my $pid = fork;
+#  die "fork" if !defined $pid;
+#  exec(@_) if $pid == 0;
+#  return $pid;
+#}
 
 =item perfecthash $ph, $key
 

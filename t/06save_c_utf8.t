@@ -17,7 +17,7 @@ my @dict = @$dictarr;
 #delete $Perfect::Hash::algo_todo{'-cmph-bdz_ph'};
 #delete $Perfect::Hash::algo_todo{'-cmph-bdz'};
 #delete $Perfect::Hash::algo_todo{'-cmph-bmz'};
-#delete $Perfect::Hash::algo_todo{'-cmph-chm'};
+delete $Perfect::Hash::algo_todo{'-cmph-chm'};
 #delete $Perfect::Hash::algo_todo{'-cmph-fch'};
 #delete $Perfect::Hash::algo_todo{'-cmph-chd_ph'};
 #delete $Perfect::Hash::algo_todo{'-cmph-chd'};

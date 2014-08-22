@@ -3,8 +3,9 @@ package Perfect::Hash::Urban;
 use strict;
 #use warnings;
 use Perfect::Hash;
-use Perfect::Hash::Hanov;
 use Perfect::Hash::HanovPP;
+use Perfect::Hash::Hanov;
+use Perfect::Hash::XS;
 use integer;
 use bytes;
 use Config;
@@ -44,10 +45,7 @@ in @V.
 sub new {
   my $class = shift or die;
   my $dict = shift; # arrayref or filename
-  #my $max_time = grep { $_ eq '-max-time' and shift } @_;
-  #$max_time = 60 unless $max_time;
-  my %options = map {$_ => 1 } @_;
-  #$options{'-max-time'} = $max_time;
+  my $options = Perfect::Hash::_handle_opts(@_);
   my ($keys, $values) = Perfect::Hash::_dict_init($dict);
   my $size = scalar @$keys;
   my $last = $size - 1;
@@ -88,7 +86,7 @@ sub new {
     my @bucket = @{$buckets->[$b]};
     last if scalar(@bucket) <= 1; # skip the rest with 1 or 0 buckets
     shift @sorted;
-    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options{-debug};
+    print "len[$i]=",scalar(@bucket)," [",join ",",@bucket,"]\n" if $options->{-debug};
     my $d = 1;
     my $item = 0;
     my %slots;
@@ -100,19 +98,19 @@ sub new {
       my $slot = $class->hash( $bucket[$item], $d ) % $size;
       # epmh.py uses a list for slots here, we rather use a faster hash
       if (defined $V[$slot] or exists $slots{$slot}) {
-        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=0x%x, $bucket[$item]\n",$d if $options{-debug};
+        printf "V[$slot]=$V[$slot], slots{$slot}=$slots{$slot}, d=0x%x, $bucket[$item]\n",$d if $options->{-debug};
         $d++; $item = 0; %slots = (); # nope, try next seed
       } else {
         $slots{$slot} = $item;
-        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options{-debug};
+        printf "slots[$slot]=$item, d=0x%x, $bucket[$item]\n", $d if $options->{-debug};
 #          unless $d % 100;
         $item++;
       }
     }
     $G[$class->hash($bucket[0], 0) % $size] = $d;
     $V[$_] = $dict->{$bucket[$slots{$_}]} for keys %slots;
-    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options{-debug};
-    print "buckets[$i]:",scalar(@bucket)," d=$d @bucket\n" if $options{-debug};
+    print "V=[".join(",",map{defined $_ ? $_ : ""} @V),"]\n" if $options->{-debug};
+    print "buckets[$i]:",scalar(@bucket)," d=$d @bucket\n" if $options->{-debug};
 #      unless $b % 1000;
     $i++;
   }
@@ -124,9 +122,9 @@ sub new {
   for my $i (0..$last) {
     push @freelist, $i unless defined $V[$i];
   }
-  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options{-debug};
+  print "len[freelist]=",scalar(@freelist)," [",join ",",@freelist,"]\n"  if $options->{-debug};
 
-  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options{-debug};
+  print "xrange(",$last - $#sorted - 1,", $size)\n" if $options->{-debug};
   while (@sorted) {
     $i = $sorted[0];
     my @bucket = @{$buckets->[$i]};
@@ -139,7 +137,7 @@ sub new {
     $V[$slot] = $dict->{$bucket[0]};
   }
 
-  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options{-debug};
+  print "G=[".join(",",@G),"],\nV=[".join(",",@V),"]\n" if $options->{-debug};
   # Last step: compress G and V into bitvectors accessed via vec().
   # Needed bits per index: length sprintf "%b",$size
   # Since perl cannot access multi-byte bits via vec, it needs to be a power
@@ -167,16 +165,16 @@ sub new {
     nvecset($G, $i+$size, $bits, $V[$i]) if $V[$i];
   }
   printf("\$G\[$bits]=\"%s\":%d\n", unpack("h*", $G), length($G))
-    if $options{-debug};
+    if $options->{-debug};
 
-  if (!exists $options{'-false-positives'}) {
-    if (exists $options{'-debug'}) {
-      return bless [$G, $bits, \%options, $keys, \@G, \@V], $class;
+  if (!exists $options->{'-false-positives'}) {
+    if (exists $options->{'-debug'}) {
+      return bless [$G, $bits, $options, $keys, \@G, \@V], $class;
     } else {
-      return bless [$G, $bits, \%options, $keys], $class;
+      return bless [$G, $bits, $options, $keys], $class;
     }
   } else {
-    return bless [$G, $bits, \%options], $class;
+    return bless [$G, $bits, $options], $class;
   }
 }
 

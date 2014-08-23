@@ -148,7 +148,7 @@ sub c_stringpool {
   }
   printf $FH "
     };
-    static struct stringpool_t stringpool_contents = {";
+    static const struct stringpool_t stringpool_contents = {";
   for my $i (0 .. $last) {
     my $g = $G->[$i];
     printf $FH "
@@ -157,7 +157,7 @@ sub c_stringpool {
   printf $FH "
     };
     #define stringpool ((const char *) &stringpool_contents)
-    static int keys[] = {";
+    static const int keys[] = {";
   for my $i (0 .. $last) {
     printf $FH "
       (int)(long)&((struct stringpool_t *)0)->stringpool_str%i,", $i;

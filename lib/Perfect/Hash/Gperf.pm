@@ -15,6 +15,14 @@ use Config;
 Uses no hash function nor hash table, just generates a gperf
 table in C<C>.
 
+gperf is limited to a low number of keys (<50000), and is sensitive to
+anagrams and bad key distributions.
+We need to time out after 60 seconds.
+
+gperf does not hash the keys, it just takes a number of distinct chars
+from the key and adds them together. This is usually faster then a
+full hash over the all key characters.
+
 =head1 METHODS
 
 =over
@@ -151,25 +159,6 @@ sub save_c {
   unlink $fn unless $? >> 8;
   return $? >> 8;
 }
-
-#sub _sigalrm_handler {
-#  if ($proc) {
-#    # XXX cygwin probably needs /bin/kill
-#    kill 'KILL' => $proc + 1; # first the kid. XXXXXX ugly hack
-#    kill 'KILL' => $proc;     # and then the shell
-#    warn "timeout: gperf killed\n";
-#  }
-#}
-#
-#sub _spawn {
-#  my $pid = fork;
-#  die "fork" if !defined $pid;
-#  if ($pid == 0) {
-#    setpgrp(0,0);
-#    exec(@_); exit(0);
-#  }
-#  return $pid;
-#}
 
 =item perfecthash $ph, $key
 

@@ -14,21 +14,27 @@ our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 
 XS interface to bob jenkins perfect hashes.
 
+Only for benchmarks yet:
+So far only calls C<bob/perfect>, not our XS,
+can only read limited \n delimited, value-less keyfiles,
+is limited to the C<--prefix phash_hash>,
+and overflows with larger number of keys (> ~25000)
+
 =cut
 
 sub new { 
   my $class = shift or die;
   my $dict = shift; #hashref, arrayref or filename
   my $options = Perfect::Hash::_handle_opts(@_);
-  # $options->{'-nul'} = 1;
   if (!exists $options->{'-max-time'}) {
     $options->{'-max-time'} = 60;
   } elsif (!$options->{'-max-time'}) {
     delete $options->{'-max-time'};
   }
-  # see if we can use the gperf executable, return undef if not
-  # no PP fallback variant yet
-  my $retval = system("bob/perfect --version".($^O eq 'MSWin32' ? "" : " >/dev/null"));
+  # see if we can use the executable, return undef if not
+  # no PP nor XS fallback variant yet
+  my $retval = system("bob/perfect --version"
+                      .($^O eq 'MSWin32' ? ">NUL" : " >/dev/null"));
   if ($retval != 0) {
     return undef;
   }
@@ -38,24 +44,20 @@ sub new {
   if (ref $dict eq 'ARRAY') {
     unlink $fn;
     open my $F, ">", $fn;
-    #print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     my $i = 0;
     my %dict;
     for (@$dict) {
       print $F $_,"\n" if length($_);
       $dict{$_} = $i++;
     }
-    #print $F "%%";
     close $F;
     $dict = \%dict;
   }
   elsif (ref $dict eq 'HASH') {
     open my $F, ">", $fn;
-    #print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     for (sort keys %$dict) {
       print $F $_,"\n" if length($_);
     }
-    #print $F "%%";
     close $F;
   } elsif (!ref $dict and ! -e $dict) {
     die "wrong dict argument. arrayref, hashref or filename expected";
@@ -91,7 +93,8 @@ sub save_c {
   my @opts = ("-NPs", "phash");
   # since we need to redirect we need a shell
   # but if we got a shell we need to kill the exe and the shell
-  my @cmd = ("bob/perfect", @opts, "< $fn");
+  my @cmd = ("bob/perfect", @opts, "<$fn",
+             ($^O eq 'MSWin32' ? ">NUL" : " >/dev/null"));
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
   if ($options->{'-max-time'} and $^O =~ /linux|bsd|solaris|cygwin/) { # timeout
     use POSIX ":sys_wait_h";
@@ -139,9 +142,15 @@ sub save_c {
 
 =over
 
-=item new $filename, @options
+=item new $filename|hashref|arrayref @options
 
-NYI
+Can only handle arrayref or single column keyfiles yet. No values.
+
+Honored options are:
+
+-max-time  default: 60, disable with 0
+
+All other options are ignored.
 
 =item perfecthash key
 

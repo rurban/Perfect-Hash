@@ -50,7 +50,7 @@ if (! -e "cmph-2.0/configure") {
 
 if (! -e "bob/lookupa.c") {
   print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";
-  system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git bob");
+  system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git -b perl bob");
 }
 # Win32 MSVC, no git
 if (!-e "bob/lookupa.c" and -e "bob/Makefile.PL") {

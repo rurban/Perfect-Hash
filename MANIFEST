@@ -4,6 +4,7 @@ Changes
 cmph-2.0.tar.gz
 cmph-2.0/Makefile.PL
 cmph-2.0/CMPH.xs
+examples/all-bench.sh
 examples/bench.pl
 examples/epmh.py
 examples/utf8

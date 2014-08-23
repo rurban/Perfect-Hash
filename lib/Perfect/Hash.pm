@@ -18,10 +18,10 @@ our @algos = qw(HanovPP Hanov Urban
                 Pearson PearsonNP Pearson8 Pearson32 Pearson16
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
-                Switch Gperf);
+                Switch Gperf Bob);
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-pearson16
+  qw(-pearson16 -bob
      -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
      -cmph-chd -cmph-bmz8 -cmph-brz);
 

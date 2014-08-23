@@ -68,20 +68,22 @@ for my $opt (@opts) {
     if ($m eq '-gperf') {
        $custom_size = $old_custom_size;
     }
+    my $suffix = $m eq "-bob" ? "_hash" : "";
+    my $base = "phash$suffix";
+    my $out = "$base.c";
     # use size/5 random entries
-    test_wmain_all($m, \@dict, $opt);
+    test_wmain_all($m, \@dict, $opt, $suffix);
     $i++;
-    my $out = "phash.c";
     unlink $out;
     my ($cmd, $cmd1);
     if ($opt =~ /-shared/) {
-      $cmd = compile_shared($ph);
-      $cmd1 = link_shared($ph);
+      $cmd = compile_shared($ph, $suffix);
+      $cmd1 = link_shared($ph, $suffix);
     } else {
-      $cmd = compile_static($ph);
+      $cmd = compile_static($ph, $suffix);
     }
     $t1 = [gettimeofday];
-    $ph->save_c("phash");
+    $ph->save_c($base);
     my $retval;
     if (-f $out and -s $out) {
       if (-s $out > $max_c_size) {
@@ -102,12 +104,12 @@ for my $opt (@opts) {
     my $s = -s $out;
     my $so = 0;
     if ($retval == 0) {
-      $so = $cmd1 ? -s "phash.".$Config{dlext} : -s "phash";
+      $so = $cmd1 ? -s "$base.".$Config{dlext} : -s $base;
       $t2 = [gettimeofday];
       my $callprefix = $^O eq 'MSWin32' ? ""
         : $^O eq 'darwin' ? "DYLD_LIBRARY_PATH=. ./"
         : "LD_LIBRARY_PATH=. ./";
-      my $retstr = `${callprefix}phash`;
+      my $retstr = `${callprefix}$base`;
       $t2 = tv_interval($t2);
       $retval = $? >> 8;
       $t2 = 0 if $retval and $t2 == 0.0;
@@ -117,8 +119,8 @@ for my $opt (@opts) {
     if ($retval) {
       print "\t\t\twith ", $retval, " errors.\n";
     }
+    unlink("$base","$base.c","$base.h","main.c") if $default;
   }
   print "----\n";
 }
 
-unlink("phash","phash.c","phash.h","main.c") if $default;

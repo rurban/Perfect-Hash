@@ -243,24 +243,28 @@ you need to link to an external library.
     - \-hash=`name` (not yet)
 
         Use the specified hash function instead of the default.
-        Only useful for hardware assisted `crc32` and `aes` system calls,
-        provided by compiler intrinsics (sse4.2) or libz. Note that some
-        zlib libraries do not provide a HW-assisted fast crc32 function,
-        rather a slow SW variant.
-        See -hash=help for a list of all supported hash function names:
-        `crc32_zlib`, `fnv`, `crc32_sse42`, `aes`, ...
+        See `-hash=help` for a list of all supported hash function names:
+        `crc32_zlib`, `fnv`, `crc32_sse42`, `aes`, `GFMultilinear`...
+
+        Only useful for hardware assisted `crc32`, `aes` and more `xmm` system
+        calls, provided by compiler intrinsics (sse4.2) or libz. Note that some zlib
+        libraries do not provide a HW-assisted fast crc32 function, rather a slow SW
+        variant.
 
         The hardware assisted `crc32` and `aes` functions add a run-time probe with
         slow software fallback code (not yet). `crc32_zlib` does all this also, and
         is especially optimized for long keys to hash them in parallel, if implemented
         in your library.
 
+        `GFMultilinear` for 64bit Intel and AMD
+        is from [https://github.com/lemire/StronglyUniversalStringHashing](https://github.com/lemire/StronglyUniversalStringHashing)
+
     - \-pic (not yet)
 
-        Optimize the generated table for inclusion in shared libraries via a
-        constant stringpool. This reduces the startup time of programs using a
-        shared library containing the generated code. As with [gperf](https://metacpan.org/pod/gperf)
-        `--pic`
+        Optimize the generated table for inclusion in shared libraries via a constant
+        direct stringpool, in contrast to a table of indirect string pointers. This
+        reduces the startup time of programs using a shared library containing the
+        generated code. As with [gperf](https://metacpan.org/pod/gperf) `--pic`
 
         gperf:
 

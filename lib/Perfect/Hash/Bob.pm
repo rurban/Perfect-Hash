@@ -7,6 +7,7 @@ use Perfect::Hash;
 use Perfect::Hash::C;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 
+# For testing we started with the exe at first
 #use XSLoader;
 #XSLoader::load('Perfect::Hash::Bob');
 
@@ -19,6 +20,18 @@ So far only calls C<bob/perfect>, not our XS,
 can only read limited \n delimited, value-less keyfiles,
 is limited to the C<--prefix phash_hash>,
 and overflows with larger number of keys (> ~25000)
+
+=head1 METHDOS
+
+=over
+
+=item new $filename|hashref|arrayref @options
+
+Can only handle arrayref or single column keyfiles yet. No values.
+
+Honored options are:
+
+-max-time  default: 60, disable with 0
 
 =cut
 
@@ -78,16 +91,18 @@ sub new {
   return bless [$fn, $options, $dict], $class;
 }
 
-=item save_c fileprefix, options
+=item save_c prefix, options
 
-Generates a $fileprefix.c file.
+prefix is ignored so far.
+
+Generates F<phash_hash.c> and F<.h> files, which need to be linked
+against F<bob/lookupa.o>
 
 =cut
 
 sub save_c {
   my $ph = shift;
   my ($fn, $options, $dict) = ($ph->[0], $ph->[1], $ph->[2]);
-  #my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $fileprefix = "phash_hash";
   # fast or slow, minimal or not
   my @opts = ("-NPs", "phash");
@@ -138,23 +153,9 @@ sub save_c {
   return $errcode;
 }
 
-=head1 METHDOS
-
-=over
-
-=item new $filename|hashref|arrayref @options
-
-Can only handle arrayref or single column keyfiles yet. No values.
-
-Honored options are:
-
--max-time  default: 60, disable with 0
-
-All other options are ignored.
-
 =item perfecthash key
 
-dummy
+dummy, for testing only. Use the generated C function instead.
 
 =cut
 
@@ -190,12 +191,6 @@ sub option {
 sub c_include { " -Ibob" }
 
 sub c_lib { " bob/lookupa.o" }
-
-=item save_c fileprefix, options
-
-Generates a $fileprefix.c and $fileprefix.h file.
-
-NYI
 
 =back
 

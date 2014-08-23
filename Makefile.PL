@@ -59,15 +59,11 @@ if (!-e "bob/lookupa.c" and -e "bob/Makefile.PL") {
 if (-e "bob/lookupa.c" and !-e "bob/perfect".$Config{exe_ext}) {
   chdir "bob";
   my $cc = $Config{cc};
-  if ($cc ne "gcc") {
-    `$^X -pi.bak -e's/gcc/$cc/' Makefile`;
-  }
-  my $retval = system($Config{'make'}, "-s");
+  my $retval = system($Config{'make'}, "-s", "-f", "Makefile.orig", "CC=$cc");
   if ($retval>>8) {
     rename "Makefile.PL", "Makefile_PL.disabled";
     warn "disabled bob extension\n";
   }
-  rename "Makefile", "Makefile.orig";
   chdir "..";
 }
 

@@ -4,7 +4,7 @@ our $VERSION = '0.01';
 our @ISA = qw(Perfect::Hash Exporter);
 
 use Exporter 'import';
-our @EXPORT = qw(memcmp_const_str _save_c_array u_csize s_csize);
+our @EXPORT = qw(memcmp_const_str _save_c_array c_stringpool u_csize s_csize);
 use B ();
 use Config;
 
@@ -99,7 +99,7 @@ long $base\_lookup(const unsigned char* s)";
 
 =over
 
-=item _save_c_array FH, array
+=item _save_c_array ident FH, array, fmt
 
 Internal helper method for save_c
 
@@ -125,6 +125,45 @@ sub _save_c_array {
     }
     print $FH "\n" if $ident;
   }
+}
+
+=item c_stringpool FH, array
+
+Dump the strings as continous direct buffer, used for C<-pic>, as in
+C<gperf --pic>.
+
+TODO: support holes in @G as in gperf
+
+=cut
+
+sub c_stringpool {
+  my ($FH, $G) = @_;
+  my $last = scalar @$G - 1;
+  printf $FH "
+    struct stringpool_t {";
+  for my $i (0 .. $last) {
+    my $g = $G->[$i];
+    printf $FH "
+      char stringpool_str%d[sizeof(%s)];", $i, B::cstring($g);
+  }
+  printf $FH "
+    };
+    static struct stringpool_t stringpool_contents = {";
+  for my $i (0 .. $last) {
+    my $g = $G->[$i];
+    printf $FH "
+      %s,", B::cstring($g);
+  }
+  printf $FH "
+    };
+    #define stringpool ((const char *) &stringpool_contents)
+    static int keys[] = {";
+  for my $i (0 .. $last) {
+    printf $FH "
+      (int)(long)&((struct stringpool_t *)0)->stringpool_str%i,", $i;
+  }
+  printf $FH "
+    };";
 }
 
 =item utf8_valid bytes

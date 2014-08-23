@@ -364,11 +364,15 @@ sub save_c {
   }
   if (!$ph->false_positives) { # store keys
     my $keys = $ph->[4];
-    print $FH "
+    if ($ph->option('-pic')) {
+      c_stringpool($FH, $keys);
+    } else {
+      print $FH "
     /* keys */
-    static const char* K[] = {\n";
-    _save_c_array(8, $FH, $keys, "\"%s\"");
-    print $FH "    };";
+    static const char* keys[] = {\n";
+      _save_c_array(8, $FH, $keys, "\"%s\"");
+      print $FH "    };";
+    }
   }
   if (ref $ph eq 'Perfect::Hash::Pearson32') {
     print $FH "
@@ -438,8 +442,21 @@ sub save_c {
   }
   if (!$ph->false_positives) { # check keys
     # we cannot use memcmp_const_str nor memcmp_const_len because we don't know K[h] nor l
-    print $FH "
-    if (l == 0 || memcmp(K[h], key, l)) h = -1;";
+    if ($ph->option('-pic')) {
+      print $FH "
+    if (l == 0) { return -1; }
+    else {
+      register int o = keys[h];
+      if (o >= 0) {
+        register const char *s = o + stringpool;
+        if (*key != *s || !memcmp(key + 1, s + 1, l-1))
+          h = -1;
+      }
+    }";
+    } else {
+      print $FH "
+    if (l == 0 || memcmp(keys[h], key, l)) h = -1;";
+    }
   }
   print $FH "
     return h;

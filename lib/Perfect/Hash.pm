@@ -88,10 +88,19 @@ There exist some executables, a library and a simple python script to generate
 code to access perfect hashes and minimal versions thereof, but nothing to use
 easily. C<gperf> is not very well suited to create big maps and cannot deal
 with certain anagrams, but creates fast C code for small dictionaries.
+
+Bob Jenkins' C<perfect> - he called it C<bob>, hence we also - is more stable
+than gperf, but requires an external lookup function.
+
 C<Pearson> hashes are simplier and fast for small machines, but not guaranteed
-to be creatable for small or bigger hashes.  cmph C<CHD>, C<BDZ_PH> and the
-other cmph algorithms might be the best algorithms for big hashes, but lookup
-time is slower for smaller hashes and you need to link to an external library.
+to be creatable for small or bigger hashes.
+
+cmph C<CHD>, C<BDZ_PH> and the other cmph algorithms might be the best
+algorithms for big hashes, but lookup time is slower for smaller hashes and
+you need to link to an external library.
+
+C<mkhashtable> generates a fast cuckoo hash table for integer lookup.
+L<http://www.theiling.de/projects/lookuptable.html>
 
 =head1 METHODS
 
@@ -139,7 +148,8 @@ lookup.
 
 =item -hanovpp
 
-The default pure perl method.
+The default pure perl method, based on CHD.
+Hashes the key 1.5x times, same as for Cuckoo hashing.
 
 =item -hanov
 
@@ -184,10 +194,16 @@ This is also a very fast variant for small 8-bit machines as the 256 byte
 table is guaranteed to fit into every CPU cache, but it only iterates
 in byte steps.
 
-=item -bob (not yet)
+=item -pearson16 (experimental)
 
-Generates nice and easy C code without external library dependency.
-However to generate -bob you need a C compiler.
+Generate non-perfect pearson hash with an optimized 16bit hash function, a
+much bigger 16bit table (size: 65536 shorts), and static binary tree collision
+resolution.
+
+=item -pearson32 (experimental)
+
+Generate non-perfect pearson hash with an optimized 32bit hash function,
+a pearson table of size 256 and static binary tree collision resolution.
 
 =item -gperf
 
@@ -211,6 +227,11 @@ it is optimized to use word size comparisons for the fixed length
 comparisons, which is up to 50% faster than C<memcmp>.
 The performance is comparable to the best perfect hashes.
 
+=item -bob
+
+Generates C code more stable than gperf, but requires an external
+dependency for the lookup function.
+
 =item -cmph-bdz_ph
 
 The C<-cmph-*> methods are the current state of the art for bigger
@@ -226,11 +247,21 @@ The performance depends on the dictionary size.
 
 =item -cmph-chm
 
+So far this is the most stable variant.
+
 =item -cmph-fch
 
 =item -cmph-chd_ph
 
 =item -cmph-chd
+
+=item -cuckoo (not yet)
+
+Generates good cuckoo tables and hash functions to lookup a string.  Unlike
+the other hash tables here this can be extended to dynamic cuckoo hash tables,
+by adding insert and delete functions which just resize to dynamic tables.
+Cuckoo uses 1.5 hashing of the key and 2 collision-free lookup arrays.
+See L<https://en.wikipedia.org/wiki/Cuckoo_hashing>
 
 =item -for-c (default)
 

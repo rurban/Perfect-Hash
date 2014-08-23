@@ -27,21 +27,23 @@ Perfect::Hash - generate perfect hashes, library backend for phash
 # DESCRIPTION
 
 Perfect hashing is a technique for building a static hash table with no
-collisions. Which means guaranteed constant O(1) access time, and for minimal
-perfect hashes even guaranteed minimal size. It is only possible to build one
-when we know all of the keys in advance. Minimal perfect hashing implies that
-the resulting table contains one entry for each key, and no empty slots.
+collisions, only lookup, no insert and delete methods. Which means guaranteed
+constant O(1) access time, and for minimal perfect hashes even guaranteed
+minimal size. It is only possible to build one when we know all of the keys in
+advance. Minimal perfect hashing implies that the resulting table contains one
+entry for each key, and no empty slots.
 
 As input we need to provide a set of unique keys, either as arrayref or
 hashref or as keyfile. The keys can so far only be strings (will be extended
 to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
-As generation algorithm there exist various hashing and other fast lookup methods:
-Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo, Switch, ...
-Not all generated lookup methods are perfect hashes per se. We also implemented
-traditional methods which might be faster for smaller key sets, like nested switches,
-hash array mapped tries or ordinary linear addressing hash tables.
+As generation algorithm there exist various perfect hashing and other fast
+lookup methods: Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo,
+Switch, RobinHood, ...  Not all generated lookup methods are perfect hashes
+per se. We also implemented traditional methods which might be faster for
+smaller key sets, like nested switches, hash array mapped tries or ordinary
+linear addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -53,14 +55,25 @@ The best algorithm used in Hanov and various others is derived from
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)
 
-There exist various C and a simple python script to generate code to
-access perfect hashes and minimal versions thereof, but nothing to use
+Prior art to phash:
+
+There exist some executables, a library and a simple python script to generate
+code to access perfect hashes and minimal versions thereof, but nothing to use
 easily. `gperf` is not very well suited to create big maps and cannot deal
 with certain anagrams, but creates fast C code for small dictionaries.
+
+Bob Jenkins' `perfect` - he called it `bob`, hence we also - is more stable
+than gperf, but requires an external lookup function.
+
 `Pearson` hashes are simplier and fast for small machines, but not guaranteed
-to be creatable for small or bigger hashes.  cmph `CHD`, `BDZ_PH` and the
-other cmph algorithms might be the best algorithms for big hashes, but lookup
-time is slower for smaller hashes and you need to link to an external library.
+to be creatable for small or bigger hashes.
+
+cmph `CHD`, `BDZ_PH` and the other cmph algorithms might be the best
+algorithms for big hashes, but lookup time is slower for smaller hashes and
+you need to link to an external library.
+
+`mkhashtable` generates a fast cuckoo hash table for integer lookup.
+[http://www.theiling.de/projects/lookuptable.html](http://www.theiling.de/projects/lookuptable.html)
 
 # METHODS
 
@@ -104,7 +117,8 @@ time is slower for smaller hashes and you need to link to an external library.
 
     - \-hanovpp
 
-        The default pure perl method.
+        The default pure perl method, based on CHD.
+        Hashes the key 1.5x times, same as for Cuckoo hashing.
 
     - \-hanov
 
@@ -149,10 +163,16 @@ time is slower for smaller hashes and you need to link to an external library.
         table is guaranteed to fit into every CPU cache, but it only iterates
         in byte steps.
 
-    - \-bob (not yet)
+    - \-pearson16 (experimental)
 
-        Generates nice and easy C code without external library dependency.
-        However to generate -bob you need a C compiler.
+        Generate non-perfect pearson hash with an optimized 16bit hash function, a
+        much bigger 16bit table (size: 65536 shorts), and static binary tree collision
+        resolution.
+
+    - \-pearson32 (experimental)
+
+        Generate non-perfect pearson hash with an optimized 32bit hash function,
+        a pearson table of size 256 and static binary tree collision resolution.
 
     - \-gperf
 
@@ -176,6 +196,11 @@ time is slower for smaller hashes and you need to link to an external library.
         comparisons, which is up to 50% faster than `memcmp`.
         The performance is comparable to the best perfect hashes.
 
+    - \-bob
+
+        Generates C code more stable than gperf, but requires an external
+        dependency for the lookup function.
+
     - \-cmph-bdz\_ph
 
         The `-cmph-*` methods are the current state of the art for bigger
@@ -188,9 +213,20 @@ time is slower for smaller hashes and you need to link to an external library.
     - \-cmph-bdz
     - \-cmph-bmz
     - \-cmph-chm
+
+        So far this is the most stable variant.
+
     - \-cmph-fch
     - \-cmph-chd\_ph
     - \-cmph-chd
+    - \-cuckoo (not yet)
+
+        Generates good cuckoo tables and hash functions to lookup a string.  Unlike
+        the other hash tables here this can be extended to dynamic cuckoo hash tables,
+        by adding insert and delete functions which just resize to dynamic tables.
+        Cuckoo uses 1.5 hashing of the key and 2 collision-free lookup arrays.
+        See [https://en.wikipedia.org/wiki/Cuckoo_hashing](https://en.wikipedia.org/wiki/Cuckoo_hashing)
+
     - \-for-c (default)
 
         Optimize for C libraries
@@ -290,10 +326,6 @@ time is slower for smaller hashes and you need to link to an external library.
 
     See ["save_xs" in Perfect::Hash::XS](https://metacpan.org/pod/Perfect::Hash::XS#save_xs)
 
-- hash\_murmur3 string, \[seed\]
-
-    pure-perl murmur3 int32 finalizer
-
 # SEE ALSO
 
 `script/phash` for the frontend.
@@ -306,8 +338,11 @@ time is slower for smaller hashes and you need to link to an external library.
 [Perfect::Hash::Pearson](https://metacpan.org/pod/Perfect::Hash::Pearson),
 [Perfect::Hash::Pearson8](https://metacpan.org/pod/Perfect::Hash::Pearson8),
 [Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
+[Perfect::Hash::Pearson32](https://metacpan.org/pod/Perfect::Hash::Pearson32),
+[Perfect::Hash::Pearson16](https://metacpan.org/pod/Perfect::Hash::Pearson16),
 [Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob) _(not yet)_,
-[Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf) _(not yet)_,
+[Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf),
+[Perfect::Hash::Switch](https://metacpan.org/pod/Perfect::Hash::Switch),
 [Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
 [Perfect::Hash::CMPH::BMZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ),
 [Perfect::Hash::CMPH::BMZ8](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ8) _(not yet)_,

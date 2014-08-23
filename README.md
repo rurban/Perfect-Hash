@@ -39,11 +39,11 @@ to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
 As generation algorithm there exist various perfect hashing and other fast
-lookup methods: Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson, Gperf, Cuckoo,
-Switch, RobinHood, ...  Not all generated lookup methods are perfect hashes
-per se. We also implemented traditional methods which might be faster for
-smaller key sets, like nested switches, hash array mapped tries or ordinary
-linear addressing hash tables.
+lookup methods: Hanov, HanovPP, Urban, CMPH::\*, Bob, Pearson\*, Gperf, Switch,
+and maybe Cuckoo, RobinHood, HAMT, ...  Not all generated lookup methods are
+perfect hashes per se. I also implemented traditional methods which might be
+faster for smaller key sets, like nested switches, hash array mapped tries or
+ordinary open addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -344,9 +344,10 @@ you need to link to an external library.
 [Perfect::Hash::PearsonNP](https://metacpan.org/pod/Perfect::Hash::PearsonNP),
 [Perfect::Hash::Pearson32](https://metacpan.org/pod/Perfect::Hash::Pearson32),
 [Perfect::Hash::Pearson16](https://metacpan.org/pod/Perfect::Hash::Pearson16),
-[Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob) _(not yet)_,
 [Perfect::Hash::Gperf](https://metacpan.org/pod/Perfect::Hash::Gperf),
 [Perfect::Hash::Switch](https://metacpan.org/pod/Perfect::Hash::Switch),
+[Perfect::Hash::Bob](https://metacpan.org/pod/Perfect::Hash::Bob),
+[Perfect::Hash::Cuckoo](https://metacpan.org/pod/Perfect::Hash::Cuckoo) _(not yet)_,
 [Perfect::Hash::CMPH::CHM](https://metacpan.org/pod/Perfect::Hash::CMPH::CHM),
 [Perfect::Hash::CMPH::BMZ](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ),
 [Perfect::Hash::CMPH::BMZ8](https://metacpan.org/pod/Perfect::Hash::CMPH::BMZ8) _(not yet)_,

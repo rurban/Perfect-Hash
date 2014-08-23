@@ -66,11 +66,11 @@ to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
 As generation algorithm there exist various perfect hashing and other fast
-lookup methods: Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson, Gperf, Cuckoo,
-Switch, RobinHood, ...  Not all generated lookup methods are perfect hashes
-per se. We also implemented traditional methods which might be faster for
-smaller key sets, like nested switches, hash array mapped tries or ordinary
-linear addressing hash tables.
+lookup methods: Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson*, Gperf, Switch,
+and maybe Cuckoo, RobinHood, HAMT, ...  Not all generated lookup methods are
+perfect hashes per se. I also implemented traditional methods which might be
+faster for smaller key sets, like nested switches, hash array mapped tries or
+ordinary open addressing hash tables.
 
 As output there exist several output formater classes, e.g. C and later: XS,
 Java, Ruby, PHP, Python, PECL.  For Lua or Lisp this is probably not needed as
@@ -513,9 +513,10 @@ L<Perfect::Hash::Pearson8>,
 L<Perfect::Hash::PearsonNP>,
 L<Perfect::Hash::Pearson32>,
 L<Perfect::Hash::Pearson16>,
-L<Perfect::Hash::Bob> I<(not yet)>,
 L<Perfect::Hash::Gperf>,
 L<Perfect::Hash::Switch>,
+L<Perfect::Hash::Bob>,
+L<Perfect::Hash::Cuckoo> I<(not yet)>,
 L<Perfect::Hash::CMPH::CHM>,
 L<Perfect::Hash::CMPH::BMZ>,
 L<Perfect::Hash::CMPH::BMZ8> I<(not yet)>,

@@ -50,6 +50,7 @@ t/03false-positives.t
 t/04save_c.t
 t/05save_c_nul.t
 t/06save_c_utf8.t
+t/07save_c_pic.t
 t/z_kwalitee.t
 t/z_meta.t
 t/z_pod-coverage.t

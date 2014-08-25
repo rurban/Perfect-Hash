@@ -82,7 +82,7 @@ The best algorithm used in Hanov and various others is derived from
 Fabiano C. Botelho, and Martin Dietzfelbinger
 L<http://cmph.sourceforge.net/papers/esa09.pdf>
 
-Prior art to phash:
+=head2 Prior art to phash
 
 There exist some executables, a library and a simple python script to generate
 code to access perfect hashes and minimal versions thereof, but nothing to use
@@ -127,21 +127,21 @@ The following algorithms and options are done and planned:
 
 Do not store the keys of the hash. Needs much less space and is faster, but
 might only be used either if you know in advance that you'll never lookup not
-existing keys, or check the result manually by yourself to avoid false
-positives.
+existing keys, or check the result manually by yourself with your already
+existing keys array to avoid false positives.
 
-=item -minimal (not yet)
+=item -minimal I<(not yet)>
 
 Selects the best available method for a minimal hash, given the
 dictionary size, the options, and if the compiled algos are available.
 
-=item -optimal-size (not yet)
+=item -optimal-size I<(not yet)>
 
 Tries various hashes, and uses the one which will create the smallest
 hash in memory. Those hashes usually will not store the value, so you
 might need to check the result for a false-positive.
 
-=item -optimal-speed (not yet)
+=item -optimal-speed I<(not yet)>
 
 Tries various hashes, and uses the one which will use the fastest
 lookup.
@@ -194,13 +194,13 @@ This is also a very fast variant for small 8-bit machines as the 256 byte
 table is guaranteed to fit into every CPU cache, but it only iterates
 in byte steps.
 
-=item -pearson16 (experimental)
+=item -pearson16 I<(todo, experimental)>
 
 Generate non-perfect pearson hash with an optimized 16bit hash function, a
 much bigger 16bit table (size: 65536 shorts), and static binary tree collision
 resolution.
 
-=item -pearson32 (experimental)
+=item -pearson32 I<(experimental)>
 
 Generate non-perfect pearson hash with an optimized 32bit hash function,
 a pearson table of size 256 and static binary tree collision resolution.
@@ -211,8 +211,8 @@ Generates pretty fast lookup, because it is not hashing the string,
 it just takes some characters from the string to create a unique key.
 Only limited dictionaries and smaller sizes.
 
-Currently only via the C<gperf> executable. Planned to do it in pure-perl
-to be independent and improve the generated memcpy comparisons, as in C<-switch>.
+Currently only via the C<gperf> executable. Planned to do it in pure-perl to
+be independent and improve the generated memcpy comparisons, as in C<-switch>.
 
 =item -switch
 
@@ -227,12 +227,12 @@ it is optimized to use word size comparisons for the fixed length
 comparisons, which is up to 50% faster than C<memcmp>.
 The performance is comparable to the best perfect hashes.
 
-=item -bob
+=item -bob I<(todo)>
 
 Generates C code more stable than gperf, but requires an external
 dependency for the lookup function.
 
-=item -cmph-bdz_ph
+=item -cmph-bdz_ph I<(todo)>
 
 The C<-cmph-*> methods are the current state of the art for bigger
 dictionaries.  This needs the external C<cmph> library even at run-time.
@@ -241,42 +241,42 @@ The performance depends on the dictionary size.
 -cmph-bdz_ph is usually the fastest cmph method for
 1.000 - 250.000 keys, and -cmph-chm is usually the second best option.
 
-=item -cmph-bdz
+=item -cmph-bdz I<(todo)>
 
-=item -cmph-bmz
+=item -cmph-bmz I<(todo)>
 
-=item -cmph-chm
+=item -cmph-chm I<(todo)>
 
 So far this is the most stable variant.
 
-=item -cmph-fch
+=item -cmph-fch I<(todo)>
 
-=item -cmph-chd_ph
+=item -cmph-chd_ph I<(todo)>
 
-=item -cmph-chd
+=item -cmph-chd I<(todo)>
 
-=item -cuckoo (not yet)
+=item -cuckoo I<(not yet)>
 
 Generates good cuckoo tables and hash functions to lookup a string.  Unlike
 the other hash tables here this can be extended to dynamic cuckoo hash tables,
 by adding insert and delete functions which just resize to dynamic tables.
-Cuckoo uses 1.5 hashing of the key and 2 collision-free lookup arrays.
-See L<https://en.wikipedia.org/wiki/Cuckoo_hashing>
+Cuckoo uses 1.5x hashing of the key (same as -hanov) and requires 2
+collision-free lookup arrays.  See L<https://en.wikipedia.org/wiki/Cuckoo_hashing>
 
-=item -for-c (default)
+=item -for-c I<(default)>
 
 Optimize for C libraries
 
-=item -for-xs (not yet)
+=item -for-xs I<(not yet)>
 
 Optimize for shared Perl XS code. Stores the values as perl types.
 
-=item -for-I<class> (not yet)
+=item -for-I<class> I<(not yet)>
 
 Optimize for any I<CLASS> output formatter class, loaded dynamically.
 Such as PYTHON, RUBY, JAVA, PHP, PECL, ...
 
-=item -hash=C<name> (not yet)
+=item -hash=C<name> I<(not yet)>
 
 Use the specified hash function instead of the default.
 See C<-hash=help> for a list of all supported hash function names:
@@ -288,14 +288,14 @@ libraries do not provide a HW-assisted fast crc32 function, rather a slow SW
 variant.
 
 The hardware assisted C<crc32> and C<aes> functions add a run-time probe with
-slow software fallback code (not yet). C<crc32_zlib> does all this also, and
+slow software fallback code I<(not yet)>. C<crc32_zlib> does all this also, and
 is especially optimized for long keys to hash them in parallel, if implemented
 in your library.
 
 C<GFMultilinear> for 64bit Intel and AMD
 is from L<https://github.com/lemire/StronglyUniversalStringHashing>
 
-=item -pic (not yet)
+=item -pic I<(in work)>
 
 Optimize the generated table for inclusion in shared libraries via a constant
 direct stringpool, in contrast to a table of indirect string pointers. This
@@ -304,17 +304,17 @@ generated code. As with L<gperf> C<--pic>
 
 gperf:
 
--P/--pic does a perfect optimization but may require some small code changes
-(see the gperf documentation for details), whereas --null-strings does only a
+C<-P>/C<--pic> does a perfect optimization but may require some small code changes
+(see the gperf documentation for details), whereas C<--null-strings> does only a
 half-hearted optimization but works without needing any change to surrounding
 code.
 
 =item -nul
 
 Allow C<NUL> bytes in keys, i.e. store the length for keys and compare
-binary via C<memcmp>, not C<strcmp>.
+binary via C<memcmp>. Does not use C<strlen>.
 
-=item -null-strings (not yet)
+=item -null-strings I<(not yet)>
 
 Use C<NULL> strings instead of empty strings for empty keyword table
 entries without C<-false-positives>. This reduces the startup time of
@@ -322,18 +322,18 @@ programs using a shared library containing the generated code (but not
 as much as the declaration C<-pic> option), at the expense of one more
 test-and-branch instruction at run time.
 
-=item -7bit (not yet)
+=item -7bit I<(not yet)>
 
 Guarantee that all keys consist only of 7-bit ASCII characters, bytes
 in the range 0..127.
 
-=item -ignore-case (not yet)
+=item -ignore-case I<(not yet)>
 
 Consider upper and lower case ASCII characters as equivalent. The
 string comparison will use a case insignificant character
 comparison. Note that locale dependent case mappings are ignored.
 
-=item -unicode-ignore-case (not yet)
+=item -unicode-ignore-case I<(not yet)>
 
 Consider upper and lower case unicode characters as equivalent. The
 string comparison will use a case insignificant character

@@ -55,7 +55,7 @@ The best algorithm used in Hanov and various others is derived from
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)
 
-Prior art to phash:
+## Prior art to phash
 
 There exist some executables, a library and a simple python script to generate
 code to access perfect hashes and minimal versions thereof, but nothing to use
@@ -96,21 +96,21 @@ you need to link to an external library.
 
         Do not store the keys of the hash. Needs much less space and is faster, but
         might only be used either if you know in advance that you'll never lookup not
-        existing keys, or check the result manually by yourself to avoid false
-        positives.
+        existing keys, or check the result manually by yourself with your already
+        existing keys array to avoid false positives.
 
-    - \-minimal (not yet)
+    - \-minimal _(not yet)_
 
         Selects the best available method for a minimal hash, given the
         dictionary size, the options, and if the compiled algos are available.
 
-    - \-optimal-size (not yet)
+    - \-optimal-size _(not yet)_
 
         Tries various hashes, and uses the one which will create the smallest
         hash in memory. Those hashes usually will not store the value, so you
         might need to check the result for a false-positive.
 
-    - \-optimal-speed (not yet)
+    - \-optimal-speed _(not yet)_
 
         Tries various hashes, and uses the one which will use the fastest
         lookup.
@@ -163,13 +163,13 @@ you need to link to an external library.
         table is guaranteed to fit into every CPU cache, but it only iterates
         in byte steps.
 
-    - \-pearson16 (experimental)
+    - \-pearson16 _(todo, experimental)_
 
         Generate non-perfect pearson hash with an optimized 16bit hash function, a
         much bigger 16bit table (size: 65536 shorts), and static binary tree collision
         resolution.
 
-    - \-pearson32 (experimental)
+    - \-pearson32 _(experimental)_
 
         Generate non-perfect pearson hash with an optimized 32bit hash function,
         a pearson table of size 256 and static binary tree collision resolution.
@@ -180,8 +180,8 @@ you need to link to an external library.
         it just takes some characters from the string to create a unique key.
         Only limited dictionaries and smaller sizes.
 
-        Currently only via the `gperf` executable. Planned to do it in pure-perl
-        to be independent and improve the generated memcpy comparisons, as in `-switch`.
+        Currently only via the `gperf` executable. Planned to do it in pure-perl to
+        be independent and improve the generated memcpy comparisons, as in `-switch`.
 
     - \-switch
 
@@ -196,12 +196,12 @@ you need to link to an external library.
         comparisons, which is up to 50% faster than `memcmp`.
         The performance is comparable to the best perfect hashes.
 
-    - \-bob
+    - \-bob _(todo)_
 
         Generates C code more stable than gperf, but requires an external
         dependency for the lookup function.
 
-    - \-cmph-bdz\_ph
+    - \-cmph-bdz\_ph _(todo)_
 
         The `-cmph-*` methods are the current state of the art for bigger
         dictionaries.  This needs the external `cmph` library even at run-time.
@@ -210,37 +210,37 @@ you need to link to an external library.
         \-cmph-bdz\_ph is usually the fastest cmph method for
         1.000 - 250.000 keys, and -cmph-chm is usually the second best option.
 
-    - \-cmph-bdz
-    - \-cmph-bmz
-    - \-cmph-chm
+    - \-cmph-bdz _(todo)_
+    - \-cmph-bmz _(todo)_
+    - \-cmph-chm _(todo)_
 
         So far this is the most stable variant.
 
-    - \-cmph-fch
-    - \-cmph-chd\_ph
-    - \-cmph-chd
-    - \-cuckoo (not yet)
+    - \-cmph-fch _(todo)_
+    - \-cmph-chd\_ph _(todo)_
+    - \-cmph-chd _(todo)_
+    - \-cuckoo _(not yet)_
 
         Generates good cuckoo tables and hash functions to lookup a string.  Unlike
         the other hash tables here this can be extended to dynamic cuckoo hash tables,
         by adding insert and delete functions which just resize to dynamic tables.
-        Cuckoo uses 1.5 hashing of the key and 2 collision-free lookup arrays.
-        See [https://en.wikipedia.org/wiki/Cuckoo_hashing](https://en.wikipedia.org/wiki/Cuckoo_hashing)
+        Cuckoo uses 1.5x hashing of the key (same as -hanov) and requires 2
+        collision-free lookup arrays.  See [https://en.wikipedia.org/wiki/Cuckoo_hashing](https://en.wikipedia.org/wiki/Cuckoo_hashing)
 
-    - \-for-c (default)
+    - \-for-c _(default)_
 
         Optimize for C libraries
 
-    - \-for-xs (not yet)
+    - \-for-xs _(not yet)_
 
         Optimize for shared Perl XS code. Stores the values as perl types.
 
-    - \-for-_class_ (not yet)
+    - \-for-_class_ _(not yet)_
 
         Optimize for any _CLASS_ output formatter class, loaded dynamically.
         Such as PYTHON, RUBY, JAVA, PHP, PECL, ...
 
-    - \-hash=`name` (not yet)
+    - \-hash=`name` _(not yet)_
 
         Use the specified hash function instead of the default.
         See `-hash=help` for a list of all supported hash function names:
@@ -252,14 +252,14 @@ you need to link to an external library.
         variant.
 
         The hardware assisted `crc32` and `aes` functions add a run-time probe with
-        slow software fallback code (not yet). `crc32_zlib` does all this also, and
+        slow software fallback code _(not yet)_. `crc32_zlib` does all this also, and
         is especially optimized for long keys to hash them in parallel, if implemented
         in your library.
 
         `GFMultilinear` for 64bit Intel and AMD
         is from [https://github.com/lemire/StronglyUniversalStringHashing](https://github.com/lemire/StronglyUniversalStringHashing)
 
-    - \-pic (not yet)
+    - \-pic _(in work)_
 
         Optimize the generated table for inclusion in shared libraries via a constant
         direct stringpool, in contrast to a table of indirect string pointers. This
@@ -268,17 +268,17 @@ you need to link to an external library.
 
         gperf:
 
-        \-P/--pic does a perfect optimization but may require some small code changes
-        (see the gperf documentation for details), whereas --null-strings does only a
+        `-P`/`--pic` does a perfect optimization but may require some small code changes
+        (see the gperf documentation for details), whereas `--null-strings` does only a
         half-hearted optimization but works without needing any change to surrounding
         code.
 
     - \-nul
 
         Allow `NUL` bytes in keys, i.e. store the length for keys and compare
-        binary via `memcmp`, not `strcmp`.
+        binary via `memcmp`. Does not use `strlen`.
 
-    - \-null-strings (not yet)
+    - \-null-strings _(not yet)_
 
         Use `NULL` strings instead of empty strings for empty keyword table
         entries without `-false-positives`. This reduces the startup time of
@@ -286,25 +286,25 @@ you need to link to an external library.
         as much as the declaration `-pic` option), at the expense of one more
         test-and-branch instruction at run time.
 
-    - \-7bit (not yet)
+    - \-7bit _(not yet)_
 
         Guarantee that all keys consist only of 7-bit ASCII characters, bytes
         in the range 0..127.
 
-    - \-ignore-case (not yet)
+    - \-ignore-case _(not yet)_
 
         Consider upper and lower case ASCII characters as equivalent. The
         string comparison will use a case insignificant character
         comparison. Note that locale dependent case mappings are ignored.
 
-    - \-unicode-ignore-case (not yet)
+    - \-unicode-ignore-case _(not yet)_
 
         Consider upper and lower case unicode characters as equivalent. The
         string comparison will use a case insignificant character
         comparison. Note that locale dependent case mappings are planned to be done via
         `libicu` or the better `libunistring`.
 
-- analyze\_data $dict, @options
+- find\_best\_method $dict, @options
 
     Scans the given dictionary, honors the given options and current architecture
     and returns the name of the recommended hash table algorithm for fast lookups.

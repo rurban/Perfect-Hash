@@ -129,8 +129,10 @@ sub _save_c_array {
 
 =item c_stringpool FH, array
 
-Dump the strings as continous direct buffer, used for C<-pic>, as in
-C<gperf --pic>.
+Dump the strings as continous direct buffer.
+Used by C<-pic>, as in C<gperf --pic>.
+
+Sort the strings by length, properly aligned words first.
 
 TODO: support holes in @G as in gperf
 
@@ -139,26 +141,51 @@ TODO: support holes in @G as in gperf
 sub c_stringpool {
   my ($FH, $G) = @_;
   my $last = scalar @$G - 1;
+  # sort by length, favor word-aligned strings first.
+  # but this sort-order is only used internally of course. the keys itselves from 0..last
+  my (@L, %L);
   printf $FH "
+    /* sorted by aligned length */
     struct stringpool_t {";
-  for my $i (0 .. $last) {
+  my $j = 0;
+  my @S = sort {bytes::length($G->[$a]) <=> bytes::length($G->[$b])} (0 .. $last);
+  for my $l (15, 7, 3) {
+    for my $i (0 .. $last) {
+      my $g = $G->[$i];
+      if ($l == bytes::length($g)) {
+        printf $FH "
+      char stringpool_str%d[sizeof(%s)];", $i, B::cstring($g);
+        $L[$j] = $i;
+        $L{$i} = $j;
+        $j++;
+      }
+    }
+  }
+  for my $i (@S) {
     my $g = $G->[$i];
     printf $FH "
-      char stringpool_str%d[sizeof(%s)];", $i, B::cstring($g);
+      char stringpool_str%d[sizeof(%s)];", $i, B::cstring($g) unless exists $L{$i};
   }
   printf $FH "
     };
     static const struct stringpool_t stringpool_contents = {";
-  for my $i (0 .. $last) {
+  for my $j (@L) {
+    my $g = $G->[$j];
+    printf $FH "
+      %s, /* %d (length %d) */", B::cstring($g), $j, bytes::length($g) + 1;
+  }
+  for my $i (@S) {
     my $g = $G->[$i];
     printf $FH "
-      %s,", B::cstring($g);
+      %s, /* %d */", B::cstring($g), $i unless exists $L{$i};
   }
   printf $FH "
     };
     #define stringpool ((const char *) &stringpool_contents)
     static const int keys[] = {";
-  for my $i (0 .. $last) {
+  # but this must be sorted in natural order
+  for my $i (0..$last) {
+    my $g = $G->[$i];
     printf $FH "
       (int)(long)&((struct stringpool_t *)0)->stringpool_str%i,", $i;
   }

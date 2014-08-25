@@ -449,7 +449,7 @@ sub save_c {
       register int o = keys[h];
       if (o >= 0) {
         register const char *s = o + stringpool;
-        if (*key != *s || !memcmp(key + 1, s + 1, l-1))
+        if (*key != *s || memcmp(key + 1, s + 1, l-1))
           h = -1;
       }
     }";

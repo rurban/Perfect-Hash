@@ -33,7 +33,7 @@ Honored options are:
 
 -max-time  default: 60, disable with 0
 -nul is always set.
--pic
+-pic is disabled
 -7bit
 -switches => --switch=2
 
@@ -113,12 +113,16 @@ sub save_c {
   my $ph = shift;
   my ($fn, $options, $dict) = ($ph->[0], $ph->[1], $ph->[2]);
   my ($fileprefix, $base) = $ph->save_h_header(@_);
-  my %opts = ('-pic'      => '-P',
+  my %opts = (
+             #'-pic'      => '-P', # generates wrong code with structs
              #'-nul'      => '-l',
               '-7bit'     => '-7',
               '-switches' => '--switch=2',
              );
-  my @opts = ("-l", "-C","-N$base\_lookup", "-H$base\_hash");
+  my @opts = ("-l", # --compare-lengths (always use -nul)
+              "-c", # --compare-strncmp
+              "-C", # --readonly-tables
+              "-N$base\_lookup", "-H$base\_hash");
   for (keys %$options) {
     push @opts, $opts{$_} if exists $opts{$_}; 
   }

@@ -20,7 +20,7 @@ my $i = 0;
 for my $m (@$methods) {
   my $used_dict = $m eq '-pearson8'
     ? $small_dict
-    : $m eq '-gperf'
+    : ($m eq '-gperf' or $custom_size)
       ? $dictarr
       : $dict;
   my $ph = new Perfect::Hash($used_dict, $m, @$opts);
@@ -37,15 +37,32 @@ for my $m (@$methods) {
     next;
   }
   my ($nul) = grep {$_ eq '-nul'} @$opts;
-  test_wmain($m, 1, 'AOL', $ph->perfecthash('AOL'), $nul);
+  my ($shared) = grep {$_ eq '-shared'} @$opts;
+  my $suffix = $m eq "-bob" ? "_hash" : "";
+  my $base = "phash$suffix";
+  my $out = "$base.c";
+  test_wmain($m, 1, 'AOL', $ph->perfecthash('AOL'), $suffix, $nul);
   $i++;
-  $ph->save_c("phash");
-  if (ok(-f "phash.c" && -f "phash.h", "$m generated phash.c/.h")) {
-    my $cmd = compile_static($ph);
+  $ph->save_c($base);
+  if (ok(-f "$base.c" && -f "$base.h", "$m generated phash.c/.h")) {
+    my ($cmd, $cmd1);
+    if ($shared) {
+      $cmd = compile_shared($ph, $suffix);
+      $cmd1 = link_shared($ph, $suffix);
+    } else {
+      $cmd = compile_static($ph, $suffix);
+    }
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
+    if (!($retval>>8) and $cmd1) {
+      print "$cmd1\n" if $ENV{TEST_VERBOSE};
+      $retval = system($cmd1);
+    }
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = $^O eq 'MSWin32' ? `phash` : `./phash`;
+      my $callprefix = $^O eq 'MSWin32' ? ""
+        : $^O eq 'darwin' ? "DYLD_LIBRARY_PATH=. ./"
+        : "LD_LIBRARY_PATH=. ./";
+      my $retstr = `${callprefix}$base`;
       $retval = $?;
       TODO: {
         local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m} and $m !~ /^-cmph/;
@@ -65,5 +82,5 @@ for my $m (@$methods) {
   } else {
     ok(1, "SKIP") for 0..3;
   }
-  unlink("phash","phash.c","phash.h","main.c") if $default;
+  unlink($base,"$base.c","$base.h","main.c") if $default;
 }

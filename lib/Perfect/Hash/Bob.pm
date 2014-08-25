@@ -135,7 +135,7 @@ sub save_c {
       setpgrp(0, 0); # with exec sets the process status to T for stopped and traced.
       # undetectable to waitpid.
       # however with system it creates a proper detectable and killable child hierarchy.
-      system(join " ", @cmd);
+      system(join(" ",@cmd));
       exit(0);
     }
   } else {

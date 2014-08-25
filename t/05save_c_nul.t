@@ -16,12 +16,11 @@ $Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
 
 my $i = 0;
 my $key = "AOL";
-my $suffix = "_nul";
 
 for my $m (@$methods) {
   my $used_dict = $m eq '-pearson8'
     ? $small_dict
-    : $m eq '-gperf'
+    : ($m eq '-gperf' or $custom_size)
       ? $dictarr
       : $dict;
   my $ph = new Perfect::Hash($used_dict, $m, @$opts, "-nul");
@@ -37,15 +36,18 @@ for my $m (@$methods) {
     $i++;
     next;
   }
+  my $suffix = $m eq "-bob" ? "_hash" : "_nul";
+  my $base = "phash$suffix";
+  my $out = "$base.c";
   test_wmain($m, 1, $key, $ph->perfecthash($key), $suffix, 1);
   $i++;
-  $ph->save_c("phash$suffix");
-  if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {
+  $ph->save_c($base);
+  if (ok(-f "$base.c" && -f "$base.h", "$m generated $base.c/.h")) {
     my $cmd = compile_static($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
+      my $retstr = $^O eq 'MSWin32' ? `$base` : `./$base`;
       $retval = $?;
       TODO: {
         local $TODO = "$m" if exists $Perfect::Hash::algo_todo{$m} and $m !~ /^-cmph/;
@@ -65,5 +67,5 @@ for my $m (@$methods) {
   } else {
     ok(1, "SKIP") for 1..3;
   }
-  unlink("phash$suffix","phash$suffix.c","phash$suffix.h","main$suffix.c") if $default;
+  unlink("$base","$base.c","$base.h","main$suffix.c") if $default;
 }

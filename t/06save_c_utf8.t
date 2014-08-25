@@ -24,7 +24,7 @@ delete $Perfect::Hash::algo_todo{'-cmph-chm'};
 
 my @small_dict = @dict[0..200];
 my $i = 0;
-my $suffix = "_utf8";
+#my $suffix = "_utf8";
 
 for my $m (@$methods) {
   my $used_dict = $m eq '-pearson8'
@@ -38,21 +38,22 @@ for my $m (@$methods) {
     $i++;
     next;
   }
-  my ($nul) = grep {$_ eq '-nul'} @$opts;
+  my $suffix = $m eq "-bob" ? "_hash" : "_utf8";
+  my $base = "phash$suffix";
   test_wmain_all($m, \@dict, $opts, $suffix);
   $i++;
-  $ph->save_c("phash$suffix");
+  $ph->save_c($base);
   # utf8 seqs being split on word boundaries with -switch in comments caused
   # emacs display a randomly wrong encoding - mojibake.
-  open my $FH, ">>", "phash$suffix.c";
+  open my $FH, ">>", "$base.c";
   print $FH "/*\nLocal variables:\n  mode: C\n  coding: utf-8-unix\nEnd:\n*/";
   close $FH;
-  if (ok(-f "phash$suffix.c" && -f "phash$suffix.h", "$m generated phash$suffix.c/.h")) {
+  if (ok(-f "$base.c" && -f "$base.h", "$m generated $base.c/.h")) {
     my $cmd = compile_static($ph, $suffix);
     diag($cmd) if $ENV{TEST_VERBOSE};
     my $retval = system($cmd);
     if (ok(!($retval>>8), "could compile $m")) {
-      my $retstr = $^O eq 'MSWin32' ? `phash$suffix` : `./phash$suffix`;
+      my $retstr = $^O eq 'MSWin32' ? `$base` : `./$base`;
       $retval = $?;
       TODO: {
         local $TODO = "$m not yet" if exists $Perfect::Hash::algo_todo{$m};
@@ -69,5 +70,5 @@ for my $m (@$methods) {
   } else {
     ok(1, "SKIP !save_c") for 1..3;
   }
-  unlink("phash$suffix","phash$suffix.c","phash$suffix.h","main$suffix.c") if $default;
+  unlink("$base","$base.c","$base.h","main$suffix.c") if $default;
 }

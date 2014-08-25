@@ -146,6 +146,7 @@ sub test_wmain {
   open $FH, ">", "main$suffix.c";
   print $FH "
 #include <stdio.h>
+#include <string.h>
 #include \"phash$suffix.h\"
 
 int main () {
@@ -198,9 +199,9 @@ sub test_wmain_all {
   my $FH;
   # and then we need a main also
   open $FH, ">", "main$suffix.c";
-  print $FH '#include <string.h>';
   print $FH "
 #include <stdio.h>
+#include <string.h>
 #include \"phash$suffix.h\"
 
 static const char *testkeys[] = {

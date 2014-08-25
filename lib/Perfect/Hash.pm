@@ -405,24 +405,24 @@ sub new {
   my $option = shift; # the first must be the algo method
   my $method = $algo_methods{substr($option,1)} if $option;
   if (substr($option,0,1) eq "-" and $method) {
+    warn "Warning: Method $option not yet working correctly\n" if exists $algo_todo{$option};
   } else {
-    # no or wrong algo method given, check which would be the best
     unshift @_, $option;
-    $method = analyze_data($dict, @_);
+    $method = find_best_method($dict, @_);
     print "Using $method\n";
   }
   eval "require $method;" unless $method eq 'Perfect::Hash::HanovPP';
   return $method->new($dict, @_);
 }
 
-=item analyze_data $dict, @options
+=item find_best_method $dict, @options
 
 Scans the given dictionary, honors the given options and current architecture
 and returns the name of the recommended hash table algorithm for fast lookups.
 
 =cut
 
-sub analyze_data {
+sub find_best_method {
   my $dict = shift;
   my @options = @_;
   # TODO: choose the right default, based on the given options and the

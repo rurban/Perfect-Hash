@@ -104,6 +104,7 @@ sub save_c {
   _do_cand($ph, $FH, $old, \@cand) if @cand;
   print $FH "
     }
+    return -1;
 }
 ";
 }

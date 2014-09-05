@@ -83,6 +83,7 @@ sub save_c {
     const unsigned int l = strlen(s);"
   }
   print $FH "
+    const unsigned char* su = (const unsigned char*)s;
     switch (l) {";
   # dispatch on l
   my ($old, @cand);
@@ -121,7 +122,7 @@ sub _do_cand {
   if (@$cand == 1) { # only one candidate to check
     my $s0 = $cand->[0];
     my $v = $dict->{$s0};
-    print $FH "\n        ",memcmp_const_str($s0, $l, $v, 1);
+    print $FH "\n        ",memcmp_const_str("su", $s0, $l, $v, 1);
   } else {
     # switch on the most diverse char in the strings
     _do_switch($ph, $FH, $cand, 1);
@@ -158,7 +159,7 @@ sub _do_switch {
   my $h = $maxkeys->[2];
   my $space = 4 + (4 * $indent);
   my $maxc;
-  print $FH "\n"," " x $space,"switch (s[$i]) {";
+  print $FH "\n"," " x $space,"switch (su[$i]) {";
   if ($options->{-debug}) {
     printf("switch on $i in [%s]\n", _list_max5($cand));
   }
@@ -201,14 +202,14 @@ sub _do_switch {
       }
       if ($h->{$c} == 1) {
         print $FH "\n  "," " x $space,"case $case";
-        print $FH "\n    "," " x $space, memcmp_const_str($s, $l, $v);
+        print $FH "\n    "," " x $space, memcmp_const_str("su", $s, $l, $v);
         $new_case = 1;
       } else {
         if ($c ne $old_c) {
           print $FH "\n  "," " x $space,"case $case";
           $new_case = 1;
         }
-        print $FH "\n    "," " x $space, memcmp_const_str($s, $l, $v);
+        print $FH "\n    "," " x $space, memcmp_const_str("su", $s, $l, $v);
         $old_c = $c;
       }
     }

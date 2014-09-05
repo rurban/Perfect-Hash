@@ -217,7 +217,7 @@ sub utf8_valid {
   )*$ /x;
 }
 
-=item memcmp_const_str($string, $length, $value, $last_statement)
+=item memcmp_const_str($var, $string, $length, $value, $last_statement)
 
 Returns a string for a faster memcmp replacement of dynamic C<s> with
 static $string with optimized word-size comparisons, when we know the
@@ -233,7 +233,7 @@ If $last_statement is true, returns -1 if not found, else $value.
 C<$cmp> is constructed by repeated calls to C<_strcmp_i()>.
 
 Examples:
-    memcmp_const_str("ACTH's", 6, 6)
+    memcmp_const_str("s", "ACTH's", 6, 6)
   =>
      if (*(int*)s == (int)0x48544341 /* ACTH's */
 	&& *(short*)&s[4] == (short)0x7327 /* 's */) return 6;
@@ -256,14 +256,14 @@ TODO: might need to check run-time char* alignment on non-intel platforms
 =cut
 
 sub memcmp_const_str {
-  my ($s, $l, $v, $last) = @_;
+  my ($var, $s, $l, $v, $last) = @_;
   my $cmp;
   if ($l == 0) {
     $cmp = "0"; # empty string is false, this key does not exist (added by ourself most likely)
   } elsif ($l > 36) { # cutoff 36 for short words, not using memcmp.
-    $cmp = strcmp_str("s", $s, $l);
+    $cmp = strcmp_str($var, $s, $l);
   } else {
-    my ($n, $ptr) = (1, "s");
+    my ($n, $ptr) = (1, $var);
     $cmp = "";
     my $i = 0;
     while ($l >= 1) {
@@ -283,7 +283,7 @@ sub memcmp_const_str {
       if ($l >= 1) {
         $i += $n;
         $s = bytes::substr($s, $n);
-        $ptr = "&s[$i]";
+        $ptr = "&".$var."[$i]";
       }
     }
     $cmp = substr($cmp, 6);
@@ -363,14 +363,14 @@ I<untested and yet unused>
 =cut
 
 sub memcmp_const_len {
-  my ($s, $l, $v, $last) = @_;
+  my ($var, $s, $l, $v, $last) = @_;
   my $cmp;
   if ($l == 0) {
     $cmp = "0"; # empty string is false, this key does not exist (added by ourself most likely)
   } elsif ($l > 36) { # cutoff 36 for short words, not using memcmp.
-    $cmp = strcmp_len("s", $s, $l);
+    $cmp = strcmp_len($var, $s, $l);
   } else {
-    my ($n, $ptr) = (1, "s");
+    my ($n, $ptr) = (1, $var);
     $cmp = "";
     my $i = 0;
     while ($l >= 1) {
@@ -390,7 +390,7 @@ sub memcmp_const_len {
       if ($l >= 1) {
         $i += $n;
         $s = "&".$s."[$i]";
-        $ptr = "&s[$i]";
+        $ptr = "&".$var."[$i]";
       }
     }
     $cmp = substr($cmp, 6);

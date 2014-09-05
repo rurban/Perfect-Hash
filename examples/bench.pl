@@ -35,11 +35,13 @@ sub powerset {
 }
 
 my $i = 0;
+# all combinations of save_c inflicting @opts:
+$opts = [qw(-false-positives -nul -pic)] unless @$opts;
+
+print "all options: ",join " ", @$opts,"\n";
 print "size=$size  (smaller sec and size is better)\n";
 printf "%-12s %8s %9s %7s %8s  %8s  %s\n",
        "Method", "*lookup*", "generate", "compile", "c size", "exesize", "options";
-# all combinations of save_c inflicting @opts:
-$opts = [qw(-false-positives -nul)] unless @$opts;
 my @opts = @{&powerset(@$opts)};
 @opts = (join " ",@$opts) if grep /-1opt/, @$opts;
 for my $opt (@opts) {
@@ -76,7 +78,7 @@ for my $opt (@opts) {
     $i++;
     unlink $out;
     my ($cmd, $cmd1);
-    if ($opt =~ /-shared/) {
+    if ($opt =~ /-shared/ or $opt =~ /-pic/) {
       $cmd = compile_shared($ph, $suffix);
       $cmd1 = link_shared($ph, $suffix);
     } else {

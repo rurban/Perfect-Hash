@@ -286,10 +286,11 @@ sub save_c {
   my $hsize = scalar @$H;
   my $htype = u_csize($hsize);
   print $FH "
+    const unsigned char* su = (const unsigned char*)s;";
+  print $FH "
     int l = strlen(s);" unless $ph->option('-nul');
   print $FH "
     long h = 0;
-    const char *key = s;
     static $htype $base\[] = {\n";
   _save_c_array(8, $FH, $H, "%3d");
   print $FH "    };\n";
@@ -378,11 +379,11 @@ sub save_c {
     print $FH "
     unsigned int *hi = (unsigned int *)&",$base,"[0];
     int i;
-    for (i=0; i < l/4; i += 4, s += 4) {
-      h = hi[ ((unsigned int)h ^ *(unsigned int*)s) % 64];
+    for (i=0; i < l/4; i += 4, su += 4) {
+      h = hi[ ((unsigned int)h ^ *(unsigned int*)su) % 64];
     }
-    for (; i < l; i++, s++) {
-      h = $base\[ (($htype)h ^ *s) % 256 ];
+    for (; i < l; i++, su++) {
+      h = $base\[ (($htype)h ^ *su) % 256 ];
     }";
   }
   elsif (ref $ph eq 'Perfect::Hash::Pearson16') {
@@ -390,10 +391,10 @@ sub save_c {
     unsigned short hs;
     int i;
     for (i = 0; i < (l % 2 ? l -1 : l); i++) {
-      hs = $base\[ (unsigned short)(hs ^ *(unsigned short*)s++) ];
+      hs = $base\[ (unsigned short)(hs ^ *(unsigned short*)su++) ];
     }
     if (l % 2)
-      hs = $base\[ (unsigned short)(hs ^ key[l-1]) ];
+      hs = $base\[ (unsigned short)(hs ^ su[l-1]) ];
     h = hs;";
   } elsif ($ph->option('-nul')) {
     print $FH "
@@ -401,17 +402,17 @@ sub save_c {
     for (i=0; i<l; i++) {";
       if (ref $ph eq 'Perfect::Hash::Pearson') {
         print $FH "
-        h = $base\[(($htype)h ^ s[i]) % $hsize];";
+        h = $base\[(($htype)h ^ su[i]) % $hsize];";
       } else {
         print $FH "
-        h = $base\[($htype)h ^ s[i]];";
+        h = $base\[($htype)h ^ su[i]];";
       }
       print $FH "
     }";
   } else {
     print $FH "
     unsigned char c;
-    for (c=*s++; c; c=*s++) {";
+    for (c=*su++; c; c=*su++) {";
     if (ref $ph eq 'Perfect::Hash::Pearson') {
       print $FH "
         h = $base\[(h ^ c) % $hsize];";
@@ -432,7 +433,7 @@ sub save_c {
       for (; i < Cs[h]; i++) {";
       # ck[i] is not known in advance
       print $FH "
-        if (!memcmp(ck[i], key, l)) return Cv[h][i];";
+        if (!memcmp(ck[i], s, l)) return Cv[h][i];";
       print $FH "
       }
     }
@@ -448,14 +449,14 @@ sub save_c {
     else {
       register int o = keys[h];
       if (o >= 0) {
-        register const char *s = o + stringpool;
-        if (*key != *s || memcmp(key + 1, s + 1, l-1))
+        register const char *st = o + stringpool;
+        if (*st != *s || memcmp(s + 1, st + 1, l-1))
           h = -1;
       }
     }";
     } else {
       print $FH "
-    if (l == 0 || memcmp(keys[h], key, l)) h = -1;";
+    if (l == 0 || memcmp(keys[h], s, l)) h = -1;";
     }
   }
   print $FH "

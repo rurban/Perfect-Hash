@@ -277,7 +277,7 @@ sub save_c {
     $size = scalar(@$G);
   }
   my $gtype = s_csize($size);
-  my $ugtype = $gtype eq "signed char" ? "un".$gtype : "unsigned ".$gtype;
+  #my $ugtype = $gtype eq "signed char" ? "un".$gtype : "unsigned ".$gtype;
 
   # TODO: which types of V. XXX also allow strings
   my $vtype = u_csize(scalar @$V);
@@ -363,11 +363,12 @@ sub c_hash_impl {
 
 /* FNV algorithm from http://isthe.com/chongo/tech/comp/fnv/ */
 static INLINE
-unsigned $base\_hash(unsigned d, const unsigned char *s, const int l) {
+unsigned $base\_hash(unsigned d, const char *s, const int l) {
     int i = 0;
+    const unsigned char* su = (const unsigned char*)s;
     if (!d) d = 0x01000193; /* 16777619 */
     for (; i < l; i++) {
-        d = (d * 0x01000193) ^ *s++;
+        d = (d * 0x01000193) ^ *su++;
     }
     return d & 0xffffffff;
 }

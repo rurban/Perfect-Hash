@@ -68,9 +68,13 @@ _new(class, keyfile, ...)
     result = newAV();
     av_push(result, newSViv(PTR2IV(mphf)));                  /* mphf in [0] */
     size = cmph_packed_size(mphf);
+    if (!size) {
+      fprintf(stderr, "Failed to calculate cmph_packed_size for algorithm %s", classname);
+      XSRETURN_UNDEF;
+    }
     packed = (char *)malloc(size);
     cmph_pack(mphf, packed);
-    av_push(result, newSVpvn(packed, size+1));             /* packed in [1] */
+    av_push(result, newSVpvn(packed, size));               /* packed in [1] */
     options = newHV();
     for (i=2; i<items; i++) { /* CHECKME */
       hv_store_ent(options, ST(i), newSViv(1), 0);
@@ -92,3 +96,11 @@ CODE:
     RETVAL = cmph_search(mphf, SvPVX(key), SvCUR(key));
 OUTPUT:
     RETVAL
+
+void
+DESTROY(ph)
+    SV*  ph
+CODE:
+    AV *result = (AV*)SvRV(ph);
+    cmph_t *mphf = (cmph_t *)SvIVX(AvARRAY(result)[0]);
+    if (mphf) cmph_destroy(mphf);

@@ -65,11 +65,15 @@ sub save_h_header {
     die "wrong class: ",ref $ph;
   }
   my $fileprefix = shift || "phash";
-  use File::Basename 'basename';
-  my $base = basename $fileprefix;
-  open FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
-  print FH $ph->c_funcdecl($base).";\n";
-  close FH;
+  my $base = $fileprefix;
+  if ($fileprefix ne "phash") {
+    require File::Basename;
+    $base = File::Basename::basename $fileprefix;
+  }
+  my $FH;
+  open $FH, ">", $fileprefix.".h" or die "$fileprefix.h: @!";
+  print $FH $ph->c_funcdecl($base).";\n";
+  close $FH;
   return ($fileprefix, $base);
 }
 
@@ -421,7 +425,8 @@ sub strcmp_len {
 =item u_csize($size)
 =item s_csize($size)
 
-Returns c-type to hold the unsigned or signed size elements.
+Returns the c-type as string to hold the unsigned or signed size elements,
+long, int, short or char.
 
 =cut
 

@@ -1,4 +1,5 @@
 package Perfect::Hash::MoreHashes;
+use strict;
 use Perfect::Hash::C;
 our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 our $VERSION = '0.01';
@@ -20,8 +21,8 @@ pure-perl murmur3 int32 finalizer
 sub hash_murmur3 {
   use bytes;
   my $ph = shift;
-  my str $str = shift;
-  my int $h = shift || 0;
+  my $str = shift;
+  my $h = shift || 0;
   for my $c (split "", $str) {
     $h = $h ^ ord($c); # XXX better slice strings into 4 bytes
     $h ^= $h >> 16;

@@ -303,9 +303,23 @@ sub save_c {
     my $keys = $ph->[3];
     print $FH "
     /* keys */
-    static const char* K[] = {
+    static const char* const K[] = {
 ";
     _save_c_array(8, $FH, $keys, "\"%s\"");
+    print $FH "    };";
+    # XXX @Ks only needed for ASAN
+    my @Ks = map {length $_} @$keys;
+    my $maxKs = 0;
+    for my $i (@Ks) {
+      $maxKs = $i if $i > $maxKs;
+    }
+    my $Kstype = u_csize($maxKs);
+    print $FH "
+    /* key lengths */
+    static const $Kstype Ks[] = {
+";
+    my $fmt = $maxKs > 4294967296 ? "%lu" : "%u";
+    _save_c_array(8, $FH, \@Ks, $fmt);
     print $FH "    };";
   }
   unless ($ph->option('-nul')) {
@@ -321,8 +335,9 @@ sub save_c {
           ? V[h]
           : V[($vtype)($base\_hash(d, s, l) % $size)];";
   if (!$ph->false_positives) { # check keys
+    # This needs to be ASAN protected, as the length of K[v] (i.e. Ks[v]) might be smaller
     print $FH "
-    if (memcmp(K[v],s,l)) v = -1;";
+    if ((l != (long)Ks[v]) || (*K[v] != *s) || memcmp(K[v],s,l)) v = -1;";
   }
   print $FH "
     return v;

@@ -274,11 +274,13 @@ Generate C code for all 3 Pearson classes
 sub save_c {
   my $ph = shift;
   my $C = $ph->[2];
-  #require Perfect::Hash::C;
-  #Perfect::Hash::C->import();
   my ($fileprefix, $base) = $ph->save_h_header(@_);
   my $FH = $ph->save_c_header($fileprefix, $base);
-  print $FH "#include <string.h>\n" if @$C or !$ph->option('-nul');
+  # print $FH "#include <string.h>\n" if @$C or !$ph->option('-nul');
+  if (!$ph->option('-nul')) {
+    # XXX check for ASAN or just use a if not
+    print $FH "#define _min(a,b) (a < b) ? a : b\n";
+  }
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
   my $size = $ph->[0];
@@ -432,8 +434,9 @@ sub save_c {
       int i = 0;
       for (; i < Cs[h]; i++) {";
       # ck[i] is not known in advance
+      my $l = $ph->option('-nul') ? "l" : "_min(l, strlen(ck[i]))";
       print $FH "
-        if (!memcmp(ck[i], s, l)) return Cv[h][i];";
+        if (!memcmp(ck[i], s, $l)) return Cv[h][i];";
       print $FH "
       }
     }
@@ -455,8 +458,9 @@ sub save_c {
       }
     }";
     } else {
+      my $l = $ph->option('-nul') ? "l" : "_min(l, strlen(keys[h]))";
       print $FH "
-    if (l == 0 || memcmp(keys[h], s, l)) h = -1;";
+    if (l == 0 || memcmp(keys[h], s, $l)) h = -1;";
     }
   }
   print $FH "

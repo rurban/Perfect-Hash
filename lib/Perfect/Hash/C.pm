@@ -253,6 +253,7 @@ TODO: might need to check run-time char* alignment on non-intel platforms
             => 0.004587  0.004156 0.553640  1038117    51536  -1opt
   switch       0.006598  0.003342 0.165452    15018    22864  -1opt (127)
             => 0.004707  0.001989 0.171876    21062    22840
+
 =cut
 
 sub memcmp_const_str {
@@ -422,11 +423,10 @@ sub strcmp_len {
   }
 }
 
-=item u_csize($size)
-=item s_csize($size)
+=item u_csize($size), s_csize($size)
 
 Returns the c-type as string to hold the unsigned or signed size elements,
-long, int, short or char.
+"long", "int", "short" or "char". No "long long".
 
 =cut
 

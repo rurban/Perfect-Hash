@@ -72,9 +72,9 @@ _new(class, keyfile, ...)
       fprintf(stderr, "Failed to calculate cmph_packed_size for algorithm %s", classname);
       XSRETURN_UNDEF;
     }
-    packed = (char *)malloc(size);
+    packed = (unsigned char *)malloc(size);
     cmph_pack(mphf, packed);
-    av_push(result, newSVpvn(packed, size));               /* packed in [1] */
+    av_push(result, newSVpvn((char *)packed, size));       /* packed in [1] */
     options = newHV();
     for (i=2; i<items; i++) { /* CHECKME */
       hv_store_ent(options, ST(i), newSViv(1), 0);

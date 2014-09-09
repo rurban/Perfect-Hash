@@ -142,7 +142,7 @@ sub save_c {
     system(join(" ",@cmd));
   }
   my $errcode = $? >> 8;
-  unlink $fn unless $errcode;
+  unlink $fn if $fn eq "phash_keys.tmp" and !$errcode;
   open my $H, ">>", "$fileprefix.h";
   if ($options->{'-nul'}) {
     print $H "#define phash_hash_lookup(k,l) mph_phash_s((k),(l))\n";

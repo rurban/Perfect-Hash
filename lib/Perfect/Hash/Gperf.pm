@@ -160,8 +160,9 @@ sub save_c {
   } else {
     system(join(" ",@cmd));
   }
-  unlink $fn unless $? >> 8;
-  return $? >> 8;
+  my $errcode = $? >> 8;
+  unlink $fn if $fn eq "phash_keys.tmp" and !$errcode;
+  return $errcode;
 }
 
 =item perfecthash $ph, $key

@@ -93,6 +93,7 @@ sub compile_shared {
   #if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
   #  $cmd =~ s/-o phash$suffix$dlext/-nologo -Fo phash$suffix.dll/;
   #}
+  $cmd .= $ph->c_lib();
   return $cmd;
 }
 

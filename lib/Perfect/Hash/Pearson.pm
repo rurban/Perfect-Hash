@@ -433,8 +433,8 @@ sub save_c {
       const char **ck = (const char **)Ck[h];
       int i = 0;
       for (; i < Cs[h]; i++) {";
-      # ck[i] is not known in advance
-      my $l = $ph->option('-nul') ? "l" : "_min(l, strlen(ck[i]))";
+      # ck[i] is not known in advance. +1 to include the final \0
+      my $l = $ph->option('-nul') ? "l+1" : "1+_min(l, strlen(ck[i]))";
       print $FH "
         if (!memcmp(ck[i], s, $l)) return Cv[h][i];";
       print $FH "

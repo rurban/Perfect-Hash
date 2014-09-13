@@ -33,7 +33,7 @@ for my $m (@$methods) {
   my $ph1 = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m, @$opts, '-false-positives');
   $v = $ph1->perfecthash($w);
   TODO: {
-    local $TODO = "$m" if $m =~ /^(-cmph-.*|-pearson)/;
+    local $TODO = "$m" if $m =~ /^-(cmph-|pearson)/;
     my $vs = defined $v ? "$v" : 'undef';
     if ($ph1->false_positives) {
       ok(defined($v) && $v >= 0, "method $m with false_positives '$w' => $vs");

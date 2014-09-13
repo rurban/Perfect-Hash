@@ -21,6 +21,8 @@ delete $Perfect::Hash::algo_todo{'-cmph-chm'};
 #delete $Perfect::Hash::algo_todo{'-cmph-fch'};
 #delete $Perfect::Hash::algo_todo{'-cmph-chd_ph'};
 #delete $Perfect::Hash::algo_todo{'-cmph-chd'};
+$Perfect::Hash::algo_todo{'-bob'} = 1;
+$Perfect::Hash::algo_todo{'-pearson16'} = 1;
 
 my @small_dict = @dict[0..200];
 my $i = 0;

@@ -21,8 +21,8 @@ our @algos = qw(HanovPP Hanov Urban
                 Switch Gperf Bob);
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  qw(-pearson16 -bob
-     -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
+  # -pearson16 -bob
+  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
      -cmph-chd -cmph-bmz8 -cmph-brz);
 
 =head1 NAME
@@ -405,7 +405,7 @@ sub new {
   my $option = shift; # the first must be the algo method
   my $method = $algo_methods{substr($option,1)} if $option;
   if (substr($option,0,1) eq "-" and $method) {
-    warn "Warning: Method $option not yet working correctly\n" if exists $algo_todo{$option};
+    warn "Warning: Method $option not yet working correctly\n" if 0 and exists $algo_todo{$option};
   } else {
     unshift @_, $option;
     $method = find_best_method($dict, @_);

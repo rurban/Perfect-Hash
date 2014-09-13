@@ -15,6 +15,8 @@ my $small_dict = $size > 255 ? "examples/words20" : $dict;
 
 # CHM passes pure-perl, but not compiled yet
 $Perfect::Hash::algo_todo{'-cmph-chm'} = 1;
+$Perfect::Hash::algo_todo{'-bob'} = 1;
+$Perfect::Hash::algo_todo{'-pearson16'} = 1;
 
 my $i = 0;
 for my $m (@$methods) {

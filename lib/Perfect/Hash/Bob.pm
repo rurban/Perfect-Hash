@@ -190,7 +190,7 @@ sub option {
 
 sub c_include { " -Ibob" }
 
-sub c_lib { " bob/lookupa.o" }
+sub c_lib { " bob/lookupa.c" }
 
 =back
 

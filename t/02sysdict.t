@@ -13,6 +13,7 @@ for (qw(examples/words /usr/share/dict/words /usr/dict/words /opt/local/share/di
 plan skip_all => "no system dict found" unless -e $dict;
 
 my ($default, $methods, $opts) = opt_parse_args('-max-time',10);
+$methods = [''] if $default;
 plan tests => scalar(@$methods);
 ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, $dict);
 

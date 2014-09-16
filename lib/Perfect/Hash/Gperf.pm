@@ -63,6 +63,7 @@ sub new {
   if (ref $dict eq 'ARRAY') {
     unlink $fn;
     open my $F, ">", $fn;
+    print $F "%{\n#include <string.h>\n%}\n";
     print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     my $i = 0;
     my %dict;
@@ -76,6 +77,7 @@ sub new {
   }
   elsif (ref $dict eq 'HASH') {
     open my $F, ">", $fn;
+    print $F "%{\n#include <string.h>\n%}\n";
     print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
     for (sort keys %$dict) {
       print $F "$_,\t",$dict->{$_},"\n" if length($_);
@@ -212,11 +214,11 @@ sub c_funcdecl {
   if ($ph->option('-nul')) {
     "
 $decl
-$struct * $base\_lookup(const unsigned char* s, int l)";
+$struct * $base\_lookup(const char* s, int l)";
   } else {
     "
 $decl
-$struct * $base\_lookup(const unsigned char* s)";
+$struct * $base\_lookup(const char* s)";
   }
 }
 

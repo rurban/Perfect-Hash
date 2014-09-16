@@ -177,4 +177,6 @@ test_cover :: pure_all README.md
 	$(PERLRUNINST) -S cover -test
 test_coveralls :: pure_all
 	test -f .coveralls.yml && $(PERLRUNINST) -S cover -test -report coveralls
+bench :: pure_all
+	examples/all-bench.sh
 '; }

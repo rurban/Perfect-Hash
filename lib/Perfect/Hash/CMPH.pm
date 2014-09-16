@@ -117,15 +117,10 @@ sub save_c {
   print $FH "#include \"cmph.h\"\n";
   print $FH $ph->c_funcdecl($base)." {";
   # XXX check for false positives from dict at [3]
+  my $l = $ph->option('-nul') ? "l" : "strlen(s)";
   print $FH "
-    static unsigned char *packed_mphf = ",B::cstring($ph->[1]),";
-    return cmph_search_packed(packed_mphf, (const char*)s, ";
-  if ($ph->option('-nul')) {
-    print $FH "l";
-  } else {
-    print $FH "strlen(s)";
-  }
-  print $FH ") % $size;
+    static const char *packed_mphf = ",B::cstring($ph->[1]),";
+    return cmph_search_packed((void*)packed_mphf, (const char*)s, $l) % $size;
 }
 ";
 }

@@ -297,7 +297,7 @@ CODE:
       XSRETURN_UV(0);
     }
     if (hsize == 256) {
-      unsigned char *s = SvPVX(key);
+      unsigned char *s = (unsigned char*)SvPVX(key);
       unsigned char h[256];
       for (; i < 256; i++) {
         h[i] = SvIVX(AvARRAY(H)[i]);
@@ -307,7 +307,7 @@ CODE:
       }
     }
     else {
-      unsigned char *s = SvPVX(key);
+      unsigned char *s = (unsigned char*)SvPVX(key);
       for (; i < SvCUR(key); i++) {
         d = SvIVX(AvARRAY(H)[(d ^ *s++) % hsize]);
       }
@@ -328,7 +328,7 @@ CODE:
     AV *ref = (AV*)SvRV(ph);
     int size = SvIVX(AvARRAY(ref)[0]);
     AV *H = (AV*)SvRV(AvARRAY(ref)[1]);
-    unsigned char *s = SvPVX(key);
+    unsigned char *s = (unsigned char*)SvPVX(key);
     const int len = SvCUR(key);
     register int i;
     register unsigned short d = 0;
@@ -356,7 +356,7 @@ CODE:
     AV *ref = (AV*)SvRV(ph);
     int size = SvIVX(AvARRAY(ref)[0]);
     AV *H = (AV*)SvRV(AvARRAY(ref)[1]);
-    unsigned char *s = SvPVX(key);
+    unsigned char *s = (unsigned char*)SvPVX(key);
     const int len = SvCUR(key);
     unsigned char h[256];
     unsigned int *hi = (unsigned int *)h;

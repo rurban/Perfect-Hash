@@ -279,7 +279,7 @@ sub save_c {
   # print $FH "#include <string.h>\n" if @$C or !$ph->option('-nul');
   if (!$ph->option('-nul')) {
     # XXX check for ASAN or just use a if not
-    print $FH "#define _min(a,b) (a < b) ? a : b\n";
+    print $FH "#define _min(a,b) (a < b) ? (a) : (b)\n";
   }
   print $FH $ph->c_hash_impl($base);
   print $FH $ph->c_funcdecl($base)." {";
@@ -434,7 +434,7 @@ sub save_c {
       int i = 0;
       for (; i < Cs[h]; i++) {";
       # ck[i] is not known in advance. +1 to include the final \0
-      my $l = $ph->option('-nul') ? "l+1" : "1+_min(l, strlen(ck[i]))";
+      my $l = $ph->option('-nul') ? "l+1" : "1+(_min(l, strlen(ck[i])))";
       print $FH "
         if (!memcmp(ck[i], s, $l)) return Cv[h][i];";
       print $FH "

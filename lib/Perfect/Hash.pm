@@ -18,12 +18,12 @@ our @algos = qw(HanovPP Hanov Urban
                 Pearson PearsonNP Pearson8 Pearson32 Pearson16
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
-                Switch Gperf Bob);
+                Switch Gperf Bob Cuckoo);
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
   # -pearson16 -bob
   qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
-     -cmph-chd -cmph-bmz8 -cmph-brz);
+     -cmph-chd -cmph-bmz8 -cmph-brz -cuckoo);
 
 =head1 NAME
 
@@ -517,6 +517,8 @@ L<Perfect::Hash::Gperf>,
 L<Perfect::Hash::Switch>,
 L<Perfect::Hash::Bob>,
 L<Perfect::Hash::Cuckoo> I<(not yet)>,
+L<Perfect::Hash::RobinHood> I<(not yet)>,
+L<Perfect::Hash::HAMT> I<(not yet)>,
 L<Perfect::Hash::CMPH::CHM>,
 L<Perfect::Hash::CMPH::BMZ>,
 L<Perfect::Hash::CMPH::BMZ8> I<(not yet)>,

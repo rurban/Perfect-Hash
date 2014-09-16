@@ -6,6 +6,7 @@ use lib 't';
 require "test.pl";
 
 my ($default, $methods, $opts) = opt_parse_args();
+$methods = [ grep {$_ ne '-cuckoo'} @$methods ];
 plan tests => 2*scalar(@$methods);
 my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/words20");
 my $small_dict = $size > 255 ? "examples/words20" : $dict;

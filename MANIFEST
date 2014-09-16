@@ -24,6 +24,7 @@ lib/Perfect/Hash/CMPH/BRZ.pm
 lib/Perfect/Hash/CMPH/CHD.pm
 lib/Perfect/Hash/CMPH/CHD_PH.pm
 lib/Perfect/Hash/CMPH/FCH.pm
+lib/Perfect/Hash/Cuckoo.pm
 lib/Perfect/Hash/Gperf.pm
 lib/Perfect/Hash/Hanov.pm
 lib/Perfect/Hash/HanovPP.pm

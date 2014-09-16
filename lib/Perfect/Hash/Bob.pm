@@ -111,7 +111,7 @@ sub save_c {
   my @cmd = ("bob/perfect", @opts, "<$fn",
              ($^O eq 'MSWin32' ? ">NUL" : " >/dev/null"));
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
-  if ($options->{'-max-time'} and $^O =~ /linux|bsd|solaris|cygwin/) { # timeout
+  if ($options->{'-max-time'} and $^O =~ /linux|bsd|darwin|solaris|cygwin/) { # timeout
     use POSIX ":sys_wait_h";
     my $pid = fork;
     die "fork" if !defined $pid;

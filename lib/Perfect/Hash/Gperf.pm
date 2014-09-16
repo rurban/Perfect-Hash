@@ -132,7 +132,7 @@ sub save_c {
   # but if we got a shell we need to kill gperf and the shell
   my @cmd = ("gperf", @opts, $fn, ">$fileprefix.c");
   print join(" ",@cmd),"\n" if $ENV{TEST_VERBOSE};
-  if ($options->{'-max-time'} and $^O =~ /linux|bsd|solaris|cygwin/) { # timeout
+  if ($options->{'-max-time'} and $^O =~ /linux|bsd|darwin|solaris|cygwin/) { # timeout
     use POSIX ":sys_wait_h";
     my $pid = fork;
     die "fork" if !defined $pid;

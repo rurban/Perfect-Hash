@@ -9,11 +9,22 @@ our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 
 =head1 DESCRIPTION
 
-Generate non-perfect but fast Cuckoo hashes.
+Generate non-perfect but fast Cuckoo hashes, with two universal hash
+functions f and g into two tables of load factor 50%, guaranteeing constant
+lookup and insertion time.
 
 Only for benchmarks yet. Still just a dummy placeholder.
 
-=head1 METHDOS
+A study by Zukowski et al. has shown that cuckoo hashing is much
+faster than chained hashing for small, cache-resident hash tables on
+modern processors:
+
+Zukowski, Marcin; Heman, Sandor; Boncz, Peter (June 2006).
+"Architecture-Conscious Hashing". Proceedings of the
+International Workshop on Data Management on New Hardware (DaMoN).
+L<https://www.cs.cmu.edu/~damon2006/pdf/zukowski06archconscioushashing.pdf>
+
+=head1 METHODS
 
 =over
 

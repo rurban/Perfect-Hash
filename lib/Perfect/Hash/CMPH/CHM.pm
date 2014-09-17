@@ -11,7 +11,7 @@ our @ISA = qw(Perfect::Hash::CMPH Perfect::Hash);
 XS interface to the cmph-2.0 CHM algorithm.
 See http://cmph.sourceforge.net/chm.html
 
-=head1 METHDOS
+=head1 METHODS
 
 =head2 new $filename, @options
 

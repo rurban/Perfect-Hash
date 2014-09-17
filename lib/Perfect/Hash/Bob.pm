@@ -21,7 +21,7 @@ can only read limited \n delimited, value-less keyfiles,
 is limited to the C<--prefix phash_hash>,
 and overflows with larger number of keys (> ~25000)
 
-=head1 METHDOS
+=head1 METHODS
 
 =over
 

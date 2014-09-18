@@ -83,6 +83,7 @@ push(@extras,
        repository  => 'http://github.com/rurban/Perfect-Hash',
        license     => 'http://dev.perl.org/licenses/',
       },
+      recommends => { 'Math::Prime::XS' => 0 },
       release_status => 'unstable',
      })
   if $EUMM_VER gt '6.46';

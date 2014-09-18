@@ -294,35 +294,38 @@ sub save_c {
   print $FH "
     const unsigned char* su = (const unsigned char*)s;";
   print $FH "
-    int l = strlen(s);" unless $ph->option('-nul');
+    int l = s ? strlen(s) : 0;" unless $ph->option('-nul');
   print $FH "
     long h = 0;
+    long v;
     static $htype $base\[] = {\n";
   _save_c_array(8, $FH, $H, "%3d");
-  print $FH "    };\n";
-  print $FH "    /* collisions: keys and values */";
+  print $FH "    };";
   my ($maxcoll, $collisions, $i) = (0,0,0);
-  for my $coll (@$C) {
-    if ($coll) {
-      if (scalar(@$coll) > 1) {
-        $maxcoll = scalar(@$coll) if $maxcoll < scalar(@$coll);
-        $collisions++;
-        print $FH "
+  if (ref $ph ne 'Perfect::Hash::Pearson8') {
+    print $FH "    /* collisions: keys and values */";
+    for my $coll (@$C) {
+      if ($coll) {
+        if (scalar(@$coll) > 1) {
+          $maxcoll = scalar(@$coll) if $maxcoll < scalar(@$coll);
+          $collisions++;
+          print $FH "
     static const char *Ck_$i\[] = {";
-        my @ci = map { $_->[0] } @$coll;
-        _save_c_array(0, $FH, \@ci, "\"%s\"");
-        print $FH " };";
-        print $FH "
+          my @ci = map { $_->[0] } @$coll;
+          _save_c_array(0, $FH, \@ci, "\"%s\"");
+          print $FH " };";
+          print $FH "
     static const int   Cv_$i\[] = {";
-        my @cv = map { $_->[1] } @$coll;
-        _save_c_array(0, $FH, \@cv, "%d");
-        print $FH " };";
-      } elsif (scalar(@$coll) == 1) {
-        print $FH "
+          my @cv = map { $_->[1] } @$coll;
+          _save_c_array(0, $FH, \@cv, "%d");
+          print $FH " };";
+        } elsif (scalar(@$coll) == 1) {
+          print $FH "
     static const int   Cv_$i\[] = {",$coll->[0],"};";
+        }
       }
+      $i++;
     }
-    $i++;
   }
   my $ctype = u_csize($maxcoll);
   if ($collisions) {
@@ -380,6 +383,14 @@ sub save_c {
       _save_c_array(8, $FH, $keys, "\"%s\"");
       print $FH "    };";
     }
+    if (ref $ph eq 'Perfect::Hash::Pearson8') {
+      my $valtype = u_csize(scalar @$C);
+      print $FH "
+    /* values */
+    static $valtype values[] = {\n";
+      _save_c_array(8, $FH, $C, "%d");
+      print $FH "    };";
+    }
   }
   if (ref $ph eq 'Perfect::Hash::Pearson32') {
     print $FH "
@@ -431,6 +442,13 @@ sub save_c {
   }
   print $FH "
     h = h % $size;" if $hsize != $size;
+  if (ref $ph eq 'Perfect::Hash::Pearson8') {
+    print $FH "
+    return keys[h] ? values[h] : -1;";
+  } else {
+    print $FH "
+    v = h;";
+  }
   if ($collisions) {
       print $FH "
     if (Cs[h] > 1) {
@@ -445,7 +463,7 @@ sub save_c {
       }
     }
     else if (Cs[h] == 1) {
-      h = Cv[h][0];
+      v = Cv[h][0];
     }";
   }
   if (!$ph->false_positives) { # check keys
@@ -458,17 +476,17 @@ sub save_c {
       if (o >= 0) {
         register const char *st = o + stringpool;
         if (*st != *s || memcmp(s + 1, st + 1, l-1))
-          h = -1;
+          v = -1;
       }
     }";
     } else {
       my $l = $ph->option('-nul') ? "l" : "_min(l, strlen(keys[h]))";
       print $FH "
-    if (l == 0 || memcmp(keys[h], s, $l)) h = -1;";
+    if (l == 0 || memcmp(keys[h], s, $l)) v = -1;";
     }
   }
   print $FH "
-    return h;
+    return v;
 }
 ";
   close $FH;

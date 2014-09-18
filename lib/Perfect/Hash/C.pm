@@ -122,9 +122,9 @@ sub _save_c_array {
     for ($from .. $to) {
       my $g = $G->[$_];
       if ($fmt eq '"%s"') {
-        printf $FH "%s,", B::cstring($g);
+        printf $FH "%s,", defined $g ? B::cstring($g) : "NULL";
       } else {
-        printf $FH $fmt.",", $g;
+        printf $FH $fmt.",", defined $g ? $g : 0;
       }
     }
     print $FH "\n" if $ident;

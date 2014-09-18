@@ -10,9 +10,10 @@ my ($default, $methods, $opts) = opt_parse_args();
 plan tests => 3 * scalar(@$methods);
 
 my ($dict, $dictarr, $size, $custom_size) = opt_dict_size($opts, "examples/words20");
-my @dict = @$dictarr;
+my @dict;
 
 for my $m (@$methods) {
+  @dict = @$dictarr;
   my $ph = new Perfect::Hash \@dict, $m, @$opts;
   unless ($ph) {
     ok(1, "SKIP empty phash $m");
@@ -23,6 +24,7 @@ for my $m (@$methods) {
    my $ok = 1;
    my $i = 0;
    for my $w (@dict) {
+     next unless defined $w;
      my $v = $ph->perfecthash($w);
      $ok = 0 if !defined($v) or $v ne $i;
      unless ($ok) {
@@ -36,7 +38,8 @@ for my $m (@$methods) {
 }
 
 my $line = 0;
-my %dict = map { $_ => $line++ } @dict;
+@dict = @$dictarr;
+my %dict = map { defined($_) ? ($_ => $line++) : () } @dict;
 for my $m (@$methods) {
   my $ph = new Perfect::Hash \%dict, $m, @$opts;
   unless ($ph) {
@@ -47,6 +50,7 @@ for my $m (@$methods) {
    local $TODO = "$m pure-perl" if exists $Perfect::Hash::algo_todo{$m};
    my $ok = 1;
    for my $w (sort keys %dict) {
+     next unless defined $w;
      my $v = $ph->perfecthash($w);
      $ok = 0 if !defined($v) or $v ne $dict{$w};
      unless ($ok) {
@@ -69,6 +73,7 @@ for my $m (@$methods) {
    my $ok = 1;
    my $i = 0;
    for my $w (@dict) {
+     next unless defined $w;
      my $v = $ph->perfecthash($w);
      $ok = 0 if !defined($v) or $v ne $i;
      unless ($ok) {

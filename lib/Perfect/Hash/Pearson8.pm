@@ -50,12 +50,17 @@ sub new {
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
   my $origsize = $size;
-  eval { require Math::Prime::XS; };
-  if ($@) {
-    # roughly prime, enough for our usage
-    eval "sub is_prime { not($_[0] % 2 or $_[0] % 3 or $_[0] % 5 or $_[0] % 7) }";
-  } else {
-    *is_prime = \&Math::Prime::XS::is_prime;
+  if (!exists &is_prime) {
+    eval { require Math::Prime::XS; };
+    if ($@) {
+      # create a roughly prime, enough for our usage
+      my $fn = 'sub is_prime { !($_[0] % 2)';
+      $fn .= " or !(\$_[0] % $_)" for (3,5,7,11,13,19,23,29);
+      $fn .= ' }';
+      eval $fn;
+    } else {
+      *is_prime = \&Math::Prime::XS::is_prime;
+    }
   }
 
   # fixed size of 256 for @H
@@ -94,7 +99,7 @@ sub new {
       # this is not good. we should non-randomly iterate over all permutations
       $ph->shuffle();
       (undef, $max) = $ph->cost($keys);
-      print "size=$size load=$load max=$max counter=$counter\n" if $options->{'-debug'};
+      print "$counter: size=$size load=$load max=$max\n" if $options->{'-debug'};
       $counter++;
     } while ($max > 1 and $counter < $maxcount); # 5 or 15
 

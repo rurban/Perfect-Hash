@@ -10,8 +10,12 @@ our @ISA = qw(Perfect::Hash Perfect::Hash::C);
 =head1 DESCRIPTION
 
 Generate non-perfect but fast Cuckoo hashes, with two universal hash
-functions f and g into two tables of load factor 50%, guaranteeing constant
-lookup and insertion time.
+functions f and g into two tables of load factor 50%, guaranteeing
+constant lookup and insertion time. Since Cuckoo hashes guarantee
+constant worst case search time, we added it here. Contrary to
+traditional perfect hashes, Cuckoo hashes can also be used for
+insertions and deletions with a simple check if the table is static
+or dynamic before extending it.
 
 Only for benchmarks yet. Still just a dummy placeholder.
 

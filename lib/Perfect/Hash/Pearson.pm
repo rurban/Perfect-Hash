@@ -25,8 +25,6 @@ Volume 33, Number 6, June, 1990
 Peter K. Pearson
 "Fast hashing of variable-length text strings"
 
-WARNING: This version is still instable.
-
 =head1 METHODS
 
 =head2 new $dict, @options
@@ -56,8 +54,10 @@ sub new {
   my $size = scalar @$keys;
   my $last = $size-1;
 
-  # Step 1: Generate @H
-  # round up to 2 complements, with ending 1111's
+  # Step 1: Generate @H the pearson table with varying size.
+  # Round up to 2 complements, with ending 1111's.
+  # TODO: The other approach, extending keys to a fill-rate of 50% and
+  # a prime size should work better, See Pearson8
   my $i = 8; # start with 255 to avoid % $hsize in hash
   while (2**$i++ < $size) {}
   my $hsize = 2**($i-1);
@@ -149,6 +149,7 @@ sub cost {
   my ($sum, $max) = (0, 0);
   for (@$keys) {
     my $h = $ph->hash($_);
+    next unless defined $h;
     $N[$h]++;
     $sum++ if $N[$h] > 1;
     $max = $N[$h] if $max < $N[$h];
@@ -172,6 +173,7 @@ sub collisions {
   my $i = 0;
   for (@$keys) {
     my $h = $ph->hash($_); # e.g. a=>1 b=>11 c=>111
+    next unless defined $h;
     push @{$C[$h]}, [$_, $values->[$i]];
     $i++;
   }
@@ -189,6 +191,7 @@ sub collisions {
 
 sub hash {
   my ($ph, $key ) = @_;
+  return undef unless defined $key;
   my $size = $ph->[0];
   my $H = $ph->[1];
   my $d = 0;
@@ -223,6 +226,7 @@ sub perfecthash {
   my ($ph, $key ) = @_;
   my $C = $ph->[2];
   my $h = $ph->hash($key);
+  return undef unless defined $h;
   my $v;
   if (defined $C->[$h]) {
     if (@{$C->[$h]} > 1) {
@@ -488,32 +492,40 @@ sub save_xs { die "save_xs NYI" }
 
 
 sub _test_tables {
-  my $ph = __PACKAGE__->new("examples/words20", qw(-debug));
+  my $ph = shift; #__PACKAGE__->new("examples/words20", qw(-debug));
+  $ph->[3]->{'-debug'} = 1;
   my $size = $ph->[0];
   my $H = $ph->[1];
   my $C = $ph->[2];
   my $keys = $ph->[4];
-  for (0..$size-1) {
+  for (0 .. scalar(@$keys)-1) {
     my $k = $keys->[$_];
-    my $v = hash($H, $k, $size);
+    next unless defined $k;
+    my $v = $ph->hash($k);
     my $h = $v;
     if ($C and defined $C->[$h]) {
       #print "check ".scalar @{$C->[$h]}." collisions for $k\n";
-      if (@{$C->[$h]} > 1) {
-        for (@{$C->[$h]}) {
-          if ($k eq $_->[0]) {
-            $v = $_->[1];
-            last;
+      if (ref $C->[$h]) {
+        if (@{$C->[$h]} > 1) {
+          for (@{$C->[$h]}) {
+            if ($k eq $_->[0]) {
+              $v = $_->[1];
+              last;
+            }
           }
+        } else {
+          $v = $C->[$h]->[0];
         }
-      } else {
-        $v = $C->[$h]->[0];
+      }
+      else {
+        $v = $C->[$h]; # Pearson8 \@newvalues
       }
     }
     printf "%2d: ph=%2s   h(%2d)=%2d => %2d  %s %s\n",
       $_, $ph->perfecthash($k),
       $_, $h, $v, $k,
-      ($C and $C->[$h] and @{$C->[$h]} > 1) ? "(".join(",",map{$_->[0]}@{$C->[$h]}).")" : $v
+      ($C and $C->[$h] and ref $C->[$h] and @{$C->[$h]} > 1)
+        ? "(".join(",",map{$_->[0]}@{$C->[$h]}).")" : $v
   }
 }
 

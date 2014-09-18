@@ -207,6 +207,7 @@ sub test_wmain_all {
 
 static const char *testkeys[] = {
   ";
+  # no, skip ending undef's
   my $size = int(scalar(@$keys));
   for my $i (0..$size) {
     print $FH B::cstring($keys->[$i]),", ";

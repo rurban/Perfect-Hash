@@ -11,11 +11,10 @@ our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
-A Pearson hash is generally not perfect, but generates one of the
-fastest lookups.  This version is limited to max. 255 keys and thus
-creates a perfect hash.
-
-Optimal for 5-250 keys.
+This Pearson hash variant is perfect. It uses a random pearson table
+of size 256, and extends the keyspace in prime steps to find a perfect
+hash starting with a load factor of 0.7 down to ~0.5, until no
+collisions remain or the search times out.
 
 From: Communications of the ACM
 Volume 33, Number 6, June, 1990
@@ -27,8 +26,8 @@ Peter K. Pearson
 =head2 new $dict, @options
 
 Computes a brute-force 8-bit Pearson hash table using the given
-dictionary, given as hashref or arrayref, with fast lookup.  This
-generator might fail, returning undef.
+dictionary, given as hashref or arrayref, with fast lookup. 
+It extends the keys. This generator might fail rarely, returning undef.
 
 Honored options are:
 
@@ -50,41 +49,95 @@ sub new {
   my $max_time = $options->{'-max-time'};
   my ($keys, $values) = _dict_init($dict);
   my $size = scalar @$keys;
-  my $last = $size-1;
-  if ($last > 255) {
-    warn "cannot create perfect 8-bit pearson hash for $size entries > 255\n";
-    # would need a 16-bit pearson or any-size pearson (see -pearson)
-    return;
-  }
-
-  # Step 1: Generate @H
-  # round up to ending 1111's
-  my $hsize = 256;
-  #print "size=$size hsize=$hsize\n";
-  my @H; $#H = $hsize-1;
-  my $i = 0;
-  $H[$_] = $i++ for 0 .. $hsize-1; # init with ordered sequence
-  my $H = \@H;
-  my $ph = bless [$size, $H], $class;
-
-  my $maxcount = 3 * $last; # when to stop the search. could be n!
-  # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
-  # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
-  my ($max, $counter);
-  my $t0 = [gettimeofday];
-  do {
-    # this is not good. we should non-randomly iterate over all permutations
-    $ph->shuffle();
-    (undef, $max) = $ph->cost($keys);
-    $counter++;
-  } while ($max > 1 and $counter < $maxcount and tv_interval($t0) < $max_time); # $n!
-  return if $max != 1;
-
-  if (!exists $options->{'-false-positives'}) {
-    return bless [$size, $H, $options, $keys], $class;
+  my $origsize = $size;
+  eval { require Math::Prime::XS; };
+  if ($@) {
+    # roughly prime, enough for our usage
+    eval "sub is_prime { not($_[0] % 2 or $_[0] % 3 or $_[0] % 5 or $_[0] % 7) }";
   } else {
-    return bless [$size, $H, $options], $class;
+    *is_prime = \&Math::Prime::XS::is_prime;
   }
+
+  # fixed size of 256 for @H
+  my $hsize = 256;
+  # extend keys to a fill-rate between 0.7 - 0.5, with size being prime
+  print "origsize=$size hsize=$hsize\n" if $options->{'-debug'};
+  {
+    no integer;
+    $size = $class->next_prime(int($origsize * 1.7));
+  }
+  $keys->[$size - 1] = undef; # auto-vivifies the intermediate elements
+
+  my $maxcount = 15; # 15/5 when to stop the search. could be extended up to n!
+  my ($max, $counter, $H) = (0, 0, undef);
+  my $load;
+  my $ph = bless [$size], $class;
+  { 
+    no integer;
+    $load = sprintf("%.2f", $origsize / $size);
+  }
+  while ($max != 1) {
+    # with higher load only try 5x, but under 50% try more, as this should lead to a hit
+    $maxcount = $load ge "0.50" ? 5 : 25;
+    # Step 1: Generate @H
+    $counter = 0;
+    my @H; $#H = $hsize-1;
+    my $i = 0;
+    $H[$_] = $i++ for 0 .. $hsize-1; # init with ordered sequence
+    $H = \@H;
+    $ph = bless [$size, $H], $class;
+
+    # Step 2: shuffle @H until we get a good maxbucket, only 0 or 1
+    # https://stackoverflow.com/questions/1396697/determining-perfect-hash-lookup-table-for-pearson-hash
+    my $t0 = [gettimeofday];
+    do {
+      # this is not good. we should non-randomly iterate over all permutations
+      $ph->shuffle();
+      (undef, $max) = $ph->cost($keys);
+      print "size=$size load=$load max=$max counter=$counter\n" if $options->{'-debug'};
+      $counter++;
+    } while ($max > 1 and $counter < $maxcount); # 5 or 15
+
+    # Step 3: extend keyspace to get a higher probability of a collision-less perfect hash
+    if ($max != 1) { # next round
+      no integer; # for $load calc
+      $size = $ph->next_prime($size+2); # extend keys to the next prime
+      $load = sprintf("%0.2f", $origsize / $size);
+      $keys->[$size - 1] = undef;
+      last if tv_interval($t0) > $max_time;
+    }
+  }
+  return undef if $max != 1;
+
+  # Step 4: re-order the keys and their values
+  my @newkeys; $#newkeys = $size - 1;
+  my @newvalues; $#newvalues = $size - 1;
+  my $i = 0;
+  for my $k (@$keys) {
+    my $v = $ph->hash($k);
+    if (defined $v) {
+      $newkeys[$v] = $k;
+      $newvalues[$v] = @$values ? $values->[$i] : $i;
+      print "$i: keys[$v] = $k\n" if $options->{'-debug'};
+    }
+    $i++;
+  }
+  return bless [$size, $H, \@newvalues, $options, \@newkeys], $class;
+}
+
+=head2 next_prime
+
+Helper method to return the next prime for the given size
+
+=cut
+
+sub next_prime {
+  my ($ph, $size) = @_;
+  $size++ unless $size % 2;
+  while (!is_prime($size)) {
+    $size += 2;
+  }
+  return $size;
 }
 
 =head2 perfecthash $ph, $key
@@ -93,37 +146,22 @@ Look up a $key in the pearson hash table
 and return the associated index into the initially 
 given $dict.
 
-Without C<-false-positives> it checks if the index is correct,
-otherwise it will return undef.
-With C<-false-positives>, the key must have existed in
-the given dictionary. If not, a wrong index will be returned.
-
 =cut
 
 sub perfecthash {
   my ($ph, $key ) = @_;
-  my $v = hash($ph->[1], $key, $ph->[0]);
-  # -false-positives. no other options yet which would add a 3rd entry here,
-  # so we can skip the !exists $ph->[2]->{-false-positives} check for now
-  if ($ph->[3]) {
-    return ($ph->[3]->[$v] eq $key) ? $v : undef;
-  } else {
-    return $v;
-  }
+  my $v = $ph->hash($key);
+  return defined $v ? $ph->[2]->[ $v ] : undef;
 }
 
 =head2 false_positives
 
-Returns 1 if the hash might return false positives, i.e. will return
-the index of an existing key when you searched for a non-existing key.
-
-The default is undef, unless you created the hash with the option
-C<-false-positives>.
+Always returns undef. Pearson8 will not return C<-false-positives>.
 
 =cut
 
 sub false_positives {
-  return exists $_[0]->[2]->{'-false-positives'};
+  return undef;
 }
 
 =head2 save_c fileprefix, options

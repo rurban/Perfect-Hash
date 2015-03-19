@@ -27,7 +27,7 @@ for my $m (@$methods) {
       : $dict;
   my $ph = new Perfect::Hash($used_dict, $m, @$opts, "-nul");
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     ok(1) for 1..4;
     $i++;
     next;
@@ -39,7 +39,7 @@ for my $m (@$methods) {
     next;
   }
   my $suffix = $m eq "-bob" ? "_hash" : "_nul";
-  my $base = "phash$suffix";
+  my $base = "pperf$suffix";
   my $out = "$base.c";
   test_wmain($m, 1, $key, $ph->perfecthash($key), $suffix, 1);
   $i++;

@@ -26,7 +26,7 @@ Honored options are:
 
 I<-false-positives>
 
-I<-max-time seconds> stops generating a phash at seconds and uses a
+I<-max-time seconds> stops generating a pperf at seconds and uses a
 non-perfect, but still fast hash then. Default: 60s.
 
 It returns an object with @H containing the randomized

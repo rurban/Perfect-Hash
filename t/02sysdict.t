@@ -23,7 +23,7 @@ for my $m (@$methods) {
   my $ph = new Perfect::Hash $dict, $m, @$opts;
   diag "done in ",tv_interval($t0),"s\n" if $ENV{TEST_VERBOSE};
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     next;
   }
   TODO: {

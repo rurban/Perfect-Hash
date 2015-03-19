@@ -35,12 +35,12 @@ for my $m (@$methods) {
       : $dict;
   my $ph = new Perfect::Hash($used_dict, $m, "-pic", @$opts);
   unless ($ph) {
-    ok(1, "SKIP empty phash $m") for 1..4;
+    ok(1, "SKIP empty pperf $m") for 1..4;
     $i++;
     next;
   }
   my $suffix = $m eq "-bob" ? "_hash" : "_pic";
-  my $base = "phash$suffix";
+  my $base = "pperf$suffix";
   test_wmain_all($m, \@dict, $opts, $suffix);
   $i++;
   $ph->save_c($base);

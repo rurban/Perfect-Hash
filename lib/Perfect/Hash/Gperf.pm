@@ -59,12 +59,12 @@ sub new {
   }
 
   # enforce KEYFILE
-  my $fn = "phash_keys.tmp";
+  my $fn = "pperf_keys.tmp";
   if (ref $dict eq 'ARRAY') {
     unlink $fn;
     open my $F, ">", $fn;
     print $F "%{\n#include <string.h>\n%}\n";
-    print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
+    print $F "%struct-type\nstruct pperf_table { char *name; const int value; };\n%%\n";
     my $i = 0;
     my %dict;
     for (@$dict) {
@@ -78,7 +78,7 @@ sub new {
   elsif (ref $dict eq 'HASH') {
     open my $F, ">", $fn;
     print $F "%{\n#include <string.h>\n%}\n";
-    print $F "%struct-type\nstruct phash_table { char *name; const int value; };\n%%\n";
+    print $F "%struct-type\nstruct pperf_table { char *name; const int value; };\n%%\n";
     for (sort keys %$dict) {
       print $F "$_,\t",$dict->{$_},"\n" if length($_);
     }
@@ -163,7 +163,7 @@ sub save_c {
     system(join(" ",@cmd));
   }
   my $errcode = $? >> 8;
-  unlink $fn if $fn eq "phash_keys.tmp" and !$errcode;
+  unlink $fn if $fn eq "pperf_keys.tmp" and !$errcode;
   return $errcode;
 }
 
@@ -209,7 +209,7 @@ sub c_lib { "" }
 
 sub c_funcdecl {
   my ($ph, $base) = @_;
-  my $struct = "struct phash_table";
+  my $struct = "struct pperf_table";
   my $decl = "$struct {char *name; const int value; };";
   if ($ph->option('-nul')) {
     "

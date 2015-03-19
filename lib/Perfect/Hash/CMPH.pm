@@ -36,7 +36,7 @@ sub new {
   my $dict = shift; #hashref, arrayref or filename
   my $size;
   # enforce KEYFILE
-  my $fn = "phash_keys.tmp";
+  my $fn = "pperf_keys.tmp";
   if (ref $dict eq 'ARRAY') {
     open my $F, ">", $fn;
     my $i = 0;

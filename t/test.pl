@@ -89,9 +89,9 @@ sub compile_shared {
   my $dlext = ".".$Config{dlext};
   my $cmd = $Config{cc}." -shared ".$ph->c_include()." -I. $opt ".ccflags
            ." ".$Config{cccdlflags}
-           ." -o phash$suffix$dlext phash$suffix.c";
+           ." -o pperf$suffix$dlext pperf$suffix.c";
   #if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
-  #  $cmd =~ s/-o phash$suffix$dlext/-nologo -Fo phash$suffix.dll/;
+  #  $cmd =~ s/-o pperf$suffix$dlext/-nologo -Fo pperf$suffix.dll/;
   #}
   $cmd .= $ph->c_lib();
   return $cmd;
@@ -105,10 +105,10 @@ sub link_shared {
   my $dlext = ".".$Config{dlext};
   my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
            ." ".$Config{cccdlflags}
-           ." -o phash$suffix main$suffix.c phash$suffix$dlext ".ldopts;
+           ." -o pperf$suffix main$suffix.c pperf$suffix$dlext ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
   if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
-    $cmd =~ s/-o phash$suffix/-nologo -Fe phash$suffix.exe/;
+    $cmd =~ s/-o pperf$suffix/-nologo -Fe pperf$suffix.exe/;
   }
   $cmd .= $ph->c_lib();
   return $cmd;
@@ -121,10 +121,10 @@ sub compile_static {
   my $opt = $Config{optimize};
   $opt =~ s/-O[xs12]/-O3/;
   my $cmd = $Config{cc}.$ph->c_include()." -I. $opt ".ccflags
-           ." -o phash$suffix main$suffix.c phash$suffix.c ".ldopts;
+           ." -o pperf$suffix main$suffix.c pperf$suffix.c ".ldopts;
   chomp $cmd; # oh yes! ldopts contains an ending \n
   if ($^O eq 'MSWin32' and $Config{cc} =~ /cl/) {
-    $cmd =~ s/-o phash$suffix/-nologo -Fe phash$suffix.exe/;
+    $cmd =~ s/-o pperf$suffix/-nologo -Fe pperf$suffix.exe/;
   }
   $cmd .= $ph->c_lib();
   return $cmd;
@@ -137,7 +137,7 @@ sub test_wmain {
   $suffix = "" unless $suffix;
   my ($decl, $result, $post_lookup) = ('','v','');
   if ($m eq "-gperf") {
-    $decl = "struct phash_table *res;";
+    $decl = "struct pperf_table *res;";
     $result = "res";
     $post_lookup = "v = res ? res->value : -1;";
     $nul = 1;
@@ -148,13 +148,13 @@ sub test_wmain {
   print $FH "
 #include <stdio.h>
 #include <string.h>
-#include \"phash$suffix.h\"
+#include \"pperf$suffix.h\"
 
 int main () {
   long v;
   int err = 0;
   $decl
-  $result = phash$suffix\_lookup(", B::cstring($key) . ($nul ? ', '.length($key) : "") . ");
+  $result = pperf$suffix\_lookup(", B::cstring($key) . ($nul ? ', '.length($key) : "") . ");
   $post_lookup
   if (v == $value) {
     printf(\"ok - c lookup exists %ld\\n\", v);
@@ -170,7 +170,7 @@ int main () {
     return;
   }
   print $FH "
-  $result = phash$suffix\_lookup(\"notexist\"" . ($nul ? ", 8" : "") . ");
+  $result = pperf$suffix\_lookup(\"notexist\"" . ($nul ? ", 8" : "") . ");
   $post_lookup
   if (v == -1) {
     printf(\"ok - c lookup notexists %ld\\n\", v);
@@ -191,7 +191,7 @@ sub test_wmain_all {
   $opts = join(" ", @$opts) if ref $opts eq 'ARRAY';
   my ($nul) = $opts =~ /-nul/;
   if ($m eq "-gperf") {
-    $decl = "struct phash_table *res;";
+    $decl = "struct pperf_table *res;";
     $result = "res";
     $post_lookup = "
     v = res ? res->value : -1;";
@@ -203,7 +203,7 @@ sub test_wmain_all {
   print $FH "
 #include <stdio.h>
 #include <string.h>
-#include \"phash$suffix.h\"
+#include \"pperf$suffix.h\"
 
 static const char *testkeys[] = {
   ";
@@ -221,7 +221,7 @@ int main () {
   int err = 0;
   $decl
   for (i=0; i < $size; i++) {
-    $result = phash$suffix\_lookup(testkeys[i]",
+    $result = pperf$suffix\_lookup(testkeys[i]",
                 $nul ? ', strlen(testkeys[i]));' : ');';
   # skip the last key if empty
   print $FH $post_lookup;

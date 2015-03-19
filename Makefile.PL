@@ -3,7 +3,7 @@ use strict;
 use ExtUtils::MakeMaker;
 use Config;
 
-# TODO: we should provide an option to provide a B::CC compiled script/phash,
+# TODO: we should provide an option to provide a B::CC compiled script/pperf,
 # which would e.g. use faster versions of the pure perl modules.
 
 # TODO try c compiler and extract cmph and bob then
@@ -93,8 +93,8 @@ WriteMakefile
    'NAME'	   => 'Perfect::Hash',
    'VERSION_FROM'  => 'lib'.$pathsep.'Perfect'.$pathsep.'Hash.pm',
    'ABSTRACT_FROM' => 'lib'.$pathsep.'Perfect'.$pathsep.'Hash.pm',
-   'PL_FILES'   => { 'script'.$pathsep.'phash.PL' => 'script'.$pathsep.'phash' },
-   'EXE_FILES'  => [ 'script'.$pathsep.'phash' ],
+   'PL_FILES'   => { 'script'.$pathsep.'pperf.PL' => 'script'.$pathsep.'pperf' },
+   'EXE_FILES'  => [ 'script'.$pathsep.'pperf' ],
    # note that some old buggy EUMM will skip -lz here. 5.8.9 with 6.88 e.g.
    # Warning (mostly harmless): No library found for -lz
    # It is not harmless, see below
@@ -105,8 +105,8 @@ WriteMakefile
      #'coretypes' => 0,
    },
    clean => { FILES => "*.gcov *.gcda *.gcno"
-                      ." cover_db perf.data script/phash"
-                      ." phash* main*"
+                      ." cover_db perf.data script/pperf"
+                      ." pperf* main*"
    },
    @extras
   );

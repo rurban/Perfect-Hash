@@ -18,7 +18,7 @@ XS interface to bob jenkins perfect hashes.
 Only for benchmarks yet:
 So far only calls C<bob/perfect>, not our XS,
 can only read limited \n delimited, value-less keyfiles,
-is limited to the C<--prefix phash_hash>,
+is limited to the C<--prefix pperf_hash>,
 and overflows with larger number of keys (> ~25000)
 
 =head1 METHODS
@@ -53,7 +53,7 @@ sub new {
   }
 
   # enforce KEYFILE
-  my $fn = "phash_keys.tmp";
+  my $fn = "pperf_keys.tmp";
   if (ref $dict eq 'ARRAY') {
     unlink $fn;
     open my $F, ">", $fn;
@@ -95,7 +95,7 @@ sub new {
 
 prefix is ignored so far.
 
-Generates F<phash_hash.c> and F<.h> files, which need to be linked
+Generates F<pperf_hash.c> and F<.h> files, which need to be linked
 against F<bob/lookupa.o>
 
 =cut
@@ -103,9 +103,9 @@ against F<bob/lookupa.o>
 sub save_c {
   my $ph = shift;
   my ($fn, $options, $dict) = ($ph->[0], $ph->[1], $ph->[2]);
-  my $fileprefix = "phash_hash";
+  my $fileprefix = "pperf_hash";
   # fast or slow, minimal or not
-  my @opts = ("-NPs", "phash");
+  my @opts = ("-NPs", "pperf");
   # since we need to redirect we need a shell
   # but if we got a shell we need to kill the exe and the shell
   my @cmd = ("bob/perfect", @opts, "<$fn",
@@ -142,12 +142,12 @@ sub save_c {
     system(join(" ",@cmd));
   }
   my $errcode = $? >> 8;
-  unlink $fn if $fn eq "phash_keys.tmp" and !$errcode;
+  unlink $fn if $fn eq "pperf_keys.tmp" and !$errcode;
   open my $H, ">>", "$fileprefix.h";
   if ($options->{'-nul'}) {
-    print $H "#define phash_hash_lookup(k,l) mph_phash_s((k),(l))\n";
+    print $H "#define pperf_hash_lookup(k,l) mph_pperf_s((k),(l))\n";
   } else {
-    print $H "#define phash_hash_lookup(k) mph_phash((k))\n";
+    print $H "#define pperf_hash_lookup(k) mph_pperf((k))\n";
   }
   close $H;
   return $errcode;

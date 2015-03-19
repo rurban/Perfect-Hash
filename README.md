@@ -1,11 +1,11 @@
 # NAME
 
-Perfect::Hash - generate perfect hashes, library backend for phash
+Perfect::Hash - generate perfect hashes, library backend for pperf
 
 # SYNOPSIS
 
     # generate c file for readonly lookup
-    phash keyfile --prefix=phash ...
+    pperf keyfile --prefix=pperf ...
 
     # pure-perl usage
     use Perfect::Hash;
@@ -18,11 +18,11 @@ Perfect::Hash - generate perfect hashes, library backend for phash
 
     Perfect::Hash->new("keyfile", '-urban', ...)->save_c;
     # or just:
-    phash keyfile --urban
-    cc -O3 -msse4.2 phash.c ... -lz
+    pperf keyfile --urban
+    cc -O3 -msse4.2 pperf.c ... -lz
 
-    phash /usr/share/dict/words --cmph-bdz_ph --nul
-    cc -O3 phash.c ... -lcmph
+    pperf /usr/share/dict/words --cmph-bdz_ph --nul
+    cc -O3 pperf.c ... -lcmph
 
 # DESCRIPTION
 
@@ -55,7 +55,7 @@ The best algorithm used in Hanov and various others is derived from
 Fabiano C. Botelho, and Martin Dietzfelbinger
 [http://cmph.sourceforge.net/papers/esa09.pdf](http://cmph.sourceforge.net/papers/esa09.pdf)
 
-## Prior art to phash
+## Prior art to pperf
 
 There exist some executables, a library and a simple python script to generate
 code to access perfect hashes and minimal versions thereof, but nothing to use
@@ -332,7 +332,7 @@ you need to link to an external library.
 
 # SEE ALSO
 
-`script/phash` for the frontend.
+`script/pperf` for the frontend.
 
 ## Algorithms
 

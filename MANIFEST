@@ -43,7 +43,7 @@ META.json
 META.yml
 ppport.h
 README.md
-script/phash.PL
+script/pperf.PL
 t/00basic.t
 t/01words.t
 t/02sysdict.t

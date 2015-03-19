@@ -14,7 +14,7 @@ my $small_dict = $size > 255 ? "examples/words20" : $dict;
 for my $m (@$methods) {
   my $ph = new Perfect::Hash($m eq '-pearson8' ? $small_dict : $dict, $m, @$opts);
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     ok(1, "SKIP");
     next;
   }

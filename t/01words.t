@@ -15,7 +15,7 @@ my @dict = @$dictarr;
 for my $m (@$methods) {
   my $ph = new Perfect::Hash \@dict, $m, @$opts;
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     next;
   }
  TODO: {
@@ -40,7 +40,7 @@ my %dict = map { $_ => $line++ } @dict;
 for my $m (@$methods) {
   my $ph = new Perfect::Hash \%dict, $m, @$opts;
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     next;
   }
  TODO: {
@@ -61,7 +61,7 @@ for my $m (@$methods) {
 for my $m (@$methods) {
   my $ph = new Perfect::Hash $dict, $m, @$opts;
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     next;
   }
  TODO: {

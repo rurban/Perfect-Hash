@@ -49,13 +49,13 @@ sub opt(*) {
 
 sub version {
   no warnings 'once';
-  return "phash $Perfect::Hash::VERSION\n";
+  return "pperf $Perfect::Hash::VERSION\n";
 }
 
 sub _usage_and_die {
   print <<'EOF';
 Usage:
-phash [method] [options...] keyfile
+pperf [method] [options...] keyfile
 
 Methods:
 --hanovpp
@@ -69,7 +69,7 @@ Options:
 --false-positives
 --nul
 --for-c       (default)
---prefix=name (default: phash)
+--prefix=name (default: pperf)
 
 Planned:
 --minimal

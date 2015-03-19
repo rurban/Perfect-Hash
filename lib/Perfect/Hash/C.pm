@@ -21,7 +21,7 @@ Perfect::Hash::C - generate C code for perfect hashes
     $ph->save_c("ph"); # => ph.c, ph.h
 
     Perfect::Hash->new([split/\n/,`cat /usr/share/dict/words`])->save_c;
-    # => phash.c, phash.h
+    # => pperf.c, pperf.h
 
 =head1 DESCRIPTION
 
@@ -64,9 +64,9 @@ sub save_h_header {
   if (ref $ph eq __PACKAGE__ or ref $ph eq 'Perfect::Hash::C') {
     die "wrong class: ",ref $ph;
   }
-  my $fileprefix = shift || "phash";
+  my $fileprefix = shift || "pperf";
   my $base = $fileprefix;
-  if ($fileprefix ne "phash") {
+  if ($fileprefix ne "pperf") {
     require File::Basename;
     $base = File::Basename::basename $fileprefix;
   }

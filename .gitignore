@@ -10,7 +10,7 @@ cmph-2.0/Makefile.orig
 cmph-2.0/TAGS
 cmph-2.0/autom4te.cache/
 examples/words
-script/phash
+script/pperf
 META.json
 META.yml
 MYMETA.json

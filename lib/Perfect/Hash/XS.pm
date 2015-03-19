@@ -13,7 +13,7 @@ Perfect::Hash::XS - Perfect Hash output formatter for XS - compiled perl extensi
 
 =head1 SYNOPSIS
 
-    phash keyfile --for-xs --prefix=ph
+    pperf keyfile --for-xs --prefix=ph
 
     use Perfect::Hash;
     $hash->{chr($_)} = int rand(2) for 48..90;

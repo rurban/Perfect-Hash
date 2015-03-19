@@ -71,7 +71,7 @@ for my $opt (@opts) {
        $custom_size = $old_custom_size;
     }
     my $suffix = $m eq "-bob" ? "_hash" : "";
-    my $base = "phash$suffix";
+    my $base = "pperf$suffix";
     my $out = "$base.c";
     # use size/5 random entries
     test_wmain_all($m, \@dict, $opt, $suffix);

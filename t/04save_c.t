@@ -27,7 +27,7 @@ for my $m (@$methods) {
       : $dict;
   my $ph = new Perfect::Hash($used_dict, $m, @$opts);
   unless ($ph) {
-    ok(1, "SKIP empty phash $m");
+    ok(1, "SKIP empty pperf $m");
     ok(1) for 1..4;
     $i++;
     next;
@@ -41,12 +41,12 @@ for my $m (@$methods) {
   my ($nul) = grep {$_ eq '-nul'} @$opts;
   my ($shared) = grep {$_ eq '-shared'} @$opts;
   my $suffix = $m eq "-bob" ? "_hash" : "";
-  my $base = "phash$suffix";
+  my $base = "pperf$suffix";
   my $out = "$base.c";
   test_wmain($m, 1, 'AOL', $ph->perfecthash('AOL'), $suffix, $nul);
   $i++;
   $ph->save_c($base);
-  if (ok(-f "$base.c" && -f "$base.h", "$m generated phash.c/.h")) {
+  if (ok(-f "$base.c" && -f "$base.h", "$m generated pperf.c/.h")) {
     my ($cmd, $cmd1);
     if ($shared) {
       $cmd = compile_shared($ph, $suffix);

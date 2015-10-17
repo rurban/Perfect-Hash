@@ -1,4 +1,5 @@
 language: "perl"
+sudo: false
 perl:
 #   - "5.6"
     - "5.8"
@@ -8,20 +9,21 @@ perl:
     - "5.16"
     - "5.18"
     - "5.20"
+    - "5.22"
 #   - "blead"
 # blead and 5.6 stumble over YAML and more missing dependencies for Devel::Cover::Report::Coveralls
-before_install:
-    - git clone git://github.com/haarg/perl-travis-helper
-    - source perl-travis-helper/init
-    - build-perl
-    - perl -V
+#before_install:
+#    - git clone git://github.com/haarg/perl-travis-helper
+#    - source perl-travis-helper/init
+#    - build-perl
+#    - perl -V
 install:
     - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
 # cpanm does not 5.6
 before_script:
     - sudo apt-get install gperf
     - gperf --version
-    - cpanm -q -n Devel::Cover::Report::Coveralls
+    - perl -S cpan Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
 script:
     perl Makefile.PL && make && cover -test -report coveralls
 

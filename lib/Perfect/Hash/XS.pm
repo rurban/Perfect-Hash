@@ -27,10 +27,11 @@ Perfect::Hash::XS - Perfect Hash output formatter for XS - compiled perl extensi
 =head1 DESCRIPTION
 
 Optimized for sharedlib and PIC, and it can hold more and mixed value
-types, not just strings and integers. With the help of Data::Compile (planned) even
-any perl values, like code refs, magic, ...
+types, not just strings and integers. With the help of Data::Compile
+(planned) even any perl values, like code refs, magic, ...
 
-This is a replacement for cdb databases or write-once or only daily Storable containers.
+This is a replacement for cdb databases or write-once or only daily
+Storable containers.
 
 =head1 METHODS
 
@@ -38,12 +39,36 @@ This is a replacement for cdb databases or write-once or only daily Storable con
 
 =item save_xs filename, options
 
-Generated XS code, with the perl values saved as perl types.
+Generate XS code, with the perl values saved as perl types.
 
 =back
 
 =cut
 
+sub save_h_header { }
+
+sub save_c_header {
+  my ($ph, $filename) = @_;
+  my $FH;
+  open $FH, ">", $filename or die "$filename: @!";
+  print $FH "#include <string.h>\n"; # for memcmp/strlen
+  return $FH;
+}
+
+sub c_funcdecl {
+  my ($ph, $base) = @_;
+  if ($ph->option('-nul')) {
+    "
+long $base\_lookup(const char* s, int l)";
+  } else {
+    "
+long $base\_lookup(const char* s)";
+  }
+}
+
 sub save_xs {
+  my $ph = shift;
+  my $file = shift;
+  my @options = @_;
   die 'save_xs nyi';
 }

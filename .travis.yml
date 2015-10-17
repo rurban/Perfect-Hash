@@ -9,7 +9,7 @@ perl:
     - "5.16"
     - "5.18"
     - "5.20"
-    - "5.22"
+#   - "5.22"
 #   - "blead"
 # blead and 5.6 stumble over YAML and more missing dependencies for Devel::Cover::Report::Coveralls
 #before_install:

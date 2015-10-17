@@ -28,7 +28,7 @@ addons:
 
 before_script:
     - gperf --version
-    - perl -S cpan Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
+    - perl -S cpanm -n -q Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
 script:
     perl Makefile.PL && make && cover -test -report coveralls
 

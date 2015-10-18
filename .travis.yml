@@ -26,7 +26,8 @@ addons:
 # for Devel::Cover::Report::Coveralls
 # cpanm does not do 5.6
 before_install:
-  - ln -s `which true` /home/travis/.local/bin/cpansign
+  - mkdir /home/travis/bin || true
+  - ln -s `which true` /home/travis/bin/cpansign
   - eval $(curl https://travis-perl.github.io/init) --auto
 install:
   - export AUTOMATED_TESTING=1 HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0

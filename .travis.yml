@@ -9,26 +9,28 @@ perl:
     - "5.16"
     - "5.18"
     - "5.20"
-#   - "5.22"
-#   - "blead"
-# blead and 5.6 stumble over YAML and more missing dependencies for Devel::Cover::Report::Coveralls
-#before_install:
-#    - git clone git://github.com/haarg/perl-travis-helper
-#    - source perl-travis-helper/init
-#    - build-perl
-#    - perl -V
-install:
-    - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
-# cpanm does not 5.6
+    - "5.22"
+    - "blead"
 
 addons:
   apt:
     packages:
     - gperf
 
+# blead and 5.6 stumble over YAML and more missing dependencies
+# for Devel::Cover::Report::Coveralls
+before_install:
+  - eval $(curl https://travis-perl.github.io/init) --auto
+install:
+  - cpan-install --deps
+  - cpan-install --coverage
+  - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
+
+# cpanm does not 5.6
 before_script:
-    - gperf --version
-    - perl -S cpanm -n -q Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
+  - gperf --version
+  - perl -S cpanm -n -q Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
+  - coverage-setup
 script:
     perl Makefile.PL && make && cover -test -report coveralls
 
@@ -37,13 +39,10 @@ notifications:
     on_success: change
     on_failure: always
 
-# fast_finish: http://blog.travis-ci.com/2013-11-27-fast-finishing-builds/
 matrix:
   fast_finish: true
   allow_failures:
-    - perl: "5.6"
     - perl: "blead"
-# unknown to perlbrew at travis. Using perl-travis-helper
 
 # Hack to not run on tag pushes:
 branches:

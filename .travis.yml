@@ -1,16 +1,18 @@
 language: "perl"
 sudo: false
 perl:
-#   - "5.6"
-    - "5.8"
-    - "5.10"
-    - "5.12"
-    - "5.14"
-    - "5.16"
-    - "5.18"
-    - "5.20"
-    - "5.22"
-    - "blead"
+# - "5.6.2"
+  - "5.8"
+  - "5.10"
+  - "5.12"
+  - "5.14"
+  - "5.16"
+  - "5.18"
+  - "5.20"
+  - "5.22"
+  - "5.22-thr"
+  - "dev"
+  - "blead"
 
 addons:
   apt:
@@ -20,19 +22,15 @@ addons:
 # blead and 5.6 stumble over YAML and more missing dependencies
 # for Devel::Cover::Report::Coveralls
 before_install:
-  - eval $(curl https://travis-perl.github.io/init) --auto
+  - cpanm Module::Signature
 install:
+  - eval $(curl https://travis-perl.github.io/init) --auto
+  - export AUTOMATED_TESTING=1 HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
   - cpan-install --deps
-  - cpan-install --coverage
-  - export AUTOMATED_TESTING=1 HARNESS_OPTIONS=c HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
 
 # cpanm does not 5.6
 before_script:
   - gperf --version
-  - perl -S cpanm -n -q Test::CPAN::Meta Devel::Cover::Report::Coveralls || true
-  - coverage-setup
-script:
-    perl Makefile.PL && make && cover -test -report coveralls
 
 notifications:
   email:
@@ -42,7 +40,11 @@ notifications:
 matrix:
   fast_finish: true
   allow_failures:
+    - perl: "dev"
     - perl: "blead"
+  include:
+    - perl: 5.18
+      env: COVERAGE=1   # enables coverage+coveralls reporting
 
 # Hack to not run on tag pushes:
 branches:

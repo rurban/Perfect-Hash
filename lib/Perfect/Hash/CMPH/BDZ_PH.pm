@@ -40,6 +40,8 @@ times lower than its closest competitor, for plausible problem
 sizes. We verify the practicality experimentally, using slightly more
 space than in the mentioned theoretical bounds.
 
+The B<nbperf> I<bdz> variant uses the same algorithm.
+
 =head1 METHODS
 
 See L<Perfect::Hash::CMPH>
@@ -60,7 +62,7 @@ L<http://cmph.sourceforge.net/papers/wads07.pdf>
 
 =cut
 
-# local testing: p -d -Ilib lib/Perfect/Hash/CMPH/CHD.pm examples/words20
+# local testing: p -d -Ilib lib/Perfect/Hash/CMPH/BDZ_PH.pm examples/words20
 unless (caller) {
   require Perfect::Hash;
   &Perfect::Hash::_test(@ARGV)

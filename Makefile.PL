@@ -47,6 +47,21 @@ if (! -e "cmph-2.0/configure") {
     chdir "..";
   }
 }
+if (! -e "nbperf/nbperf.c") {
+  if (-d ".git") {
+    print "Uodating submodules\n";
+    system("git submodule update --init");
+  } else {
+    print "Cloning git://github.com/rurban/nbperf\n";
+    system("git clone git://github.com/rurban/nbperf.git");
+  }
+}
+if (! -e "nbperf/nbperf".$Config{exe_ext}) {
+  chdir "nbperf";
+  my $cc = $Config{cc};
+  my $retval = system($Config{'make'}, "CC='$cc'");
+  chdir "..";
+}
 
 if (! -e "bob/lookupa.c") {
   print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";

@@ -12,18 +12,18 @@ our @EXPORT = qw(_dict_init gettimeofday tv_interval);
 
 # Not all these methods are for perfect hashes. we generate a bunch of fast static
 # lookup methods and check which is the best.
-# Not yet:      Bob CMPH::BMZ8 CMPH::BRZ
+# Not yet:      Bob Nbperf CMPH::BMZ8 CMPH::BRZ
 #               Double Cuckoo RobinHood HAMT
 our @algos = qw(HanovPP Hanov Urban
                 Pearson PearsonNP Pearson8 Pearson32 Pearson16
                 CMPH::BDZ_PH CMPH::BDZ CMPH::BMZ CMPH::CHM
                 CMPH::FCH CMPH::CHD_PH CMPH::CHD
-                Switch Gperf Bob Cuckoo);
+                Switch Gperf Bob Nbperf);
 # Still failing:
 our %algo_todo = map {$_=>1} # pure-perl and save_c
-  # -pearson16 -bob
-  qw(-cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
-     -cmph-chd -cmph-bmz8 -cmph-brz -cuckoo);
+  qw(-pearson8
+     -cmph-bdz_ph -cmph-bdz -cmph-bmz -cmph-chm -cmph-fch -cmph-chd_ph
+     -cmph-chd -cmph-bmz8 -cmph-brz);
 
 =head1 NAME
 
@@ -66,7 +66,7 @@ to ints on demand) and the values can so far be only ints and strings.  More
 types later.
 
 As generation algorithm there exist various perfect hashing and other fast
-lookup methods: Hanov, HanovPP, Urban, CMPH::*, Bob, Pearson*, Gperf, Switch,
+lookup methods: Hanov, HanovPP, Urban, CMPH::*, Bob, Nbperf, Pearson*, Gperf, Switch,
 and maybe Cuckoo, RobinHood, HAMT, ...  Not all generated lookup methods are
 perfect hashes per se. I also implemented traditional methods which might be
 faster for smaller key sets, like nested switches, hash array mapped tries or
@@ -231,6 +231,14 @@ The performance is comparable to the best perfect hashes.
 
 Generates C code more stable than gperf, but requires an external
 dependency for the lookup function.
+
+=item -nbperf
+
+Generates NetBSD perfect minimal hashes with the chm algorithm.
+
+Currently only via the C<nbperf> executable, and requires an external
+dependency for the hash function. Planned to do it in
+pure-perl as with PostgreSQL.
 
 =item -cmph-bdz_ph I<(todo)>
 
@@ -405,7 +413,7 @@ sub new {
   my $option = shift; # the first must be the algo method
   my $method = $algo_methods{substr($option,1)} if $option;
   if (substr($option,0,1) eq "-" and $method) {
-    warn "Warning: Method $option not yet working correctly\n" if 0 and exists $algo_todo{$option};
+    warn "Warning: Method $option not yet working correctly\n" if exists $algo_todo{$option};
   } else {
     unshift @_, $option;
     $method = find_best_method($dict, @_);
@@ -516,6 +524,7 @@ L<Perfect::Hash::Pearson16>,
 L<Perfect::Hash::Gperf>,
 L<Perfect::Hash::Switch>,
 L<Perfect::Hash::Bob>,
+L<Perfect::Hash::Nbperf>,
 L<Perfect::Hash::Cuckoo> I<(not yet)>,
 L<Perfect::Hash::RobinHood> I<(not yet)>,
 L<Perfect::Hash::HAMT> I<(not yet)>,
@@ -532,7 +541,7 @@ L<Perfect::Hash::CMPH::CHD_PH>
 =head2 Output classes
 
 Output classes are loaded dynamically from a C<-for-class> option,
-the option must be lowercase, the classsname must be uppercase.
+the option must be lowercase, the classname must be uppercase.
 
 L<Perfect::Hash::C> C<-for-c> (C library)
 

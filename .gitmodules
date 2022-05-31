@@ -1,3 +1,6 @@
 [submodule "jenkins-minimal-perfect-hash"]
 	path = bob
 	url = git://github.com/rurban/jenkins-minimal-perfect-hash.git
+[submodule "nbperf"]
+	path = nbperf
+	url = https://github.com/rurban/nbperf

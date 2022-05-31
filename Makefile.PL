@@ -6,7 +6,7 @@ use Config;
 # TODO: we should provide an option to provide a B::CC compiled script/pperf,
 # which would e.g. use faster versions of the pure perl modules.
 
-# TODO try c compiler and extract cmph and bob then
+# TODO try c compiler and extract cmph, nbperf and bob then
 #use ExtUtils::Embed;
 
 my ($libs, $incdir, $libdir);
@@ -48,9 +48,24 @@ if (! -e "cmph-2.0/configure") {
   }
 }
 
+if (! -e "nbperf/Makefile") {
+  if (-d '.git') {
+    print "Updating nbperf submodule\n";
+    system("git submodule update --init");
+  } else {
+    print "Cloning git://github.com/rurban/nbperf.git\n";
+    system("git clone git://github.com/rurban/nbperf.git");
+  }
+}
+
 if (! -e "bob/lookupa.c") {
-  print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";
-  system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git -b perl bob");
+  if (-d '.git') {
+    print "Updating bob submodule\n";
+    system("git submodule update --init");
+  } else {  
+    print "Cloning git://github.com/rurban/jenkins-minimal-perfect-hash.git to bob\n";
+    system("git clone git://github.com/rurban/jenkins-minimal-perfect-hash.git -b perl bob");
+  }
 }
 # Win32 MSVC, no git
 if (!-e "bob/lookupa.c" and -e "bob/Makefile.PL") {
@@ -59,13 +74,26 @@ if (!-e "bob/lookupa.c" and -e "bob/Makefile.PL") {
 if (-e "bob/lookupa.c" and !-e "bob/perfect".$Config{exe_ext}) {
   chdir "bob";
   my $cc = $Config{cc};
-  my $retval = system($Config{'make'}, "-s", "-f", "Makefile.orig", "CC=$cc");
+  my $retval = system($Config{'make'}, "-s", "-f", "Makefile.orig", "CC='$cc'");
   if ($retval>>8) {
     rename "Makefile.PL", "Makefile_PL.disabled";
     warn "disabled bob extension\n";
   }
   chdir "..";
 }
+
+if (!-e "nbperf/nbperf".$Config{exe_ext}) {
+  chdir "nbperf";
+  my $cc = $Config{cc};
+  my $retval = system($Config{'make'}, "CC='$cc'");
+  if ($retval>>8) {
+    warn "disabled nbperf extension\n";
+  } else {
+    system($Config{'make'}, "install");
+  }
+  chdir "..";
+}
+
 
 my @extras = ();
 my $EUMM_VER = $ExtUtils::MakeMaker::VERSION;

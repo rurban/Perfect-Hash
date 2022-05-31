@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #
-# PerfectHash.pm
+# PerfectHashInt.pm
 #    Perl module that constructs minimal perfect hash functions
 #
 # This code constructs a minimal perfect hash function for the given
@@ -24,11 +24,11 @@
 # Portions Copyright (c) 1994, Regents of the University of California
 # Copyright (c) 2022, Reini Urban for integer keys
 #
-# src/tools/PerfectHash.pm
+# src/tools/PerfectHashInt.pm
 #
 #----------------------------------------------------------------------
 
-package PerfectHash;
+package PerfectHashInt;
 
 use strict;
 use warnings;
@@ -183,20 +183,21 @@ sub _calc_hash
 {
 	my ($key, $mult, $seed) = @_;
 
-        if ($int_keys)
-        {
-            return = ($seed * $mult + $key) % 4294967296;
-        }
-        else
-        {
-            my $result = $seed;
-            for my $c (split //, $key)
-            {
-		my $cn = ord($c);
-		$cn |= 0x20 if $case_fold;
-		$result = ($result * $mult + $cn) % 4294967296;
-            }
-	return $result;
+	if ($int_keys)
+	{
+		return ($seed * $mult + $key) % 4294967296;
+	}
+	else
+	{
+		my $result = $seed;
+		for my $c (split //, $key)
+		{
+			my $cn = ord($c);
+			$cn |= 0x20 if $case_fold;
+			$result = ($result * $mult + $cn) % 4294967296;
+		}
+		return $result;
+	}
 }
 
 
